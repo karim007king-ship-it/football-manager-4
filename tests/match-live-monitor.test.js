@@ -69,3 +69,16 @@ test('live game page loads monitor dependencies before its controller and parses
  assert.match(html,/advanceShadowMonitor\(\)/);
  assert.match(html,/shadowMonitorHtml\(\)/);
 });
+
+test('monitor reports the exact stage when shadow creation fails',()=>{
+ assert.throws(()=>Monitor.create({match:{xi:[],O:{xi:[]}}}),/\\[FM4 shadow CREATE\\]/);
+});
+test('monitor reports sync failures with a stage label',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:95});
+ assert.throws(()=>Monitor.sync(monitor,null),/\\[FM4 shadow SYNC\\]/);
+});
+test('monitor reports advance failures without changing the live match',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:96}),before=JSON.stringify(m);
+ assert.throws(()=>Monitor.advance(monitor,null,1),/\\[FM4 shadow ADVANCE>SYNC\\]/);
+ assert.equal(JSON.stringify(m),before);
+});
