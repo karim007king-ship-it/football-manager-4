@@ -82,3 +82,13 @@ test('monitor reports advance failures without changing the live match',()=>{
  assert.throws(()=>Monitor.advance(monitor,null,1),/\[FM4 shadow ADVANCE>SYNC\]/);
  assert.equal(JSON.stringify(m),before);
 });
+
+test('monitor labels render failures and preserves the underlying stack',()=>{
+ const Bridge=require('../js/match/live-bridge');
+ const m=live(),monitor=Monitor.create({match:m,seed:97});
+ const original=Bridge.snapshotShadow;
+ Bridge.snapshotShadow=()=>{throw new Error('render-probe-failure')};
+ try{
+  assert.throws(()=>Monitor.render(monitor,m),e=>e.message.includes('[FM4 shadow RENDER]')&&e.stack.includes('render-probe-failure'));
+ }finally{Bridge.snapshotShadow=original;}
+});
