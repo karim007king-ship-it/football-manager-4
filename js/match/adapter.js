@@ -71,4 +71,15 @@ function createMatchFromGame({home,away,seed=1}={}){
   ],seed
  });
 }
-module.exports={toEngineTeam,createMatchFromGame,rolesFor,estimateSkills};
+// Safe bridge for the current live-match object. It creates a parallel engine
+// state and does not mutate or replace the legacy M object.
+function createMatchFromLive({match,userTeamName='فريقي',opponentTeamName='الخصم',seed=1}={}){
+ if(!match||!Array.isArray(match.xi)||!match.O||!Array.isArray(match.O.xi))
+  throw new Error('A live FM4 match with both selected lineups is required');
+ const user=toEngineTeam({name:userTeamName,players:match.xi,side:match.home?0:1,mentality:match.tac||'balanced',energy:match.en||{}});
+ const opponent=toEngineTeam({name:opponentTeamName,players:match.O.xi,side:match.home?1:0,mentality:'balanced'});
+ const userTeamId=match.home?0:1;
+ const state=require('./engine').createMatch({teams:match.home?[user,opponent]:[opponent,user],seed});
+ return{state,userTeamId};
+}
+module.exports={toEngineTeam,createMatchFromGame,createMatchFromLive,rolesFor,estimateSkills};
