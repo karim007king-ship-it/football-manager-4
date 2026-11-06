@@ -58,14 +58,14 @@ test('live game page loads monitor dependencies before its controller and parses
   assert.ok(position>previous,'script '+file+' must be loaded in dependency order');
   previous=position;
  }
- const marker="<script>\\nconst KEY='fm_web_pro_v2';";
+ const marker="<script>\nconst KEY='fm_web_pro_v2';";
  const start=html.indexOf(marker);
  assert.ok(start>=0,'main game controller script exists');
  const bodyStart=start+marker.length;
  const end=html.indexOf('</script>',bodyStart);
  assert.ok(end>bodyStart,'main game controller script closes');
  new vm.Script('const KEY=\'fm_web_pro_v2\';'+html.slice(bodyStart,end));
- assert.match(html,/initShadowMonitor\\(\\)/);
- assert.match(html,/advanceShadowMonitor\\(\\)/);
- assert.match(html,/shadowMonitorHtml\\(\\)/);
+ assert.match(html,/initShadowMonitor\(\)/);
+ assert.match(html,/advanceShadowMonitor\(\)/);
+ assert.match(html,/shadowMonitorHtml\(\)/);
 });
