@@ -54,3 +54,31 @@ test('120-minute extra-time simulation remains stable and bounded',()=>{
   assert.ok(s.score.every(n=>Number.isFinite(n)&&n>=0));
  }
 });
+test('realistic 65-75 OVR squads keep match volume and passing within tighter calibration bands',()=>{
+ let goals=0,shots=0,passes=0,completed=0,homeGoals=0,awayGoals=0;
+ const games=200;
+ for(let seed=501;seed<501+games;seed++){
+  const s=simulateMatch(createMatchFromGame({home:legacyTeam('Home'),away:legacyTeam('Away'),seed}),90);
+  goals+=s.score[0]+s.score[1];shots+=s.shots[0]+s.shots[1];
+  passes+=s.passes[0]+s.passes[1];completed+=s.completedPasses[0]+s.completedPasses[1];
+  homeGoals+=s.score[0];awayGoals+=s.score[1];
+ }
+ const avgGoals=goals/games,avgShots=shots/games,passAccuracy=100*completed/Math.max(1,passes);
+ assert.ok(avgGoals>=1.5&&avgGoals<=3.8,'65-75 OVR average goals '+avgGoals.toFixed(2));
+ assert.ok(avgShots>=12&&avgShots<=22,'65-75 OVR average shots '+avgShots.toFixed(2));
+ assert.ok(passAccuracy>=64&&passAccuracy<=82,'pass accuracy '+passAccuracy.toFixed(1));
+ assert.ok(Math.abs(homeGoals-awayGoals)/games<=.65,'balanced home/away goals');
+});
+
+test('higher-rated teams gain a scoring edge regardless of home or away side',()=>{
+ const rated=(name,ovr)=>({name,mentality:'balanced',players:['GK','DEF','DEF','DEF','DEF','MID','MID','MID','MID','FWD','FWD'].map((pos,i)=>({id:name+i,name:'P'+i,pos,ovr:ovr+(i%3)-1,morale:70,inj:0}))});
+ for(const [homeOvr,awayOvr,strongSide] of [[80,65,0],[65,80,1]]){
+  let strongGoals=0,weakGoals=0;
+  const games=200;
+  for(let seed=901;seed<901+games;seed++){
+   const s=simulateMatch(createMatchFromGame({home:rated('Home',homeOvr),away:rated('Away',awayOvr),seed}),90);
+   strongGoals+=s.score[strongSide];weakGoals+=s.score[1-strongSide];
+  }
+  assert.ok((strongGoals-weakGoals)/games>.2,'higher-rated side should score more: '+homeOvr+' vs '+awayOvr);
+ }
+});
