@@ -48,6 +48,10 @@ function syncTeam(state,teamId,mapped){
   // Mirror every balanced lineup change in order. Do not hide substitution
   // errors: the caller must see a failed shadow sync rather than false success.
   if(!state.substitutions)state.substitutions=[0,0];
+  const used=Number(state.substitutions[teamId]||0);
+  // Preflight the whole batch so a later failure cannot leave a half-applied
+  // lineup change in the shadow state.
+  if(used+leaving.length>5)throw new Error('Maximum of five substitutions reached');
   for(let i=0;i<leaving.length;i++){
    subApi().substitutePlayer(state,teamId,leaving[i].id,incoming[i].id);
   }
