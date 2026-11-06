@@ -5,6 +5,14 @@ const bridgeApi=()=>typeof module!=='undefined'&&module.exports?require('./live-
 const adapterApi=()=>typeof module!=='undefined'&&module.exports?require('./adapter'):window.FM4MatchAdapter;
 const subApi=()=>typeof module!=='undefined'&&module.exports?require('./substitutions'):window.FM4Substitutions;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function stageError(stage,error){
+ const message=String(error&&error.message||error||'Unknown error');
+ const wrapped=new Error('[FM4 shadow '+stage+'] '+message);
+ wrapped.stage=stage;wrapped.cause=error;
+ if(typeof console!=='undefined'&&console.error)console.error('[FM4 shadow '+stage+']',error&&error.stack||error);
+ return wrapped;
+}
+
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function makeTeamLineup(match,userSide){
  const away=!match.home;
@@ -51,24 +59,30 @@ function repairCarrier(state){
  if(best)state.ball={x:best.player.x,y:best.player.y,team:best.team,playerId:best.player.id};
 }
 function create({match,seed=1,userTeamName='فريقي',opponentTeamName}={}){
- const shadow=bridgeApi().createShadowFromLive({match,seed,userTeamName,opponentTeamName:opponentTeamName||match?.opp?.name||'الخصم'});
- shadow.state.substitutions=[0,0];
- return {shadow,steps:0,lastError:''};
+ try{
+  const shadow=bridgeApi().createShadowFromLive({match,seed,userTeamName,opponentTeamName:opponentTeamName||match?.opp?.name||'الخصم'});
+  shadow.state.substitutions=[0,0];
+  return {shadow,steps:0,lastError:null};
+ }catch(error){throw stageError('CREATE',error);}
 }
 function sync(monitor,match){
- if(!monitor?.shadow?.state||!match)throw new Error('Monitor and live match are required');
- const shadow=monitor.shadow,state=shadow.state,user=shadow.userTeamId,opp=1-user;
- const userMapped=mappedPlayers(match,true),opponentMapped=mappedPlayers(match,false);
- syncTeam(state,user,userMapped);
- syncTeam(state,opp,opponentMapped);
- repairCarrier(state);
- return bridgeApi().snapshotShadow(shadow);
+ try{
+  if(!monitor?.shadow?.state||!match)throw new Error('Monitor and live match are required');
+  const shadow=monitor.shadow,state=shadow.state,user=shadow.userTeamId,opp=1-user;
+  const userMapped=mappedPlayers(match,true),opponentMapped=mappedPlayers(match,false);
+  syncTeam(state,user,userMapped);
+  syncTeam(state,opp,opponentMapped);
+  repairCarrier(state);
+  return bridgeApi().snapshotShadow(shadow);
+ }catch(error){throw stageError('SYNC',error);}
 }
 function advance(monitor,match,minutes=1){
- sync(monitor,match);
- const result=bridgeApi().stepShadow(monitor.shadow,minutes);
- monitor.steps+=Math.max(0,Math.floor(Number(minutes)||0));
- return result;
+ try{
+  sync(monitor,match);
+  const result=bridgeApi().stepShadow(monitor.shadow,minutes);
+  monitor.steps+=Math.max(0,Math.floor(Number(minutes)||0));
+  return result;
+ }catch(error){throw stageError(error&&error.stage?'ADVANCE>'+error.stage:'ADVANCE',error);}
 }
 function render(monitor,match){
  if(!monitor?.shadow?.state)return '';
