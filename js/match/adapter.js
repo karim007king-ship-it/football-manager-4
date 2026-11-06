@@ -1,3 +1,4 @@
+(function(){
 'use strict';
 // Converts FM4's legacy player/match shape into the isolated match-engine schema.
 // FM4 currently stores overall rating (ovr), morale and injury status rather than
@@ -87,3 +88,5 @@ function createMatchFromLive({match,userTeamName='فريقي',opponentTeamName='
 const FM4MatchAdapter={toEngineTeam,createMatchFromGame,createMatchFromLive,rolesFor,estimateSkills};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchAdapter;
 if(typeof window!=='undefined')window.FM4MatchAdapter=FM4MatchAdapter;
+
+})();
