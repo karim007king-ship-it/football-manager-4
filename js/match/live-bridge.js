@@ -11,6 +11,10 @@ function createShadowFromLive({match,userTeamName='فريقي',opponentTeamName=
  state.score[1-user]=Math.max(0,Math.floor(Number(match.go)||0));
  if(Number.isFinite(Number(match.bx)))state.ball.x=Math.max(2,Math.min(98,Number(match.bx)));
  if(Number.isFinite(Number(match.by)))state.ball.y=Math.max(2,Math.min(98,Number(match.by)));
+ // The legacy UI stores ball coordinates but not a reliable carrier ID.
+ // Attach the shadow ball to the nearest active player on either side.
+ const nearest=state.teams.flatMap(t=>t.players.filter(p=>p.active).map(p=>({team:t.id,player:p,distance:Math.hypot(p.x-state.ball.x,p.y-state.ball.y)}))).sort((a,b)=>a.distance-b.distance)[0];
+ if(nearest)state.ball={x:state.ball.x,y:state.ball.y,team:nearest.team,playerId:nearest.player.id};
  return {state,userTeamId:user,legacyMinute:minute,legacyScore:[state.score[user],state.score[1-user]],source:'read-only-shadow'};
 }
 function stepShadow(shadow,minutes=1){
