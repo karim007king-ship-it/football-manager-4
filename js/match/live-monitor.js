@@ -22,7 +22,7 @@ function mappedPlayers(match,userSide){
 function ensurePlayer(team,p){
  let found=team.players.find(x=>x.id===p.id);
  if(!found){
-  found={...p,baseX:p.x,baseY:p.y,direction:team.id===0?1:-1};
+  found={...p,active:false,baseX:p.x,baseY:p.y,direction:team.id===0?1:-1};
   team.players.push(found);
  }
  return found;
