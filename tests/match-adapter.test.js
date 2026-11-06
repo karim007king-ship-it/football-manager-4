@@ -51,6 +51,8 @@ test('bridges the current live match without mutating its legacy state',()=>{
  const {state,userTeamId}=require('../js/match/adapter').createMatchFromLive({match:live,userTeamName:'فريقي',opponentTeamName:'الخصم',seed:7});
  assert.equal(userTeamId,1);
  assert.equal(state.teams[userTeamId].name,'فريقي');
+ assert.equal(state.teams[userTeamId].adaptiveTactics,false);
+ assert.equal(state.teams[1-userTeamId].adaptiveTactics,true);
  assert.equal(state.teams[1-userTeamId].name,'الخصم');
  assert.equal(state.teams[userTeamId].players[0].stamina,63);
  assert.equal(JSON.stringify(live),before);
@@ -63,4 +65,10 @@ test('keeps bench players inactive and does not let them distort starting format
  assert.deepEqual(out.players.slice(0,11).map(p=>p.role),['GK','LB','CB','CB','RB','LM','CM','CM','RM','ST','ST']);
  assert.equal(out.players[11].active,false);
  assert.equal(out.players[11].role,'CB');
+});
+
+test('defaults career user team to manual tactics and opponent to adaptive tactics',()=>{
+ const s=createMatchFromGame({home:legacyTeam('المضيف'),away:legacyTeam('الضيف'),seed:19});
+ assert.equal(s.teams[0].adaptiveTactics,false);
+ assert.equal(s.teams[1].adaptiveTactics,true);
 });
