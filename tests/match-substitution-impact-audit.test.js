@@ -57,7 +57,7 @@ test('200-seed substitution audit: tired starter versus fresh substitute from mi
    Engine.stepMatch(baseline);
    Engine.stepMatch(withSub);
    a.baseMidDistance+=Math.hypot(bx.x-b0.x,bx.y-b0.y);
-   a.subMidDistance+=Math.hypot(sx.x-s0.x,sy=sx.y-s0.y);
+   a.subMidDistance+=Math.hypot(sx.x-s0.x,sx.y-s0.y);
   }
   assert.equal(out.stamina,tiredBefore,'inactive outgoing player must not keep losing stamina');
   assert.ok(incoming.stamina<100,'the substitute must accumulate fatigue after entering');
