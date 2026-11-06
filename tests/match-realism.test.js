@@ -65,13 +65,21 @@ test('seed sweep: full-match statistics remain internally consistent',()=>{
  assert.ok(totals.penetrations>0,'attacks should reach advanced areas');
  assert.ok(totals.completed<=totals.passes);
  assert.ok(totals.onTarget<=totals.shots);
+ const avgShots=totals.shots/100,avgPasses=totals.passes/100;
+ const passRate=totals.passes?totals.completed/totals.passes*100:0;
+ const avgTackles=totals.tackles/100,avgGoals=totals.goals/100;
+ assert.ok(avgShots>=7&&avgShots<=22,'shot volume should remain in a plausible range');
+ assert.ok(avgPasses>=60&&avgPasses<=220,'passing volume should remain in a plausible range');
+ assert.ok(passRate>=55&&passRate<=85,'pass completion should remain plausible');
+ assert.ok(avgTackles>=8&&avgTackles<=20,'tackle volume should remain in a plausible range');
+ assert.ok(avgGoals>=1.5&&avgGoals<=4,'goal volume should remain in a plausible range');
  console.log('FM4 100-seed diagnostics:',JSON.stringify({
   matches:100,averagePossession:possession.map(v=>+(v/90).toFixed(1)),
-  averageShotsPerMatch:+(totals.shots/100).toFixed(2),
-  averagePassesPerMatch:+(totals.passes/100).toFixed(2),
-  passCompletion:totals.passes?+(totals.completed/totals.passes*100).toFixed(1):0,
-  averageTacklesPerMatch:+(totals.tackles/100).toFixed(2),
-  averageGoalsPerMatch:+(totals.goals/100).toFixed(2),
+  averageShotsPerMatch:+avgShots.toFixed(2),
+  averagePassesPerMatch:+avgPasses.toFixed(2),
+  passCompletion:+passRate.toFixed(1),
+  averageTacklesPerMatch:+avgTackles.toFixed(2),
+  averageGoalsPerMatch:+avgGoals.toFixed(2),
   matchesWithAdvancedAttacks:totals.penetrations
  }));
 });
