@@ -67,8 +67,6 @@ test('1000 seeded matches audit scoring, shot volume, home bias and strength adv
   const neutralHomePossession = 100 * balanced.homePossession / (400 * 90);
   const strongHomeGoalDiff = (strongHome.homeWins - strongHome.awayWins);
   const strongAwayGoalDiff = (strongAway.awayWins - strongAway.homeWins);
-  const strongHomeAvgDiff = (strongHome.goals / 300);
-  const strongAwayAvgDiff = (strongAway.goals / 300);
 
   assert.ok(neutralGoals >= 1.2 && neutralGoals <= 4.8,
     'neutral average goals/match outside broad guardrails: ' + neutralGoals.toFixed(2));
@@ -102,5 +100,5 @@ test('1000 seeded matches audit scoring, shot volume, home bias and strength adv
       strongAwayLosses: strongAway.homeWins
     }
   };
-  console.log('FM4 600-match balance audit:', JSON.stringify(report));
+  console.log('FM4 1000-match balance audit:', JSON.stringify(report));
 });
