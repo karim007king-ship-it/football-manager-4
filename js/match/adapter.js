@@ -13,12 +13,13 @@ const POS_ROLES={
 };
 function rolesFor(players){
  const groups={GK:[],DEF:[],MID:[],FWD:[]};
- players.forEach(p=>{const pos=String(p.pos||'').toUpperCase();if(groups[pos])groups[pos].push(p);});
+ players.forEach(p=>{const pos=String(p.pos||'').toUpperCase();if(p.active!==false&&groups[pos])groups[pos].push(p);});
  const assigned=new Map();
  for(const pos of ['GK','DEF','MID','FWD']){
   const list=groups[pos],roles=pos==='GK'?POS_ROLES.GK:(POS_ROLES[pos][list.length]||list.map(()=>pos==='DEF'?'CB':pos==='MID'?'CM':'ST'));
   list.forEach((p,i)=>assigned.set(p.id,roles[i]||roles[roles.length-1]||pos));
  }
+ players.filter(p=>p.active===false).forEach(p=>{const pos=String(p.pos||'').toUpperCase();assigned.set(p.id,pos==='GK'?'GK':pos==='DEF'?'CB':pos==='MID'?'CM':'ST');});
  return assigned;
 }
 function laneY(role,index,count){
@@ -58,7 +59,7 @@ function toEngineTeam({name,players,side=0,mentality='balanced',energy={}}={}){
   return{
    id:String(p.id??i),name:String(p.name||'لاعب'),role,...skills,
    stamina:round(energy[p.id]??100),x:sideId===0?xBase:100-xBase,
-   y:laneY(role,n,counts[role]),active:true
+   y:laneY(role,n,counts[role]),active:p.active!==false
   };
  });
  return{name:String(name|| (side===0?'الفريق المضيف':'الفريق الضيف')),mentality,players:mapped};
