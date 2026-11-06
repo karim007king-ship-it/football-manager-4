@@ -1,0 +1,8 @@
+{
+  "appId": "com.karim.footballmanager",
+  "appName": "مدير الكرة",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
