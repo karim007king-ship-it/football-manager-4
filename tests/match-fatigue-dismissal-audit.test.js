@@ -43,11 +43,12 @@ test('fatigue and dismissal audit: measure current effects without changing matc
   identicalAggregateOutputAtDifferentStartingStamina:sameStaminaOutput,
   elevenVsTen:{
    eleven:{averageGoals:+(eleven.goals/200).toFixed(2),homeGoals:+(eleven.homeGoals/200).toFixed(2),awayGoals:+(eleven.awayGoals/200).toFixed(2),homeShots:+(eleven.homeShots/200).toFixed(2),awayShots:+(eleven.awayShots/200).toFixed(2)},
-   ten:{averageGoals:+(ten.goals/200).toFixed(2),homeGoals:+(ten.homeGoals/200).toFixed(2),awayGoals:+(ten.awayGoals/200).toFixed(2),homeShots:+(ten.homeShots/200).toFixed(2),awayShots:+(ten.awayShots/200).toFixed(2)}
+   ten:{averageGoals:+(ten.goals/200).toFixed(2),homeGoals:+(ten.homeGoals/200).toFixed(2),awayGoals:+(ten.awayGoals/200).toFixed(2),homeShots:+(ten.homeShots/200).toFixed(2),awayShots:+(ten.awayShots/200).toFixed(2),shortSideShotChange:+((ten.awayShots-eleven.awayShots)/200).toFixed(2)}
   }
  };
  console.log('FM4 fatigue/dismissal audit:',JSON.stringify(report));
  assert.notEqual(fresh.goals,exhausted.goals,'low starting stamina must change match goal output');
  assert.notEqual(fresh.shots,exhausted.shots,'low starting stamina must change match shot output');
  assert.ok(ten.homeShots>eleven.homeShots,'the team facing ten players should create more shots');
+ assert.ok(ten.awayShots<eleven.awayShots,'the team with ten players should create fewer shots: eleven='+eleven.awayShots+', ten='+ten.awayShots);
 });
