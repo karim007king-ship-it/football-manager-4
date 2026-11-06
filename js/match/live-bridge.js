@@ -1,3 +1,4 @@
+(function(){
 'use strict';
 // Read-only shadow bridge: runs the new engine beside the legacy live match.
 // It deliberately never writes to the legacy M object or its player records.
@@ -64,3 +65,5 @@ function compareWithLegacy(shadow,match){
 const FM4LiveBridge={createShadowFromLive,stepShadow,snapshotShadow,compareWithLegacy};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4LiveBridge;
 if(typeof window!=='undefined')window.FM4LiveBridge=FM4LiveBridge;
+
+})();
