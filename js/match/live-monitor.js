@@ -21,7 +21,8 @@ function makeTeamLineup(match,userSide){
  if(userSide){
   return {teamId:match.home?0:1,players:match.xi,side:away?1:0,name:'فريقي',mentality:match.tac||'balanced',energy:match.en||{}};
  }
- const players=match.O.xi.slice(0,Math.max(0,match.O.xi.length-(Number(match.oR)||0)));
+ const sentOff=Array.isArray(match.oSentOff)?new Set(match.oSentOff.map(String)):null;
+ const players=sentOff?match.O.xi.filter(p=>!sentOff.has(String(p.id))):match.O.xi.slice(0,Math.max(0,match.O.xi.length-(Number(match.oR)||0)));
  return {teamId:match.home?1:0,players,side:match.home?1:0,name:match.opp?.name||'الخصم',mentality:'balanced',energy:{}};
 }
 function mappedPlayers(match,userSide){
