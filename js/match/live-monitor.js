@@ -44,7 +44,9 @@ function syncTeam(state,teamId,mapped){
  const leaving=team.players.filter(p=>p.active&&!wanted.has(p.id));
  const incoming=mapped.filter(p=>!team.players.some(x=>x.id===p.id&&x.active));
  incoming.forEach(p=>ensurePlayer(team,p));
- if(leaving.length===1&&incoming.length===1&&team.players.filter(p=>p.active).length===11){
+ if(leaving.length===1&&incoming.length===1){
+  // Let substitutePlayer validate the legal 7–11 active-player range. This
+  // also records substitutions correctly when a team has already been reduced by a dismissal.
   if(!state.substitutions)state.substitutions=[0,0];
   try{subApi().substitutePlayer(state,teamId,leaving[0].id,incoming[0].id)}catch(e){}
  }
