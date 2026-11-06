@@ -50,7 +50,8 @@ test('safe forward passing lanes are preferred over backward support',()=>{
  const carrier=h.players[6];carrier.x=40;carrier.y=50;
  const forward=h.players[8];forward.x=67;forward.y=50;
  const backward=h.players[5];backward.x=24;backward.y=50;
- a.players.forEach((p,i)=>{p.x=90;p.y=5+i*9;});
+ h.players.forEach(p=>{p.active=true;});
+ a.players.forEach((p,i)=>{p.active=true;p.x=90;p.y=5+i*9;});
  const picked=choosePassTarget({players:h.players},a.players,carrier,0);
  assert.equal(picked.p.id,forward.id);
  assert.ok(picked.progress>0);
