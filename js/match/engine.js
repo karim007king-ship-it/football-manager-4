@@ -90,7 +90,7 @@ function stepAction(s){
  updateShape(s,tid,carrier);
  // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
- const shotChance=clamp(.10+carrier.shooting/850-pd/850,.04,.24);
+ const shotChance=clamp(.14+carrier.shooting/750-pd/800,.05,.3);
  let event=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
@@ -114,7 +114,7 @@ function stepAction(s){
    s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};
    event={type:'tackle',minute:s.minute+1,team:oid,playerId:press.id,x:press.x,y:press.y};
   }else{
-   const pass=best&&(pd>=4.5&&(pd<10||best.progress>0||rnd()<.55));
+   const pass=best&&rnd()<(pd<4.5?.35:pd<8.5?.72:best.progress>0?.58:.28);
    if(pass){
     s.passes[tid]++;
     const chance=clamp(.66+carrier.passing/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0),.35,.97);
