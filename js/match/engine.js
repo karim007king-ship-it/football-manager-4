@@ -99,7 +99,9 @@ function stepMatch(s){
   if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
  }else{
   const options=active(t).filter(p=>p.id!==carrier.id).map(p=>{const pr=(p.x-carrier.x)*(tid===0?1:-1),near=nearest(def,p),space=near?distance(near,p):30,pen=Math.abs(p.y-carrier.y)*.16;return{p,progress:pr,space,score:pr*.65+space*.35+p.passing*.04-pen+(pr>=-3?2:0)};}).sort((a,b)=>b.score-a.score);
-  const best=options[0],pass=best&&(pd<8.5||(best.progress>7&&rnd()<.34));
+  // At close range, give the defender a genuine tackle opportunity before
+  // the carrier's emergency pass logic takes over.
+  const best=options[0],pass=best&&(pd>=4.5&&(pd<8.5||(best.progress>7&&rnd()<.34)));
   if(pass){
    s.passes[tid]++;const chance=clamp(.58+carrier.passing/260-Math.max(0,distance(carrier,best.p)-12)/120-(pd<4?.18:pd<8?.08:0),.28,.94);
    if(rnd()<chance){s.completedPasses[tid]++;s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};event={type:'pass',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};}
