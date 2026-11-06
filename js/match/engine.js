@@ -93,6 +93,7 @@ function pointSegmentDistance(point,a,b){
  const u=clamp(((point.x-a.x)*dx+(point.y-a.y)*dy)/len2,0,1);
  return Math.hypot(point.x-(a.x+u*dx),point.y-(a.y+u*dy));
 }
+// Score receiver space and the entire pass corridor, not only the receiver's endpoint.
 function choosePassTarget(team,defenders,carrier,teamId){
  const dir=teamId===0?1:-1;
  const candidates=active(team).filter(p=>p.id!==carrier.id).map(p=>{
