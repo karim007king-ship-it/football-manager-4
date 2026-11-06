@@ -5,7 +5,13 @@ const adapterApi=()=>typeof module!=='undefined'&&module.exports?require('./adap
 const engineApi=()=>typeof module!=='undefined'&&module.exports?require('./engine'):window.FM4MatchEngine;
 function createShadowFromLive({match,userTeamName='فريقي',opponentTeamName='الخصم',seed=1}={}){
  const linked=adapterApi().createMatchFromLive({match,userTeamName,opponentTeamName,seed});
- return {state:linked.state,userTeamId:linked.userTeamId,legacyMinute:Number(match.min)||0,legacyScore:[Number(match.gu)||0,Number(match.go)||0],source:'read-only-shadow'};
+ const state=linked.state,user=linked.userTeamId,minute=Math.max(0,Math.min(90,Math.floor(Number(match.min)||0)));
+ state.minute=minute;
+ state.score[user]=Math.max(0,Math.floor(Number(match.gu)||0));
+ state.score[1-user]=Math.max(0,Math.floor(Number(match.go)||0));
+ if(Number.isFinite(Number(match.bx)))state.ball.x=Math.max(2,Math.min(98,Number(match.bx)));
+ if(Number.isFinite(Number(match.by)))state.ball.y=Math.max(2,Math.min(98,Number(match.by)));
+ return {state,userTeamId:user,legacyMinute:minute,legacyScore:[state.score[user],state.score[1-user]],source:'read-only-shadow'};
 }
 function stepShadow(shadow,minutes=1){
  if(!shadow||!shadow.state)throw new Error('A shadow match is required');
@@ -17,16 +23,10 @@ function snapshotShadow(shadow){
  if(!shadow||!shadow.state)throw new Error('A shadow match is required');
  const s=shadow.state,u=shadow.userTeamId,o=1-u;
  return {
-  minute:s.minute,
-  userTeamId:u,
-  userScore:s.score[u],
-  opponentScore:s.score[o],
-  possession:s.possession.slice(),
-  shots:s.shots.slice(),
-  completedPasses:s.completedPasses.slice(),
+  minute:s.minute,userTeamId:u,userScore:s.score[u],opponentScore:s.score[o],
+  possession:s.possession.slice(),shots:s.shots.slice(),completedPasses:s.completedPasses.slice(),
   activePlayers:s.teams.map(t=>t.players.filter(p=>p.active).length),
-  eventCount:s.events.length,
-  source:shadow.source
+  eventCount:s.events.length,source:shadow.source
  };
 }
 const FM4LiveBridge={createShadowFromLive,stepShadow,snapshotShadow};
