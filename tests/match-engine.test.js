@@ -1,50 +1,17 @@
 'use strict';
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createMatch, stepMatch, simulateMatch } = require('../js/match/engine');
-
-function team(name, side) {
-  const players = [];
-  for (let i = 0; i < 11; i += 1) {
-    players.push({
-      id: name + '-' + i,
-      name: 'P' + i,
-      role: i === 0 ? 'GK' : i < 5 ? 'DF' : i < 9 ? 'MF' : 'FW',
-      x: side === 0 ? 25 + (i % 4) * 8 : 75 - (i % 4) * 8,
-      y: 8 + i * 8,
-      pace: 65,
-      passing: 68,
-      shooting: 62,
-      defending: 60
-    });
-  }
-  return { name, players };
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {createMatch,stepMatch,simulateMatch}=require('../js/match/engine');
+function team(name,side){
+ const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
+ const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
+ return{name,players:roles.map((role,i)=>({id:name+'-'+i,name:'P'+i,role,pace:66,passing:68,shooting:62,defending:61,x:xs[i],y:[50,18,39,61,82,50,34,64,12,50,88][i]}))};
 }
-
-test('creates a valid two-team match state', () => {
-  const state = createMatch({ teams: [team('Home', 0), team('Away', 1)] });
-  assert.equal(state.minute, 0);
-  assert.deepEqual(state.score, [0, 0]);
-  assert.equal(state.teams.length, 2);
-});
-
-test('advances time and records possession/events', () => {
-  const state = createMatch({ teams: [team('Home', 0), team('Away', 1)], seed: 7 });
-  simulateMatch(state, 90);
-  assert.equal(state.minute, 90);
-  assert.ok(state.events.length > 0);
-  assert.ok(state.possession[0] + state.possession[1] > 0);
-  assert.ok(state.events.every(e => ['carry', 'pass', 'interception', 'tackle', 'shot', 'goal'].includes(e.type)));
-});
-
-test('rejects invalid team count', () => {
-  assert.throws(() => createMatch({ teams: [team('Only', 0)] }), /Exactly two teams/);
-});
-
-test('single step advances the ball or records a meaningful event', () => {
-  const state = createMatch({ teams: [team('Home', 0), team('Away', 1)], seed: 11 });
-  const before = state.minute;
-  stepMatch(state);
-  assert.equal(state.minute, before + 1);
-  assert.ok(state.events.length >= 0);
-});
+const create=(seed=23)=>createMatch({teams:[team('Home',0),team('Away',1)],seed});
+test('creates valid two-team match state',()=>{const s=create();assert.equal(s.minute,0);assert.deepEqual(s.score,[0,0]);assert.equal(s.teams.length,2);assert.equal(s.ball.team,0);});
+test('advances 90 minutes and event times stay aligned',()=>{const s=simulateMatch(create(7),90);assert.equal(s.minute,90);assert.ok(s.events.length>0);assert.equal(s.possession[0]+s.possession[1],90);assert.ok(s.events.every(e=>e.minute>=1&&e.minute<=90));assert.ok(s.events.every(e=>['carry','pass','interception','tackle','shot','save','goal'].includes(e.type)));});
+test('off-ball teammates move to support play',()=>{const s=create();const before=s.teams[0].players.filter(p=>p.id!==s.ball.playerId).map(p=>({id:p.id,x:p.x,y:p.y}));stepMatch(s);assert.ok(before.some(old=>{const p=s.teams[0].players.find(x=>x.id===old.id);return Math.abs(p.x-old.x)>.001||Math.abs(p.y-old.y)>.001;}));});
+test('both teams carry toward their attacking goal when space is available',()=>{for(const side of [0,1]){const h=team('Home',0),a=team('Away',1),att=side===0?h:a,def=side===0?a:h;att.players.forEach((p,i)=>{p.x=side===0?(i===1?50:15):(i===1?50:85);p.y=10+i*7;});def.players.forEach((p,i)=>{p.x=side===0?92:8;p.y=5+i*9;});const s=createMatch({teams:[h,a],seed:101}),c=att.players[1],x=c.x;s.ball={x:c.x,y:c.y,team:side,playerId:c.id};stepMatch(s);assert.equal(s.ball.team,side);assert.ok(side===0?s.ball.x>x:s.ball.x<x);}});
+test('same seed and inputs produce same match output',()=>{const a=simulateMatch(create(991),90),b=simulateMatch(create(991),90);assert.deepEqual(a.score,b.score);assert.deepEqual(a.events,b.events);assert.deepEqual(a.possession,b.possession);});
+test('rejects invalid team count and undersized squads',()=>{assert.throws(()=>createMatch({teams:[team('Only',0)]}),/Exactly two teams/);assert.throws(()=>createMatch({teams:[team('Home',0),{name:'Away',players:[]}] }),/at least 7 players/);});
+test('shots only occur in attacking third',()=>{const s=simulateMatch(create(),90);for(const e of s.events.filter(x=>['shot','save','goal'].includes(x.type))){const d=e.team===0?100-e.x:e.x;assert.ok(d<=25.001);}});
