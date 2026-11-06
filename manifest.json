@@ -1,0 +1,13 @@
+{
+  "name": "Football Manager 4 - مدير كرة القدم",
+  "short_name": "FM4",
+  "description": "لعبة إدارة كرة قدم عربية",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b141d",
+  "theme_color": "#0b141d"
+}
