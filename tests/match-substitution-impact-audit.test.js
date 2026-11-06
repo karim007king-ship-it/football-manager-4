@@ -30,7 +30,7 @@ function totals(){
  return {matches:0,baseShots:0,subShots:0,basePasses:0,subPasses:0,
   baseCompleted:0,subCompleted:0,baseTackles:0,subTackles:0,
   baseGoals:0,subGoals:0,baseCompletion:0,subCompletion:0,
-  incomingFinalStamina:0,outgoingFinalStamina:0};
+  incomingFinalStamina:0,outgoingFinalStamina:0,baseMidDistance:0,subMidDistance:0};
 }
 
 test('200-seed substitution audit: tired starter versus fresh substitute from minute 65',()=>{
@@ -50,8 +50,15 @@ test('200-seed substitution audit: tired starter versus fresh substitute from mi
   assert.equal(out.active,false);
   assert.equal(incoming.active,true);
   assert.equal(incoming.stamina,100);
-  Engine.simulateMatch(baseline,25);
-  Engine.simulateMatch(withSub,25);
+  for(let minute=0;minute<25;minute++){
+   const bx=baseline.teams[0].players.find(p=>p.id==='Home-6');
+   const sx=withSub.teams[0].players.find(p=>p.id==='Home-fresh-mid');
+   const b0={x:bx.x,y:bx.y},s0={x:sx.x,y:sx.y};
+   Engine.stepMatch(baseline);
+   Engine.stepMatch(withSub);
+   a.baseMidDistance+=Math.hypot(bx.x-b0.x,bx.y-b0.y);
+   a.subMidDistance+=Math.hypot(sx.x-s0.x,sy=sx.y-s0.y);
+  }
   assert.equal(out.stamina,tiredBefore,'inactive outgoing player must not keep losing stamina');
   assert.ok(incoming.stamina<100,'the substitute must accumulate fatigue after entering');
   a.matches++;
@@ -79,7 +86,8 @@ test('200-seed substitution audit: tired starter versus fresh substitute from mi
    completionRate:+(100*a.subCompleted/Math.max(1,a.subPasses)).toFixed(1),
    tackles:+(a.subTackles/a.matches).toFixed(2),goals:+(a.subGoals/a.matches).toFixed(2)},
   averageStaminaAtEnd:{outgoingInactive:+(a.outgoingFinalStamina/a.matches).toFixed(1),
-   incomingActive:+(a.incomingFinalStamina/a.matches).toFixed(1)}
+   incomingActive:+(a.incomingFinalStamina/a.matches).toFixed(1)},
+  trackedMidfielderMovement:{tiredStarter:+(a.baseMidDistance/a.matches).toFixed(2),freshSubstitute:+(a.subMidDistance/a.matches).toFixed(2)}
  };
  console.log('FM4 substitution impact audit:',JSON.stringify(report));
  assert.ok(a.matches===200);
