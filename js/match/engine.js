@@ -23,14 +23,57 @@ const active=t=>t.players.filter(p=>p.active);
 function nearest(players,point){let best=null,d=Infinity;for(const p of players){if(!p.active)continue;const n=distance(p,point);if(n<d){best=p;d=n;}}return best;}
 function moveToward(p,t,max){const dx=t.x-p.x,dy=t.y-p.y,len=Math.hypot(dx,dy);if(!len)return;if(len<=max){p.x=clamp(t.x,2,98);p.y=clamp(t.y,2,98);}else{p.x=clamp(p.x+dx/len*max,2,98);p.y=clamp(p.y+dy/len*max,2,98);}}
 function updateShape(s,teamId,carrier){
- for(const t of s.teams){const has=t.id===teamId,dir=t.id===0?1:-1;
-  for(const p of active(t)){if(has&&p.id===carrier.id)continue;const l=line(p.role),push=has?(l>.65?9:l>.4?5:1.5):-1.5;
-   let x=p.baseX+dir*push+(s.ball.x-50)*.09*dir*(has?1:1.4),y=p.baseY+(s.ball.y-50)*(has?.12:.2);
-   if(keeper(p.role)){x=t.id===0?5:95;y=clamp(50+(s.ball.y-50)*.12,38,62);}
-   else if(!has&&l<.35)x=clamp(x,t.id===0?8:62,t.id===0?38:92);
-   if(/^(LW|RW|LM|RM|LB|RB|LWB|RWB)$/i.test(p.role))y+=p.baseY<50?-3:3;
-   else if(/^(CM|DM|CDM|AM|CAM|MF)$/i.test(p.role))y+=(50-p.baseY)*.08;
-   moveToward(p,{x:clamp(x,2,98),y:clamp(y,3,97)},has?1.25:1.6);
+ const ballX=s.ball.x,ballY=s.ball.y;
+ for(const t of s.teams){
+  const has=t.id===teamId,dir=t.id===0?1:-1,mentality=String(t.mentality||'balanced').toLowerCase();
+  const pushScale=mentality==='attacking'?1.35:mentality==='defensive'?.62:mentality==='counter'?1.15:1;
+  const pressScale=mentality==='pressing'?1.7:mentality==='defensive'?.65:1;
+  const defenders=active(t);
+  const pressers=has?[]:defenders.filter(p=>!keeper(p.role)).sort((a,b)=>distance(a,carrier)-distance(b,carrier)).slice(0,mentality==='pressing'?3:1);
+  const cover=pressers.length?pressers[0]:null;
+  for(const p of defenders){
+   if(has&&p.id===carrier.id)continue;
+   const r=String(p.role||'').toUpperCase(),l=line(r);
+   const isWide=/^(LW|RW|LM|RM|LB|RB|LWB|RWB)$/.test(r);
+   const isFullback=/^(LB|RB|LWB|RWB)$/.test(r);
+   const isForward=/^(LW|RW|ST|CF|FW|FWD)$/.test(r);
+   const ballProgress=(ballX-50)*dir;
+   const forwardPush=has?(l>.68?10:l>.43?5.5:1.2)*pushScale:-1.2;
+   let tx=p.baseX+dir*forwardPush+(ballX-50)*.075*dir*(has?1:1.35);
+   let ty=p.baseY+(ballY-50)*(has?.13:.19);
+
+   // Attack width and staggered runs: wide attackers stay in the channel,
+   // fullbacks overlap when possession reaches their side of midfield.
+   if(isWide){
+    const lane=p.baseY<50?Math.min(p.baseY,18):Math.max(p.baseY,82);
+    ty=lane+(ballY-lane)*.08;
+    if(has&&isFullback&&ballProgress>0)tx+=dir*clamp(ballProgress*.12,0,7)*pushScale;
+    if(has&&isForward&&ballProgress>12)tx+=dir*clamp(ballProgress*.08,0,5);
+   }else if(/^(CM|DM|CDM|AM|CAM|MF)$/.test(r)){
+    ty+= (50-p.baseY)*.1;
+    if(has&&(/^(AM|CAM)$/.test(r)||l>.55))tx+=dir*(ballProgress>5?3:1);
+   }else if(/^(ST|CF)$/.test(r)&&has){
+    // Striker offers a forward passing lane but does not teleport beyond the ball.
+    tx=Math.max((t.id===0?ballX:100-ballX)+dir*2,tx);
+    tx=clamp(tx, t.id===0?ballX-2:2, t.id===0?98:ballX+2);
+   }
+
+   if(keeper(r)){tx=t.id===0?5:95;ty=clamp(50+(ballY-50)*.14,38,62);}
+   else if(!has&&l<.35){
+    tx=clamp(tx,t.id===0?8:62,t.id===0?38:92);
+    ty=p.baseY+(ballY-p.baseY)*.16;
+   }
+
+   // A compact, coordinated press: one player closes the ball, nearby
+   // midfielders cover passing lanes, while the rest preserve their line.
+   const isPresser=pressers.some(q=>q.id===p.id);
+   if(!has&&isPresser){
+    const rank=pressers.findIndex(q=>q.id===p.id);
+    const target=rank===0?{x:carrier.x,y:carrier.y}:{x:carrier.x-dir*5,y:carrier.y+(p.baseY<50?-7:7)};
+    moveToward(p,target,rank===0?1.8*pressScale:1.15*pressScale);
+   }else{
+    moveToward(p,{x:clamp(tx,2,98),y:clamp(ty,3,97)},has?1.3:1.25);
+   }
   }
  }
 }
