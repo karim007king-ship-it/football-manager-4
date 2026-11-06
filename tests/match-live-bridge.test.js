@@ -43,7 +43,9 @@ test('compares shadow statistics with legacy score, possession and shots',()=>{
  assert.deepEqual(report.minute,{engine:12,legacy:12});
  assert.deepEqual(report.score,{engine:[1,0],legacy:[1,0]});
  assert.equal(report.possession.legacy,52);
+ assert.equal(report.possession.engine,52);
  assert.deepEqual(report.shots.legacy,[4,3]);
+ assert.deepEqual(report.shots.engine,[4,3]);
  assert.deepEqual(report.activePlayers,[11,11]);
 });
 test('comparison rejects missing match inputs',()=>{
