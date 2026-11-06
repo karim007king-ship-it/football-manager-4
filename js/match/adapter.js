@@ -3,6 +3,7 @@
 // FM4 currently stores overall rating (ovr), morale and injury status rather than
 // individual technical attributes, so skill values below are transparent estimates.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const engineApi=()=>typeof module!=='undefined'&&module.exports?require('./engine'):window.FM4MatchEngine;
 const round=v=>Math.round(clamp(Number(v)||0,1,100));
 const POS_ROLES={
  GK:['GK'],
@@ -64,7 +65,7 @@ function toEngineTeam({name,players,side=0,mentality='balanced',energy={}}={}){
 }
 function createMatchFromGame({home,away,seed=1}={}){
  if(!home||!away)throw new Error('Home and away FM4 teams are required');
- return require('./engine').createMatch({
+ return engineApi().createMatch({
   teams:[
    toEngineTeam({...home,side:0}),
    toEngineTeam({...away,side:1})
@@ -79,7 +80,9 @@ function createMatchFromLive({match,userTeamName='فريقي',opponentTeamName='
  const user=toEngineTeam({name:userTeamName,players:match.xi,side:match.home?0:1,mentality:match.tac||'balanced',energy:match.en||{}});
  const opponent=toEngineTeam({name:opponentTeamName,players:match.O.xi,side:match.home?1:0,mentality:'balanced'});
  const userTeamId=match.home?0:1;
- const state=require('./engine').createMatch({teams:match.home?[user,opponent]:[opponent,user],seed});
+ const state=engineApi().createMatch({teams:match.home?[user,opponent]:[opponent,user],seed});
  return{state,userTeamId};
 }
-module.exports={toEngineTeam,createMatchFromGame,createMatchFromLive,rolesFor,estimateSkills};
+const FM4MatchAdapter={toEngineTeam,createMatchFromGame,createMatchFromLive,rolesFor,estimateSkills};
+if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchAdapter;
+if(typeof window!=='undefined')window.FM4MatchAdapter=FM4MatchAdapter;
