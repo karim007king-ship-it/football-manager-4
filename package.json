@@ -1,19 +1,14 @@
 {
   "name": "football-manager-4",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Arabic football club management game",
+  "description": "Football Manager 4 packaged as an Android app",
   "scripts": {
     "test": "node --test tests/*.test.js"
   },
-  "engines": {
-    "node": ">=20"
-  },
   "dependencies": {
-    "@capacitor/android": "6.2.1",
-    "@capacitor/core": "6.2.1"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "6.2.1"
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/core": "^6.1.0"
   }
 }
