@@ -1,3 +1,4 @@
+(function(){
 'use strict';
 // FM4 match kernel v2. Coordinates 0..100; home attacks right, away left.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -156,3 +157,5 @@ function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0
 const FM4MatchEngine={createMatch,stepMatch,simulateMatch,distance,roleLine:line};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
+
+})();
