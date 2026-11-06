@@ -146,6 +146,9 @@ function stepMatch(s){
  // Three linked actions per displayed minute provide passing, pressing and
  // chance creation without making the match clock run faster.
  for(let action=0;action<3;action++)stepAction(s);
+ // Keep cumulative possession exact at one displayed minute per step.
+ s.possession[0]=Number(s.possession[0].toFixed(6));
+ s.possession[1]=s.minute+1-s.possession[0];
  s.minute++;
  return s;
 }
