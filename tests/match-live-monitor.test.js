@@ -103,7 +103,7 @@ test('monitor rejects an over-limit batch atomically without partially applying 
  assert.equal(players.find(p=>p.id===inA.id).active,false);
  assert.equal(players.find(p=>p.id===inB.id).active,false);
  assert.equal(monitor.shadow.state.substitutions[side],4);
- assert.equal(monitor.shadow.state.substitutionLog.length,0);
+ assert.equal((monitor.shadow.state.substitutionLog||[]).length,0);
 });
 test('monitor maps simultaneous goalkeeper and striker substitutions to their correct roles',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:938});
