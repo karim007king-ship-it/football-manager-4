@@ -60,6 +60,7 @@ test('seed sweep: full-match statistics remain internally consistent',()=>{
  assert.equal(possession[0]+possession[1],9000);
  assert.ok(totals.passes>0,'seed sweep should produce passing events');
  assert.ok(totals.shots>0,'seed sweep should produce attempts');
+ assert.ok(totals.tackles>0,'defensive pressure should result in actual tackles');
  assert.ok(totals.events>1000,'simulation should produce a varied event stream');
  assert.ok(totals.penetrations>0,'attacks should reach advanced areas');
  assert.ok(totals.completed<=totals.passes);
