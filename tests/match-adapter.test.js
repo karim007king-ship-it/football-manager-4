@@ -31,6 +31,14 @@ test('uses legacy morale, injury and match energy without mutating source player
  assert.equal(out.players[1].stamina,54);
  assert.equal(JSON.stringify(t.players),before);
 });
+test('maps composite OVR to a restrained finishing estimate',()=>{
+ const player={id:77,name:'مهاجم',pos:'FWD',ovr:70,morale:70,inj:0};
+ const mapped=toEngineTeam({name:'النادي',players:[player,{id:78,pos:'GK',ovr:70},{id:79,pos:'DEF',ovr:70},{id:80,pos:'DEF',ovr:70},{id:81,pos:'DEF',ovr:70},{id:82,pos:'MID',ovr:70},{id:83,pos:'MID',ovr:70}]});
+ const striker=mapped.players[0];
+ assert.ok(striker.shooting>=55&&striker.shooting<=70,'finishing estimate '+striker.shooting);
+ assert.ok(striker.shooting<player.ovr,'composite OVR should not be copied as elite finishing');
+});
+
 test('creates a valid match from two legacy lineups and simulates it',()=>{
  const s=createMatchFromGame({home:legacyTeam('المضيف'),away:legacyTeam('الضيف',1),seed:91});
  assert.equal(s.teams[0].name,'المضيف');assert.equal(s.teams[1].name,'الضيف');
