@@ -21,9 +21,10 @@ test('defending team sends a presser toward the ball carrier',()=>{
  a.players.forEach((p,i)=>{p.x= i===1?53:82;p.y= i===1?50:8+i*8;});
  const s=createMatch({teams:[h,a],seed:12}),carrier=h.players[6];
  s.ball={x:carrier.x,y:carrier.y,team:0,playerId:carrier.id};
- const presser=a.players[1],before=Math.hypot(presser.x-carrier.x,presser.y-carrier.y);
+ const presser=a.players[1],target={x:carrier.x,y:carrier.y};
+ const before=Math.hypot(presser.x-target.x,presser.y-target.y);
  stepMatch(s);
- const after=Math.hypot(presser.x-carrier.x,presser.y-carrier.y);
+ const after=Math.hypot(presser.x-target.x,presser.y-target.y);
  assert.ok(after<before,'nearest defender should close down the carrier');
 });
 
