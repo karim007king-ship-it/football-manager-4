@@ -112,3 +112,36 @@ test('3000 seeded matches compare fresh substitutions by position and match outc
   assert.ok(report[s.label].endStamina.freshSubstitute>report[s.label].endStamina.tiredStarter);
  }
 });
+
+function auditStrikerTiming(minute){
+ const a={matches:0,basePoints:0,subPoints:0,baseGoals:0,subGoals:0,
+  baseResults:{win:0,draw:0,loss:0},subResults:{win:0,draw:0,loss:0},
+  outgoingStamina:0,incomingStamina:0};
+ for(let seed=1;seed<=500;seed++){
+  const baseline=match(seed,9),changed=match(seed,9);
+  Engine.simulateMatch(baseline,minute);Engine.simulateMatch(changed,minute);
+  const outgoing=changed.teams[0].players[9];
+  const incoming=changed.teams[0].players.find(p=>p.id==='Home-fresh');
+  substitutePlayer(changed,0,outgoing.id,incoming.id);
+  Engine.simulateMatch(baseline,90-minute);Engine.simulateMatch(changed,90-minute);
+  const bd=baseline.score[0]-baseline.score[1],sd=changed.score[0]-changed.score[1];
+  const br=bd>0?'win':bd<0?'loss':'draw',sr=sd>0?'win':sd<0?'loss':'draw';
+  a.baseResults[br]++;a.subResults[sr]++;
+  a.basePoints+=br==='win'?3:br==='draw'?1:0;
+  a.subPoints+=sr==='win'?3:sr==='draw'?1:0;
+  a.baseGoals+=baseline.score[0];a.subGoals+=changed.score[0];
+  a.outgoingStamina+=outgoing.stamina;a.incomingStamina+=incoming.stamina;
+  a.matches++;
+  assert.equal(outgoing.active,false);assert.equal(incoming.active,true);
+ }
+ return {minute,matches:a.matches,
+  results:{withoutSubstitution:a.baseResults,withFreshStriker:a.subResults},
+  averagePoints:{withoutSubstitution:+(a.basePoints/a.matches).toFixed(3),withFreshStriker:+(a.subPoints/a.matches).toFixed(3)},
+  homeGoals:{withoutSubstitution:+(a.baseGoals/a.matches).toFixed(3),withFreshStriker:+(a.subGoals/a.matches).toFixed(3)},
+  staminaAtFullTime:{outgoing:+(a.outgoingStamina/a.matches).toFixed(1),incoming:+(a.incomingStamina/a.matches).toFixed(1)}};
+}
+test('1500 seeded matches audit striker substitution timing at minutes 55, 65 and 75',()=>{
+ const report=[55,65,75].map(auditStrikerTiming);
+ console.log('FM4 striker substitution timing audit:',JSON.stringify(report));
+ for(const row of report)assert.equal(row.matches,500);
+});
