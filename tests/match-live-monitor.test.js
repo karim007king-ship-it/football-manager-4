@@ -42,6 +42,17 @@ test('monitor mirrors a dismissal without inventing a replacement',()=>{
  assert.equal(players.find(p=>p.id===String(sentOff.id)).active,false);
  assert.ok(monitor.shadow.state.teams[1-side].players.some(p=>p.active));
 });
+test('monitor mirrors the exact opponent dismissed player instead of dropping the last lineup entry',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:931});
+ const sentOff=m.O.xi[4];
+ m.oSentOff=[String(sentOff.id)];m.oR=1;
+ Monitor.sync(monitor,m);
+ const side=1-monitor.shadow.userTeamId,players=monitor.shadow.state.teams[side].players;
+ assert.equal(players.filter(p=>p.active).length,10);
+ assert.equal(players.find(p=>p.id===String(sentOff.id)).active,false);
+ assert.equal(players.find(p=>p.id===String(m.O.xi[10].id)).active,true);
+});
+
 test('monitor maps the user team correctly in an away match',()=>{
  const m=live(false),monitor=Monitor.create({match:m,seed:94});
  const snap=Monitor.advance(monitor,m,1);
@@ -68,6 +79,8 @@ test('live game page loads monitor dependencies before its controller and parses
  assert.match(html,/initShadowMonitor\(\)/);
  assert.match(html,/advanceShadowMonitor\(\)/);
  assert.match(html,/shadowMonitorHtml\(\)/);
+ assert.match(html,/function opponentOnPitch\(\)/);
+ assert.match(html,/M\.oSentOff\.push\(String\(p\.id\)\)/);
 });
 
 test('monitor reports the exact stage when shadow creation fails',()=>{
