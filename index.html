@@ -659,7 +659,7 @@ function sbPaint(h){let b=$('sb');if(!b.querySelector('#pt')){b.innerHTML='<butt
   if(!bl){pt.innerHTML=pitchHtml();return}
   pt.querySelector('.dl').innerHTML=dots(M.xi,true)+dots(opponentOnPitch(),false);
   bl.style.left=M.bx+'%';bl.style.top=M.by+'%';pt.querySelector('.mom i').style.width=Math.round(M.mo)+'%';pt.querySelector('.mt').textContent='الزخم لصالحك '+Math.round(M.mo)+'%'}
-function flavor(){let us=Math.random()<.5,T=us?M.xi:M.O.xi,a=pick(T).name,b=pick(T).name,nm=us?'':M.opp.name+': ',L=liveS(),A=us?L.a:M.O.a,D=us?M.O.d:L.d,
+function flavor(){let us=Math.random()<.5,T=us?M.xi:opponentOnPitch(),a=pick(T).name,b=pick(T).name,nm=us?'':M.opp.name+': ',L=liveS(),A=us?L.a:M.O.a,D=us?M.O.d:L.d,
   K=[()=>{Q(`${tm()} ${nm}${a} يراوغ مدافعاً ويتجاوزه بمهارة! ✨`,'',()=>mv(us,1));Q(`${tm()} ${pick(['الجمهور يصفق للمراوغة 👏','لكن زميله لا يلحق بالتمريرة','المدافع الثاني يغلق الطريق'])}`,'')},
   ()=>{Q(`${tm()} ${nm}${a} يرفع عرضية من الجناح 🎯`,'',()=>mv(us,2));if(Math.random()<.3)Q(null,'',()=>resolve(us,A,D,b,.6));else Q(`${tm()} ${pick(['الحارس يخرج ويلتقطها بثقة 🧤','رأسية تمر فوق العارضة','الدفاع يبعدها لركنية'])}`,'')},
   ()=>{Q(`${tm()} ${nm}${a} يسدد من خارج المنطقة 💥`,'',()=>mv(us,2));if(Math.random()<.18)Q(null,'',()=>resolve(us,A,D,a,.5));else Q(`${tm()} ${pick(['الكرة تعلو العارضة بقليل','تصطدم بالقائم! 😱','الحارس يمسكها بصعوبة'])}`,'')},
@@ -860,7 +860,7 @@ function pitchHtml(){return `<div class="pitch"><div class="dl">${dots(M.xi,true
 function ord(){let a=[-1,0,1.5][M.pr],d=[1.5,0,-.5][M.pr];
   for(const id in M.ins){if(!M.xi.some(p=>p.id==id))continue;let t=M.ins[id];if(t=='free'){a+=1.2;d-=.4}else if(t=='def'){d+=1;a-=.3}else d+=.6}
   return{a,d}}
-function starName(){return M.O.xi.slice().sort((a,b)=>b.ovr-a.ovr)[0].name}
+function starName(){return opponentOnPitch().slice().sort((a,b)=>b.ovr-a.ovr)[0]?.name||'لاعب'}
 function ordBtn(){if(!M||M.done||M.hold)return;ordMenu()}
 function ordMenu(){menu('🧠 الأوامر التكتيكية (اضغط للتبديل)',[
   {l:`🔥 الضغط: ${PRN[M.pr]}`,fn:()=>{M.pr=(M.pr+1)%3;log(`${tm()} 🔥 الضغط: ${PRN[M.pr]}`,'log-info');ordMenu()}},
