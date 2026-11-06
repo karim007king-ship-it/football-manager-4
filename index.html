@@ -398,26 +398,31 @@ function luSet(yid,xid){let lu=G.lu||(G.lu={p:[],b:[]}),ok=id=>G.players.some(p=
 function luAuto(){G.lu=null;save();go('lineup')}
 let G=null,busy=false,M=null;
 let shadowMonitor=null,shadowMonitorError='';
+function shadowErrorText(e){return String(e&&e.stack||e&&e.message||e||'Unknown error').slice(0,2200)}
+function shadowErrorHtml(){
+ let detail=String(shadowMonitorError).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ return '<div style="margin:8px 0;padding:9px;border:1px solid #a66;border-radius:8px;color:#ffd0d0;font-size:11px"><b>تعذر تحديث المحاكاة الموازية</b><div style="margin-top:4px">المباراة الأصلية مستمرة دون تغيير.</div><pre dir="ltr" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;text-align:left;color:#ffe3e3;font-size:10px;margin-top:6px">'+detail+'</pre></div>';
+}
 function initShadowMonitor(){
  shadowMonitor=null;shadowMonitorError='';
  try{
   let seed=7,key=String(G.season)+'|'+String(G.round)+'|'+String(G.uid)+'|'+String(M.opp.id);
   for(let i=0;i<key.length;i++)seed=(Math.imul(seed,31)+key.charCodeAt(i))>>>0;
   shadowMonitor=window.FM4ShadowMonitor.create({match:M,seed});
- }catch(e){shadowMonitorError=String(e&&e.message||e)}
+ }catch(e){shadowMonitorError=shadowErrorText(e)}
 }
 function syncShadowMonitor(){
  if(!shadowMonitor||!M)return;
- try{window.FM4ShadowMonitor.sync(shadowMonitor,M)}catch(e){shadowMonitorError=String(e&&e.message||e)}
+ try{window.FM4ShadowMonitor.sync(shadowMonitor,M)}catch(e){shadowMonitorError=shadowErrorText(e)}
 }
 function advanceShadowMonitor(){
  if(!shadowMonitor||!M)return;
- try{window.FM4ShadowMonitor.advance(shadowMonitor,M,1)}catch(e){shadowMonitorError=String(e&&e.message||e)}
+ try{window.FM4ShadowMonitor.advance(shadowMonitor,M,1)}catch(e){shadowMonitorError=shadowErrorText(e)}
 }
 function shadowMonitorHtml(){
- if(shadowMonitorError)return '<div style="margin:8px 0;padding:8px;border:1px solid #a66;border-radius:8px;color:#ffd0d0;font-size:11px">تعذر تحديث المحاكاة الموازية: '+String(shadowMonitorError).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+' — المباراة الأصلية مستمرة دون تغيير.</div>';
+ if(shadowMonitorError)return shadowErrorHtml();
  if(!shadowMonitor||!M)return '';
- try{return window.FM4ShadowMonitor.render(shadowMonitor,M)}catch(e){shadowMonitorError=String(e&&e.message||e);return ''}
+ try{return window.FM4ShadowMonitor.render(shadowMonitor,M)}catch(e){shadowMonitorError=shadowErrorText(e);return shadowErrorHtml()}
 }
 const $=id=>document.getElementById(id);
 const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
