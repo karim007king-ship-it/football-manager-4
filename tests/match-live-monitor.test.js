@@ -1,6 +1,9 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const path=require('node:path');
 const Monitor=require('../js/match/live-monitor');
 function team(name,offset=0){
  const pos=['GK','DEF','DEF','DEF','DEF','MID','MID','MID','MID','FWD','FWD'];
@@ -25,7 +28,10 @@ test('monitor mirrors a live substitution and keeps eleven active players',()=>{
  const side=monitor.shadow.userTeamId,players=monitor.shadow.state.teams[side].players;
  assert.equal(players.filter(p=>p.active).length,11);
  assert.equal(players.find(p=>p.id===String(out.id)).active,false);
- assert.equal(players.find(p=>p.id==='bench-1').active,true);
+ const substitute=players.find(p=>p.id==='bench-1');
+ assert.equal(substitute.active,true);
+ assert.equal(substitute.baseX,players.find(p=>p.id===String(out.id)).baseX);
+ assert.equal(substitute.baseY,players.find(p=>p.id===String(out.id)).baseY);
  assert.equal(monitor.shadow.state.substitutions[side],1);
 });
 test('monitor mirrors a dismissal without inventing a replacement',()=>{
@@ -41,4 +47,25 @@ test('monitor maps the user team correctly in an away match',()=>{
  const snap=Monitor.advance(monitor,m,1);
  assert.equal(monitor.shadow.userTeamId,1);
  assert.equal(snap.minute,1);
+});
+
+test('live game page loads monitor dependencies before its controller and parses',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+ const scripts=['engine.js','adapter.js','live-bridge.js','substitutions.js','live-monitor.js'];
+ let previous=-1;
+ for(const file of scripts){
+  const position=html.indexOf('src="js/match/'+file+'"');
+  assert.ok(position>previous,'script '+file+' must be loaded in dependency order');
+  previous=position;
+ }
+ const marker="<script>\\nconst KEY='fm_web_pro_v2';";
+ const start=html.indexOf(marker);
+ assert.ok(start>=0,'main game controller script exists');
+ const bodyStart=start+marker.length;
+ const end=html.indexOf('</script>',bodyStart);
+ assert.ok(end>bodyStart,'main game controller script closes');
+ new vm.Script('const KEY=\'fm_web_pro_v2\';'+html.slice(bodyStart,end));
+ assert.match(html,/initShadowMonitor\\(\\)/);
+ assert.match(html,/advanceShadowMonitor\\(\\)/);
+ assert.match(html,/shadowMonitorHtml\\(\\)/);
 });
