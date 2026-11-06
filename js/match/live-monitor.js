@@ -1,3 +1,4 @@
+(function(){
 'use strict';
 // Read-only comparison monitor. The legacy match object is only read; all
 // simulation and lineup synchronization happen in the isolated shadow state.
@@ -116,3 +117,5 @@ function render(monitor,match){
 const FM4ShadowMonitor={create,sync,advance,render};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4ShadowMonitor;
 if(typeof window!=='undefined')window.FM4ShadowMonitor=FM4ShadowMonitor;
+
+})();
