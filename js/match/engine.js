@@ -14,7 +14,7 @@ function createMatch({teams,seed=1}={}){
   return {id:tid,name:String(src.name||(tid?'Away':'Home')),mentality:src.mentality||'balanced',adaptiveTactics:src.adaptiveTactics!==false,players:src.players.map((p,i)=>{
    const role=p.role||(i===0?'GK':i<5?'DF':i<9?'MF':'FW'),lx=line(role);
    const x=clamp(Number(p.x??(tid===0?lx*100:100-lx*100)),2,98),y=clamp(Number(p.y??(8+(i%9)*10.5)),2,98);
-   return {id:String(p.id??i),name:String(p.name||'Player'),role,pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
+   return {id:String(p.id??i),name:String(p.name||'Player'),role,slotIndex:Number(p.slotIndex??i),pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
   })};
  });
  const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
