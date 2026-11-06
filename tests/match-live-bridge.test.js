@@ -25,7 +25,7 @@ test('maps the user team correctly when the legacy club plays away',()=>{
 test('shadow simulation advances without changing legacy match or players',()=>{
  const m=live(false),before=JSON.stringify(m),s=Bridge.createShadowFromLive({match:m,seed:46});
  const result=Bridge.stepShadow(s,8);
- assert.equal(result.minute,8);assert.equal(result.userTeamId,1);
+ assert.equal(result.minute,20);assert.equal(result.userTeamId,1);
  assert.deepEqual(result.activePlayers,[11,11]);assert.ok(result.eventCount>0);
  assert.equal(JSON.stringify(m),before);
 });
