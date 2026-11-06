@@ -34,8 +34,9 @@ test('uses legacy morale, injury and match energy without mutating source player
 test('creates a valid match from two legacy lineups and simulates it',()=>{
  const s=createMatchFromGame({home:legacyTeam('المضيف'),away:legacyTeam('الضيف',1),seed:91});
  assert.equal(s.teams[0].name,'المضيف');assert.equal(s.teams[1].name,'الضيف');
- assert.ok(s.teams[0].players.every(p=>p.x<50));
- assert.ok(s.teams[1].players.every(p=>p.x>50));
+ assert.ok(s.teams[0].players.slice(0,5).every(p=>p.x<50));
+ assert.ok(s.teams[1].players.slice(0,5).every(p=>p.x>50));
+ assert.ok(s.teams[0].players.slice(5,9).every(p=>p.x===50));
  simulateMatch(s,90);assert.equal(s.minute,90);
 });
 test('rejects incomplete legacy teams instead of inventing a lineup',()=>{
