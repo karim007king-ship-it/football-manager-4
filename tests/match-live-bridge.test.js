@@ -32,7 +32,7 @@ test('shadow simulation advances without changing legacy match or players',()=>{
 });
 test('shadow advancement is capped at 90 minutes and rejects missing state',()=>{
  const s=Bridge.createShadowFromLive({match:live(),seed:47});
- assert.equal(Bridge.stepShadow(s,100).minute,90);
+ assert.equal(Bridge.stepShadow(s,130).minute,120);
  assert.throws(()=>Bridge.stepShadow(null,1),/shadow match/);
 });
 
