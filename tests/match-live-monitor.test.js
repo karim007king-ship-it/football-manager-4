@@ -34,6 +34,30 @@ test('monitor mirrors a live substitution and keeps eleven active players',()=>{
  assert.equal(substitute.baseY,players.find(p=>p.id===String(out.id)).baseY);
  assert.equal(monitor.shadow.state.substitutions[side],1);
 });
+test('monitor records two substitutions made between sync calls',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:933});
+ const side=monitor.shadow.userTeamId;
+ const outA=m.xi[5],outB=m.xi[6];
+ const inA={id:'bench-batch-a',name:'بديل أ',pos:'MID',ovr:72,morale:80,inj:0};
+ const inB={id:'bench-batch-b',name:'بديل ب',pos:'MID',ovr:71,morale:80,inj:0};
+ m.xi[5]=inA;m.xi[6]=inB;
+ Monitor.sync(monitor,m);
+ const players=monitor.shadow.state.teams[side].players;
+ assert.equal(players.filter(p=>p.active).length,11);
+ assert.equal(players.find(p=>p.id===String(outA.id)).active,false);
+ assert.equal(players.find(p=>p.id===String(outB.id)).active,false);
+ assert.equal(players.find(p=>p.id===inA.id).active,true);
+ assert.equal(players.find(p=>p.id===inB.id).active,true);
+ assert.equal(monitor.shadow.state.substitutions[side],2);
+ assert.equal(monitor.shadow.state.substitutionLog.length,2);
+});
+test('monitor surfaces a substitution registration failure instead of hiding it',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:934});
+ const side=monitor.shadow.userTeamId;
+ monitor.shadow.state.substitutions[side]=5;
+ m.xi[5]={id:'bench-over-limit',name:'بديل زائد',pos:'MID',ovr:70,morale:80,inj:0};
+ assert.throws(()=>Monitor.sync(monitor,m),/\\[FM4 shadow SYNC\\].*Maximum of five substitutions reached/);
+});
 test('monitor mirrors a dismissal without inventing a replacement',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:93}),sentOff=m.xi.pop();
  Monitor.sync(monitor,m);
