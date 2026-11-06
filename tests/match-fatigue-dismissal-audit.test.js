@@ -48,5 +48,6 @@ test('fatigue and dismissal audit: measure current effects without changing matc
  };
  console.log('FM4 fatigue/dismissal audit:',JSON.stringify(report));
  assert.notEqual(fresh.goals,exhausted.goals,'low starting stamina must change match goal output');
- assert.notEqual(fresh.shots,exhausted.shots,'low starting stamina must change match shot output');\n assert.ok(ten.homeShots>eleven.homeShots,'the team facing ten players should create more shots');
+ assert.notEqual(fresh.shots,exhausted.shots,'low starting stamina must change match shot output');
+ assert.ok(ten.homeShots>eleven.homeShots,'the team facing ten players should create more shots');
 });
