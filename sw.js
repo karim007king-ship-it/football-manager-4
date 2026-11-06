@@ -1,5 +1,5 @@
 // FM4 service worker — cache namespace is intentionally separate from FM3.
-const CACHE = 'football-manager-4-v2';
+const CACHE = 'football-manager-4-v3';
 const CORE = ['./', './index.html', './manifest.json', './js/match/engine.js', './js/match/adapter.js', './js/match/live-bridge.js', './js/match/substitutions.js', './js/match/live-monitor.js'];
 
 self.addEventListener('install', event => {
