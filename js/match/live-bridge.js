@@ -9,6 +9,18 @@ function createShadowFromLive({match,userTeamName='فريقي',opponentTeamName=
  state.minute=minute;
  state.score[user]=Math.max(0,Math.floor(Number(match.gu)||0));
  state.score[1-user]=Math.max(0,Math.floor(Number(match.go)||0));
+ // Seed cumulative legacy statistics so the shadow comparison starts from the
+ // same match point instead of comparing a fresh engine against 12+ legacy minutes.
+ const elapsed=Math.max(0,minute);
+ const legacyPossession=Number(match.ps);
+ const userPossession=Number.isFinite(legacyPossession)
+  ?Math.max(0,Math.min(elapsed,legacyPossession/100))
+  :elapsed/2;
+ state.possession[user]=userPossession;
+ state.possession[1-user]=elapsed-userPossession;
+ const legacyShots=Array.isArray(match.sh)?match.sh:[0,0];
+ state.shots[user]=Math.max(0,Number(legacyShots[0])||0);
+ state.shots[1-user]=Math.max(0,Number(legacyShots[1])||0);
  if(Number.isFinite(Number(match.bx)))state.ball.x=Math.max(2,Math.min(98,Number(match.bx)));
  if(Number.isFinite(Number(match.by)))state.ball.y=Math.max(2,Math.min(98,Number(match.by)));
  // The legacy UI stores ball coordinates but not a reliable carrier ID.
