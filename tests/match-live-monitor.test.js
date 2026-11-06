@@ -56,7 +56,7 @@ test('monitor surfaces a substitution registration failure instead of hiding it'
  const side=monitor.shadow.userTeamId;
  monitor.shadow.state.substitutions[side]=5;
  m.xi[5]={id:'bench-over-limit',name:'بديل زائد',pos:'MID',ovr:70,morale:80,inj:0};
- assert.throws(()=>Monitor.sync(monitor,m),/\\[FM4 shadow SYNC\\].*Maximum of five substitutions reached/);
+ assert.throws(()=>Monitor.sync(monitor,m),/\[FM4 shadow SYNC\].*Maximum of five substitutions reached/);
 });
 test('monitor mirrors a dismissal without inventing a replacement',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:93}),sentOff=m.xi.pop();
