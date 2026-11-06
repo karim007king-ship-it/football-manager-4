@@ -20,7 +20,7 @@ function createMatch({teams,seed=1}={}){
  const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
  return {minute:0,score:[0,0],possession:[0,0],shots:[0,0],shotsOnTarget:[0,0],passes:[0,0],completedPasses:[0,0],tackles:[0,0],teams:normalized,ball:{x:kick.x,y:kick.y,team:0,playerId:kick.id},events:[],random};
 }
-const active=t=>t.players.filter(p=>p.active);
+const active=t=>t.players.filter(p=>p.active);\n// Fitness scales physical and technical execution without changing player ratings.\nfunction fitness(p){return .78+.22*clamp(Number(p.stamina??100),0,100)/100;}
 function nearest(players,point){let best=null,d=Infinity;for(const p of players){if(!p.active)continue;const n=distance(p,point);if(n<d){best=p;d=n;}}return best;}
 function moveToward(p,t,max){const dx=t.x-p.x,dy=t.y-p.y,len=Math.hypot(dx,dy);if(!len)return;if(len<=max){p.x=clamp(t.x,2,98);p.y=clamp(t.y,2,98);}else{p.x=clamp(p.x+dx/len*max,2,98);p.y=clamp(p.y+dy/len*max,2,98);}}
 function effectiveMentality(s,teamId){
@@ -83,7 +83,7 @@ function updateShape(s,teamId,carrier){
     const target=rank===0?{x:carrier.x,y:carrier.y}:{x:carrier.x-dir*5,y:carrier.y+(p.baseY<50?-7:7)};
     moveToward(p,target,rank===0?1.8*pressScale:1.15*pressScale);
    }else{
-    moveToward(p,{x:clamp(tx,2,98),y:clamp(ty,3,97)},has?1.3:1.25);
+    moveToward(p,{x:clamp(tx,2,98),y:clamp(ty,3,97)},(has?1.3:1.25)*fitness(p));
    }
   }
  }
@@ -124,13 +124,13 @@ function stepAction(s){
  // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
  // Calibrated against the three-actions-per-minute clock and legacy OVR mapping.
- const shotChance=clamp(.09+carrier.shooting/1400-pd/1200,.025,.16);
+ const sharpness=fitness(carrier);\n const shotChance=clamp(.09+(carrier.shooting*sharpness)/1400-pd/1200,.025,.16);
  let event=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
-  const on=rnd()<clamp(.28+carrier.shooting/180,.28,.8);
+  const on=rnd()<clamp(.28+(carrier.shooting*sharpness)/180,.28,.8);
   if(on)s.shotsOnTarget[tid]++;
-  const quality=clamp(.09+carrier.shooting/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0),.03,.5);
+  const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0),.03,.5);
   const goal=on&&rnd()<quality;
   if(goal)s.score[tid]++;
   event={type:goal?'goal':on?'save':'shot',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
@@ -138,7 +138,7 @@ function stepAction(s){
   if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
  }else{
   const best=choosePassTarget(t,def,carrier,tid);
-  const closeTackle=press&&pd<4.5&&rnd()<.11+press.defending/900;
+  const closeTackle=press&&pd<4.5&&rnd()<.11+(press.defending*fitness(press))/900;
   if(closeTackle){
    s.tackles[oid]++;
    s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};
@@ -147,7 +147,7 @@ function stepAction(s){
    const pass=best&&rnd()<(pd<4.5?.35:pd<8.5?.72:best.progress>0?.58:.28);
    if(pass){
     s.passes[tid]++;
-    const chance=clamp(.66+carrier.passing/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0),.35,.97);
+    const chance=clamp(.66+(carrier.passing*sharpness)/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0),.35,.97);
     if(rnd()<chance){
      s.completedPasses[tid]++;
      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
@@ -162,7 +162,7 @@ function stepAction(s){
    }else{
     const dir=tid===0?1:-1;
     const lateral=press&&Math.abs(press.y-carrier.y)<8?(carrier.y<50?-.65:.65):(50-carrier.y)*.012;
-    carrier.x=clamp(carrier.x+dir*(.7+carrier.pace/95),2,98);
+    carrier.x=clamp(carrier.x+dir*(.7+(carrier.pace*fitness(carrier))/95),2,98);
     carrier.y=clamp(carrier.y+lateral,3,97);
     s.ball={x:carrier.x,y:carrier.y,team:tid,playerId:carrier.id};
     event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
