@@ -63,8 +63,10 @@ function updateShape(s,teamId,carrier){
     if(has&&(/^(AM|CAM)$/.test(r)||l>.55))tx+=dir*(ballProgress>5?3:1);
    }else if(/^(ST|CF)$/.test(r)&&has){
     // Striker offers a forward passing lane but does not teleport beyond the ball.
-    tx=Math.max((t.id===0?ballX:100-ballX)+dir*2,tx);
-    tx=clamp(tx, t.id===0?ballX-2:2, t.id===0?98:ballX+2);
+    // Keep the striker ahead of the ball in the team's own attacking direction.
+    // The previous mirrored expression incorrectly pushed the away striker backward.
+    tx=dir>0?Math.max(ballX+2,tx):Math.min(ballX-2,tx);
+    tx=clamp(tx,t.id===0?ballX-2:2,t.id===0?98:ballX+2);
    }
 
    if(keeper(r)){tx=t.id===0?5:95;ty=clamp(50+(ballY-50)*.14,38,62);}
@@ -121,13 +123,14 @@ function stepAction(s){
  updateShape(s,tid,carrier);
  // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
- const shotChance=clamp(.14+carrier.shooting/750-pd/800,.05,.3);
+ // Calibrated against the three-actions-per-minute clock and legacy OVR mapping.
+ const shotChance=clamp(.07+carrier.shooting/1400-pd/1200,.025,.16);
  let event=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
-  const on=rnd()<clamp(.25+carrier.shooting/150,.25,.88);
+  const on=rnd()<clamp(.2+carrier.shooting/180,.2,.75);
   if(on)s.shotsOnTarget[tid]++;
-  const quality=clamp(.07+carrier.shooting/280+(25-goalDist)/65-Math.abs(50-carrier.y)/170-(pd<5?.16:0),.03,.6);
+  const quality=clamp(.05+carrier.shooting/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0),.03,.5);
   const goal=on&&rnd()<quality;
   if(goal)s.score[tid]++;
   event={type:goal?'goal':on?'save':'shot',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
