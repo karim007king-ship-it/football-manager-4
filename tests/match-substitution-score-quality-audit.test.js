@@ -16,7 +16,7 @@ function team(side,quality){
  const players=roles.map((role,i)=>({
   id:(side?'Away':'Home')+'-'+i,name:'Player '+i,role,
   pace:66,passing:68,shooting:62,defending:61,
-  stamina:!side&&i===9?25:100,x:xs[i],y:ys[i],active:true
+  stamina:!side&&i===9?25:100,x:side?100-xs[i]:xs[i],y:ys[i],active:true
  }));
  if(!side)players.push({
   id:'Home-sub-'+quality,name:quality+' striker substitute',role:'ST',
@@ -33,15 +33,17 @@ function add(target,state){
  target.points+=points(state.score);
  target[outcome(state.score)]++;
  target.goals+=state.score[0];
+ target.awayGoals+=state.score[1];
  target.shots+=state.shots[0];
+ target.awayShots+=state.shots[1];
 }
-function summarize(x,n){return {wins:x.wins,draws:x.draws,losses:x.losses,averagePoints:+(x.points/n).toFixed(3),homeGoals:+(x.goals/n).toFixed(3),homeShots:+(x.shots/n).toFixed(3)};}
+function summarize(x,n){return {wins:x.wins,draws:x.draws,losses:x.losses,averagePoints:+(x.points/n).toFixed(3),homeGoals:+(x.goals/n).toFixed(3),awayGoals:+(x.awayGoals/n).toFixed(3),homeShots:+(x.shots/n).toFixed(3),awayShots:+(x.awayShots/n).toFixed(3)};}
 
-test('2700 paired seeded matches compare substitute quality in leading, drawing and trailing situations',()=>{
+test('2700 paired seeded matches compare substitute quality with mirrored home and away formations',()=>{
  const perSituation=300,maxSeeds=20000;
  const report={};
  for(const situation of ['leading','drawing','trailing']){
-  const totals={baseline:{points:0,wins:0,draws:0,losses:0,goals:0,shots:0}};
+  const totals={baseline:{points:0,wins:0,draws:0,losses:0,goals:0,awayGoals:0,shots:0,awayShots:0}};
   for(const quality of Object.keys(qualities))totals[quality]={points:0,wins:0,draws:0,losses:0,goals:0,shots:0};
   let matches=0,firstSeed=null,lastSeed=null;
   for(let seed=1;seed<=maxSeeds&&matches<perSituation;seed++){
