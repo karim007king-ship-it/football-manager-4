@@ -68,6 +68,26 @@ test('monitor records two substitutions made between sync calls',()=>{
  assert.equal(monitor.shadow.state.substitutions[side],2);
  assert.equal(monitor.shadow.state.substitutionLog.length,2);
 });
+test('monitor records multiple substitutions after a dismissal without restoring the sent-off player',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:936});
+ const sentOff=m.xi.pop();
+ Monitor.sync(monitor,m);
+ const side=monitor.shadow.userTeamId;
+ const outA=m.xi[5],outB=m.xi[6];
+ const inA={id:'bench-red-batch-a',name:'بديل بعد الطرد أ',pos:'MID',ovr:72,morale:80,inj:0};
+ const inB={id:'bench-red-batch-b',name:'بديل بعد الطرد ب',pos:'MID',ovr:73,morale:80,inj:0};
+ m.xi[5]=inA;m.xi[6]=inB;
+ Monitor.sync(monitor,m);
+ const players=monitor.shadow.state.teams[side].players;
+ assert.equal(players.filter(p=>p.active).length,10);
+ assert.equal(players.find(p=>p.id===String(sentOff.id)).active,false);
+ assert.equal(players.find(p=>p.id===String(outA.id)).active,false);
+ assert.equal(players.find(p=>p.id===String(outB.id)).active,false);
+ assert.equal(players.find(p=>p.id===inA.id).active,true);
+ assert.equal(players.find(p=>p.id===inB.id).active,true);
+ assert.equal(monitor.shadow.state.substitutions[side],2);
+ assert.equal(monitor.shadow.state.substitutionLog.length,2);
+});
 test('monitor surfaces a substitution registration failure instead of hiding it',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:934});
  const side=monitor.shadow.userTeamId;
