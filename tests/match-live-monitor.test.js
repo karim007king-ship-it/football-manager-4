@@ -235,3 +235,25 @@ test('browser scripts expose all match modules without global lexical collisions
  assert.equal(context.FM4ShadowMonitor.advance(monitor,match,1).minute,1);
  assert.match(context.FM4ShadowMonitor.render(monitor,match),/المحاكاة الموازية/);
 });
+
+test('monitor matches later simultaneous substitutions to stable formation slots after earlier swaps',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:939});
+ const side=monitor.shadow.userTeamId;
+ const firstStriker=m.xi[9],firstMid=m.xi[5];
+ const subStriker={id:'slot-striker-one',name:'مهاجم بديل أول',pos:'FWD',ovr:74,morale:80,inj:0};
+ const subMid={id:'slot-mid-one',name:'وسط بديل أول',pos:'MID',ovr:73,morale:80,inj:0};
+ m.shadowSlots={};m.xi.forEach((p,i)=>{m.shadowSlots[p.id]=i;});
+ m.xi[9]=subStriker;m.shadowSlots[subStriker.id]=m.shadowSlots[firstStriker.id];Monitor.sync(monitor,m);
+ m.xi[5]=subMid;m.shadowSlots[subMid.id]=m.shadowSlots[firstMid.id];Monitor.sync(monitor,m);
+ const secondMid={id:'slot-mid-two',name:'وسط بديل ثان',pos:'MID',ovr:75,morale:80,inj:0};
+ const secondStriker={id:'slot-striker-two',name:'مهاجم بديل ثان',pos:'FWD',ovr:76,morale:80,inj:0};
+ m.xi[5]=secondMid;m.shadowSlots[secondMid.id]=m.shadowSlots[subMid.id];
+ m.xi[9]=secondStriker;m.shadowSlots[secondStriker.id]=m.shadowSlots[subStriker.id];
+ Monitor.sync(monitor,m);
+ const players=monitor.shadow.state.teams[side].players;
+ assert.equal(players.find(p=>p.id===secondMid.id).role,players.find(p=>p.id===String(firstMid.id)).role);
+ assert.equal(players.find(p=>p.id===secondStriker.id).role,players.find(p=>p.id===String(firstStriker.id)).role);
+ assert.equal(players.find(p=>p.id===secondMid.id).x,players.find(p=>p.id===String(firstMid.id)).x);
+ assert.equal(players.find(p=>p.id===secondStriker.id).x,players.find(p=>p.id===String(firstStriker.id)).x);
+ assert.equal(monitor.shadow.state.substitutions[side],4);
+});
