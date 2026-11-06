@@ -33,6 +33,7 @@ function measure(index){
  for(let seed=1;seed<=200;seed++){
   const baseline=match(seed,index),changed=match(seed,index);
   Engine.simulateMatch(baseline,65);Engine.simulateMatch(changed,65);
+  const baseBefore={shots:baseline.shots[0],passes:baseline.passes[0],completed:baseline.completedPasses[0],tackles:baseline.tackles[0],goals:baseline.score[0]};
   const before={shots:changed.shots[0],passes:changed.passes[0],
    completed:changed.completedPasses[0],tackles:changed.tackles[0],goals:changed.score[0]};
   const outgoing=changed.teams[0].players[index];
@@ -50,11 +51,11 @@ function measure(index){
   assert.equal(outgoing.stamina,initialStamina);
   assert.ok(incoming.stamina<100);
   a.matches++;
-  a.baseShots+=baseline.shots[0]-0; a.subShots+=changed.shots[0]-before.shots;
-  a.basePasses+=baseline.passes[0]; a.subPasses+=changed.passes[0]-before.passes;
-  a.baseCompleted+=baseline.completedPasses[0];a.subCompleted+=changed.completedPasses[0]-before.completed;
-  a.baseTackles+=baseline.tackles[0];a.subTackles+=changed.tackles[0]-before.tackles;
-  a.baseGoals+=baseline.score[0];a.subGoals+=changed.score[0]-before.goals;
+  a.baseShots+=baseline.shots[0]-baseBefore.shots; a.subShots+=changed.shots[0]-before.shots;
+  a.basePasses+=baseline.passes[0]-baseBefore.passes; a.subPasses+=changed.passes[0]-before.passes;
+  a.baseCompleted+=baseline.completedPasses[0]-baseBefore.completed;a.subCompleted+=changed.completedPasses[0]-before.completed;
+  a.baseTackles+=baseline.tackles[0]-baseBefore.tackles;a.subTackles+=changed.tackles[0]-before.tackles;
+  a.baseGoals+=baseline.score[0]-baseBefore.goals;a.subGoals+=changed.score[0]-before.goals;
   a.baseEndFitness+=outgoing.stamina;a.subEndFitness+=incoming.stamina;
  }
  return {
