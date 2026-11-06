@@ -111,6 +111,7 @@ function render(monitor,match){
   <div style="font-size:10px;color:#f4c979;margin-top:5px">مقارنة النتيجة: ${scoreDiff} • تسديدات اللعبة القديمة: ${cmp.shots.legacy[0]} - ${cmp.shots.legacy[1]} • استحواذها: ${cmp.possession.legacy}%</div>
   ${last||'<div style="font-size:11px;color:#aab8c8;margin-top:4px">بانتظار أحداث المحرك...</div>'}
  </section>`;
+ }catch(error){throw stageError('RENDER',error);}
 }
 const FM4ShadowMonitor={create,sync,advance,render};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4ShadowMonitor;
