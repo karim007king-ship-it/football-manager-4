@@ -42,6 +42,25 @@ test('monitor mirrors a dismissal without inventing a replacement',()=>{
  assert.equal(players.find(p=>p.id===String(sentOff.id)).active,false);
  assert.ok(monitor.shadow.state.teams[1-side].players.some(p=>p.active));
 });
+test('monitor records a substitution after the user team has been reduced by a dismissal',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:932});
+ const sentOff=m.xi.pop();
+ Monitor.sync(monitor,m);
+ const side=monitor.shadow.userTeamId;
+ assert.equal(monitor.shadow.state.teams[side].players.filter(p=>p.active).length,10);
+ const outgoing=m.xi[5],incoming={id:'bench-after-red',name:'بديل بعد الطرد',pos:'MID',ovr:73,morale:80,inj:0};
+ m.xi[5]=incoming;
+ Monitor.sync(monitor,m);
+ const players=monitor.shadow.state.teams[side].players;
+ assert.equal(players.filter(p=>p.active).length,10);
+ assert.equal(players.find(p=>p.id===String(sentOff.id)).active,false);
+ assert.equal(players.find(p=>p.id===String(outgoing.id)).active,false);
+ assert.equal(players.find(p=>p.id===incoming.id).active,true);
+ assert.equal(monitor.shadow.state.substitutions[side],1);
+ assert.equal(monitor.shadow.state.substitutionLog.length,1);
+ assert.equal(monitor.shadow.state.substitutionLog[0].outgoingId,String(outgoing.id));
+ assert.equal(monitor.shadow.state.substitutionLog[0].incomingId,incoming.id);
+});
 test('monitor mirrors the exact opponent dismissed player instead of dropping the last lineup entry',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:931});
  const sentOff=m.O.xi[4];
