@@ -15,6 +15,7 @@ test('creates a read-only shadow from a live home match',()=>{
  assert.equal(s.userTeamId,0);assert.equal(s.state.teams[0].name,'فريقي');
  assert.equal(s.state.teams[1].name,'الخصم');assert.equal(s.state.teams[0].players[0].stamina,61);
  assert.equal(JSON.stringify(m),before);assert.equal(s.source,'read-only-shadow');
+ assert.equal(s.state.minute,12);assert.deepEqual(s.state.score,[1,0]);
 });
 test('maps the user team correctly when the legacy club plays away',()=>{
  const s=Bridge.createShadowFromLive({match:live(false),seed:45});
