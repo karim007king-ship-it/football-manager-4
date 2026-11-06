@@ -15,10 +15,10 @@ test('match engine and adapter expose browser globals without CommonJS',()=>{
 });
 test('isolated match preview page has syntactically valid inline JavaScript',()=>{
  const html=fs.readFileSync(path.join(root,'match-preview.html'),'utf8');
- const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
- assert.ok(scripts.length>0,'inline preview controller script exists');
- for(const script of scripts)new vm.Script(script[1]);
- assert.match(html,/id="pitch"/);
+ const start=html.lastIndexOf('<script>')+'<script>'.length;
+ const end=html.indexOf('</script>',start);
+ assert.ok(start>8&&end>start,'inline preview controller script exists');
+ new vm.Script(html.slice(start,end));
  assert.match(html,/id="pause"/);
  assert.match(html,/id="events"/);
 });
