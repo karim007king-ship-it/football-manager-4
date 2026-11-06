@@ -117,7 +117,7 @@ function auditPositionTiming(minute,index,label){
  const a={matches:0,basePoints:0,subPoints:0,baseGoals:0,subGoals:0,
   baseResults:{win:0,draw:0,loss:0},subResults:{win:0,draw:0,loss:0},
   outgoingStamina:0,incomingStamina:0};
- for(let seed=1;seed<=500;seed++){
+ for(let seed=1;seed<=1500;seed++){
   const baseline=match(seed,index),changed=match(seed,index);
   Engine.simulateMatch(baseline,minute);Engine.simulateMatch(changed,minute);
   const outgoing=changed.teams[0].players[index];
@@ -140,7 +140,7 @@ function auditPositionTiming(minute,index,label){
   homeGoals:{withoutSubstitution:+(a.baseGoals/a.matches).toFixed(3),withFreshSubstitute:+(a.subGoals/a.matches).toFixed(3)},
   staminaAtFullTime:{outgoing:+(a.outgoingStamina/a.matches).toFixed(1),incoming:+(a.incomingStamina/a.matches).toFixed(1)}};
 }
-test('4500 seeded matches audit substitution timing for midfield, wing and striker at minutes 55, 65 and 75',()=>{
+test('13500 seeded matches audit substitution timing for midfield, wing and striker at minutes 55, 65 and 75',()=>{
  const report={};
  for(const scenario of scenarios){
   report[scenario.label]=[55,65,75].map(minute=>auditPositionTiming(minute,scenario.index,scenario.label));
@@ -149,7 +149,7 @@ test('4500 seeded matches audit substitution timing for midfield, wing and strik
  for(const scenario of scenarios){
   assert.equal(report[scenario.label].length,3);
   for(const row of report[scenario.label]){
-   assert.equal(row.matches,500);
+   assert.equal(row.matches,1500);
    assert.ok(row.staminaAtFullTime.incoming>row.staminaAtFullTime.outgoing);
   }
  }
