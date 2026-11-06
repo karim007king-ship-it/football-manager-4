@@ -11,7 +11,9 @@ function substitutePlayer(state,teamId,outId,inId){
  const used=Number(state.substitutions?.[teamId]||0);
  if(used>=5)throw new Error('Maximum of five substitutions reached');
  const activeBefore=players.filter(p=>p.active).length;
- if(activeBefore!==11)throw new Error('A valid substitution requires exactly 11 active players');
+ // A red-carded team may have fewer than eleven players, but must retain
+ // at least seven before and after a legal substitution.
+ if(activeBefore<7||activeBefore>11)throw new Error('A valid substitution requires 7 to 11 active players');
  const wasCarrier=state.ball&&state.ball.team===teamId&&state.ball.playerId===out.id;
  // The substitute inherits the vacated tactical slot, not the outgoing player's stamina.
  for(const key of ['role','x','y','baseX','baseY','direction'])if(out[key]!==undefined)incoming[key]=out[key];
