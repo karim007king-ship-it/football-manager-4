@@ -9,6 +9,7 @@ on:
       - "manifest.json"
       - "sw.js"
       - "js/**"
+      - "tests/**"
       - "package.json"
       - "capacitor.config.json"
       - ".github/workflows/android-apk.yml"
