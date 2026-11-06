@@ -1,0 +1,104 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { createMatchFromGame } = require('../js/match/adapter');
+const { simulateMatch } = require('../js/match/engine');
+
+const POSITIONS = ['GK','DEF','DEF','DEF','DEF','MID','MID','MID','MID','FWD','FWD'];
+
+function squad(name, rating) {
+  return {
+    name,
+    mentality: 'balanced',
+    adaptiveTactics: false,
+    players: POSITIONS.map((pos, i) => ({
+      id: name + '-' + i,
+      name: name + ' ' + i,
+      pos,
+      ovr: rating + (i % 3),
+      morale: 70,
+      inj: 0
+    }))
+  };
+}
+
+function play(home, away, seed) {
+  return simulateMatch(createMatchFromGame({ home, away, seed }), 90);
+}
+
+function add(target, match) {
+  target.goals += match.score[0] + match.score[1];
+  target.shots += match.shots[0] + match.shots[1];
+  target.onTarget += match.shotsOnTarget[0] + match.shotsOnTarget[1];
+  target.homePossession += match.possession[0];
+  target.homeWins += match.score[0] > match.score[1] ? 1 : 0;
+  target.draws += match.score[0] === match.score[1] ? 1 : 0;
+  target.awayWins += match.score[0] < match.score[1] ? 1 : 0;
+  target.fourPlus += Math.max(...match.score) >= 4 ? 1 : 0;
+}
+
+test('1000 seeded matches audit scoring, shot volume, home bias and strength advantage', () => {
+  const balanced = {
+    goals: 0, shots: 0, onTarget: 0, homePossession: 0,
+    homeWins: 0, draws: 0, awayWins: 0, fourPlus: 0
+  };
+  const strongHome = { goals: 0, shots: 0, onTarget: 0, homePossession: 0,
+    homeWins: 0, draws: 0, awayWins: 0, fourPlus: 0 };
+  const strongAway = { goals: 0, shots: 0, onTarget: 0, homePossession: 0,
+    homeWins: 0, draws: 0, awayWins: 0, fourPlus: 0 };
+
+  const equalHome = squad('EqualHome', 70);
+  const equalAway = squad('EqualAway', 70);
+  const strong = squad('Strong', 84);
+  const weak = squad('Weak', 54);
+
+  // 200 neutral fixtures, 200 strong-home fixtures and 200 strong-away fixtures.
+  // Each fixture is simulated for 90 minutes: 600 matches x 90 minutes.
+  for (let seed = 1; seed <= 200; seed++) {
+    add(balanced, play(equalHome, equalAway, seed));
+    add(strongHome, play(strong, weak, 10000 + seed));
+    add(strongAway, play(weak, strong, 20000 + seed));
+  }
+
+  const neutralGoals = balanced.goals / 200;
+  const neutralShots = balanced.shots / 200;
+  const neutralHomePossession = 100 * balanced.homePossession / (200 * 90);
+  const strongHomeGoalDiff = (strongHome.homeWins - strongHome.awayWins);
+  const strongAwayGoalDiff = (strongAway.awayWins - strongAway.homeWins);
+  const strongHomeAvgDiff = (strongHome.goals / 200);
+  const strongAwayAvgDiff = (strongAway.goals / 200);
+
+  assert.ok(neutralGoals >= 1.2 && neutralGoals <= 4.8,
+    'neutral average goals/match outside broad guardrails: ' + neutralGoals.toFixed(2));
+  assert.ok(neutralShots >= 10 && neutralShots <= 26,
+    'neutral average shots/match outside broad guardrails: ' + neutralShots.toFixed(2));
+  assert.ok(neutralHomePossession >= 43 && neutralHomePossession <= 57,
+    'neutral home possession indicates excessive side bias: ' + neutralHomePossession.toFixed(1));
+  assert.ok(strongHomeGoalDiff > 0,
+    'strong home team should win more often than weak away team');
+  assert.ok(strongAwayGoalDiff > 0,
+    'strong away team should win more often than weak home team');
+
+  const report = {
+    matches: 600,
+    neutral: {
+      averageGoals: +neutralGoals.toFixed(2),
+      averageShots: +neutralShots.toFixed(2),
+      shotsOnTarget: +(balanced.onTarget / 200).toFixed(2),
+      homePossession: +neutralHomePossession.toFixed(1),
+      homeWins: balanced.homeWins,
+      draws: balanced.draws,
+      awayWins: balanced.awayWins,
+      matchesWithFourPlusGoalsByOneSide: balanced.fourPlus
+    },
+    strengthAdvantage: {
+      strongHomeWins: strongHome.homeWins,
+      strongHomeDraws: strongHome.draws,
+      strongHomeLosses: strongHome.awayWins,
+      strongAwayWins: strongAway.awayWins,
+      strongAwayDraws: strongAway.draws,
+      strongAwayLosses: strongAway.homeWins
+    }
+  };
+  console.log('FM4 600-match balance audit:', JSON.stringify(report));
+});
