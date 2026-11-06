@@ -82,8 +82,13 @@ function stepMatch(s){
  if(!s||!Array.isArray(s.teams)||s.teams.length!==2||!s.ball)throw Error('Invalid match state');
  const tid=s.ball.team,oid=1-tid,t=s.teams[tid],opp=s.teams[oid],carrier=t.players.find(p=>p.active&&p.id===s.ball.playerId)||nearest(active(t),s.ball);
  if(!carrier)throw Error('The team in possession has no active players');
- const rnd=s.random||(s.random=makeRandom(1)),goalX=tid===0?100:0,def=active(opp),press=nearest(def,carrier),pd=press?distance(press,carrier):40,goalDist=Math.abs(goalX-carrier.x);
- let event=null;s.possession[tid]++;carrier.stamina=clamp(carrier.stamina-.035,0,100);updateShape(s,tid,carrier);
+ const rnd=s.random||(s.random=makeRandom(1)),goalX=tid===0?100:0,def=active(opp);
+ let press=nearest(def,carrier),pd=press?distance(press,carrier):40;
+ const goalDist=Math.abs(goalX-carrier.x);
+ let event=null;s.possession[tid]++;carrier.stamina=clamp(carrier.stamina-.035,0,100);
+ updateShape(s,tid,carrier);
+ // Evaluate pressure after defenders have actually moved into their pressing positions.
+ press=nearest(def,carrier);pd=press?distance(press,carrier):40;
  const shotChance=clamp(.035+carrier.shooting/900-pd/500,.015,.13);
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;const on=rnd()<clamp(.25+carrier.shooting/150,.25,.88);if(on)s.shotsOnTarget[tid]++;
