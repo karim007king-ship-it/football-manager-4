@@ -1,3 +1,4 @@
+(function(){
 'use strict';
 function substitutePlayer(state,teamId,outId,inId){
  if(!state||!Array.isArray(state.teams)||!state.teams[teamId])throw new Error('Invalid team');
@@ -27,3 +28,5 @@ function substitutePlayer(state,teamId,outId,inId){
 const FM4Substitutions={substitutePlayer};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4Substitutions;
 if(typeof window!=='undefined')window.FM4Substitutions=FM4Substitutions;
+
+})();
