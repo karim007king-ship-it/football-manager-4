@@ -78,42 +78,76 @@ function updateShape(s,teamId,carrier){
  }
 }
 function addEvent(s,e){s.events.push(e);if(s.events.length>300)s.events.shift();}
-function stepMatch(s){
- if(!s||!Array.isArray(s.teams)||s.teams.length!==2||!s.ball)throw Error('Invalid match state');
- const tid=s.ball.team,oid=1-tid,t=s.teams[tid],opp=s.teams[oid],carrier=t.players.find(p=>p.active&&p.id===s.ball.playerId)||nearest(active(t),s.ball);
+function stepAction(s){
+ const tid=s.ball.team,oid=1-tid,t=s.teams[tid],opp=s.teams[oid];
+ const carrier=t.players.find(p=>p.active&&p.id===s.ball.playerId)||nearest(active(t),s.ball);
  if(!carrier)throw Error('The team in possession has no active players');
  const rnd=s.random||(s.random=makeRandom(1)),goalX=tid===0?100:0,def=active(opp);
  let press=nearest(def,carrier),pd=press?distance(press,carrier):40;
  const goalDist=Math.abs(goalX-carrier.x);
- let event=null;s.possession[tid]++;carrier.stamina=clamp(carrier.stamina-.035,0,100);
+ s.possession[tid]+=1/3;
+ carrier.stamina=clamp(carrier.stamina-.012,0,100);
  updateShape(s,tid,carrier);
- // Evaluate pressure after defenders have actually moved into their pressing positions.
+ // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
- const shotChance=clamp(.035+carrier.shooting/900-pd/500,.015,.13);
+ const shotChance=clamp(.055+carrier.shooting/750-pd/650,.025,.18);
+ let event=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
-  s.shots[tid]++;const on=rnd()<clamp(.25+carrier.shooting/150,.25,.88);if(on)s.shotsOnTarget[tid]++;
-  const quality=clamp(.12+carrier.shooting/180+(25-goalDist)/55-Math.abs(50-carrier.y)/150-(pd<5?.16:0),.04,.72),goal=on&&rnd()<quality;
+  s.shots[tid]++;
+  const on=rnd()<clamp(.25+carrier.shooting/150,.25,.88);
+  if(on)s.shotsOnTarget[tid]++;
+  const quality=clamp(.12+carrier.shooting/180+(25-goalDist)/55-Math.abs(50-carrier.y)/150-(pd<5?.16:0),.04,.72);
+  const goal=on&&rnd()<quality;
   if(goal)s.score[tid]++;
   event={type:goal?'goal':on?'save':'shot',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
   const restart=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
   if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
  }else{
-  const options=active(t).filter(p=>p.id!==carrier.id).map(p=>{const pr=(p.x-carrier.x)*(tid===0?1:-1),near=nearest(def,p),space=near?distance(near,p):30,pen=Math.abs(p.y-carrier.y)*.16;return{p,progress:pr,space,score:pr*.65+space*.35+p.passing*.04-pen+(pr>=-3?2:0)};}).sort((a,b)=>b.score-a.score);
-  // At close range, give the defender a genuine tackle opportunity before
-  // the carrier's emergency pass logic takes over.
-  const best=options[0],pass=best&&(pd>=4.5&&(pd<8.5||(best.progress>7&&rnd()<.34)));
-  if(pass){
-   s.passes[tid]++;const chance=clamp(.58+carrier.passing/260-Math.max(0,distance(carrier,best.p)-12)/120-(pd<4?.18:pd<8?.08:0),.28,.94);
-   if(rnd()<chance){s.completedPasses[tid]++;s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};event={type:'pass',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};}
-   else{const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;if(win){s.ball={x:win.x,y:win.y,team:oid,playerId:win.id};event={type:'interception',minute:s.minute+1,team:oid,playerId:win.id,x:win.x,y:win.y};}}
+  const options=active(t).filter(p=>p.id!==carrier.id).map(p=>{
+   const progress=(p.x-carrier.x)*(tid===0?1:-1),near=nearest(def,p);
+   const space=near?distance(near,p):30,pen=Math.abs(p.y-carrier.y)*.16;
+   return{p,progress,space,score:progress*.65+space*.35+p.passing*.04-pen+(progress>=-3?2:0)};
+  }).sort((a,b)=>b.score-a.score);
+  const best=options[0],closeTackle=press&&pd<4.5&&rnd()<.05+press.defending/800;
+  if(closeTackle){
+   s.tackles[oid]++;
+   s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};
+   event={type:'tackle',minute:s.minute+1,team:oid,playerId:press.id,x:press.x,y:press.y};
   }else{
-   const dir=tid===0?1:-1,lateral=press&&Math.abs(press.y-carrier.y)<8?(carrier.y<50?-.65:.65):(50-carrier.y)*.012;
-   carrier.x=clamp(carrier.x+dir*(.7+carrier.pace/95),2,98);carrier.y=clamp(carrier.y+lateral,3,97);
-   s.ball={x:carrier.x,y:carrier.y,team:tid,playerId:carrier.id};event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
-   if(press&&pd<4.5&&rnd()<.12+press.defending/420){s.tackles[oid]++;s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};event={type:'tackle',minute:s.minute+1,team:oid,playerId:press.id,x:press.x,y:press.y};}
+   const pass=best&&(pd>=4.5&&(pd<8.5||(best.progress>7&&rnd()<.34)));
+   if(pass){
+    s.passes[tid]++;
+    const chance=clamp(.62+carrier.passing/320-Math.max(0,distance(carrier,best.p)-12)/150-(pd<4?.12:pd<8?.05:0),.3,.96);
+    if(rnd()<chance){
+     s.completedPasses[tid]++;
+     s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
+     event={type:'pass',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};
+    }else{
+     const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;
+     if(win){
+      s.ball={x:win.x,y:win.y,team:oid,playerId:win.id};
+      event={type:'interception',minute:s.minute+1,team:oid,playerId:win.id,x:win.x,y:win.y};
+     }
+    }
+   }else{
+    const dir=tid===0?1:-1;
+    const lateral=press&&Math.abs(press.y-carrier.y)<8?(carrier.y<50?-.65:.65):(50-carrier.y)*.012;
+    carrier.x=clamp(carrier.x+dir*(.7+carrier.pace/95),2,98);
+    carrier.y=clamp(carrier.y+lateral,3,97);
+    s.ball={x:carrier.x,y:carrier.y,team:tid,playerId:carrier.id};
+    event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
+   }
   }
  }
- if(event)addEvent(s,event);s.minute++;return s;
+ if(event)addEvent(s,event);
+}
+function stepMatch(s){
+ if(!s||!Array.isArray(s.teams)||s.teams.length!==2||!s.ball)throw Error('Invalid match state');
+ // Three linked actions per displayed minute provide passing, pressing and
+ // chance creation without making the match clock run faster.
+ for(let action=0;action<3;action++)stepAction(s);
+ s.minute++;
+ return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
 const FM4MatchEngine={createMatch,stepMatch,simulateMatch,distance,roleLine:line};
