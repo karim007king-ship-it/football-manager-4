@@ -202,6 +202,11 @@ td .bdg{margin-left:6px}.sbm .bdg{margin:0 4px}
 </div>
 <div id="modal"><div id="mbox"><div id="mtxt"></div><div class="btns"><button id="myes" style="background:var(--pr)">حسناً</button><button id="mno" style="background:#555">إلغاء</button></div></div></div>
 
+<script src="js/match/engine.js"></script>
+<script src="js/match/adapter.js"></script>
+<script src="js/match/live-bridge.js"></script>
+<script src="js/match/substitutions.js"></script>
+<script src="js/match/live-monitor.js"></script>
 <script>
 const KEY='fm_web_pro_v2';
 const CL=[["الترجي",72],["النجم الساحلي",70],["الإفريقي",69],["الصفاقسي",68],["المنستيري",66],["البنزرتي",65],["الملعب التونسي",63],["قابس",61]];
@@ -392,6 +397,28 @@ function luSet(yid,xid){let lu=G.lu||(G.lu={p:[],b:[]}),ok=id=>G.players.some(p=
   lu.b=lu.b.filter(i=>i!=xid&&ok(i));if(!lu.p.includes(xid))lu.p.push(xid);lu.p=lu.p.filter(i=>i!=yid&&ok(i));if(!lu.b.includes(yid))lu.b.push(yid);save();go('lineup')}
 function luAuto(){G.lu=null;save();go('lineup')}
 let G=null,busy=false,M=null;
+let shadowMonitor=null,shadowMonitorError='';
+function initShadowMonitor(){
+ shadowMonitor=null;shadowMonitorError='';
+ try{
+  let seed=7,key=String(G.season)+'|'+String(G.round)+'|'+String(G.uid)+'|'+String(M.opp.id);
+  for(let i=0;i<key.length;i++)seed=(Math.imul(seed,31)+key.charCodeAt(i))>>>0;
+  shadowMonitor=window.FM4ShadowMonitor.create({match:M,seed});
+ }catch(e){shadowMonitorError=String(e&&e.message||e)}
+}
+function syncShadowMonitor(){
+ if(!shadowMonitor||!M)return;
+ try{window.FM4ShadowMonitor.sync(shadowMonitor,M)}catch(e){shadowMonitorError=String(e&&e.message||e)}
+}
+function advanceShadowMonitor(){
+ if(!shadowMonitor||!M)return;
+ try{window.FM4ShadowMonitor.advance(shadowMonitor,M,1)}catch(e){shadowMonitorError=String(e&&e.message||e)}
+}
+function shadowMonitorHtml(){
+ if(shadowMonitorError)return '<div style="margin:8px 0;padding:8px;border:1px solid #a66;border-radius:8px;color:#ffd0d0;font-size:11px">تعذر تحديث المحاكاة الموازية: '+String(shadowMonitorError).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+' — المباراة الأصلية مستمرة دون تغيير.</div>';
+ if(!shadowMonitor||!M)return '';
+ try{return window.FM4ShadowMonitor.render(shadowMonitor,M)}catch(e){shadowMonitorError=String(e&&e.message||e);return ''}
+}
 const $=id=>document.getElementById(id);
 const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const pick=a=>a[R(0,a.length-1)];
@@ -615,7 +642,7 @@ function startMatch(cup){
   if(S.xi.length<11)return say('⚠️ لا يوجد لاعبون أصحاء كفاية لتشكيلة '+G.form+'. اشترِ لاعبين أو غيّر الخطة.');
   snd.start();busy=true;let wx=Math.random()<.3?'rain':'clear';
   M={yc:{},pw0:S.pw,pg:{},pa:{},pr:1,tp:1,wd:1,ins:{},rt:{},ast:null,bx:50,by:50,mo:50,mom:0,q:[],tb:{a:0,d:0},cup:!!cup,derby:isDerby(C(U).name,opp.name),min:0,end:90,gu:0,go:0,home,opp,O,wx,done:false,paused:false,hold:false,skip:false,tac:G.tactic,xi:[...S.xi],slot:{},en:{},subs:5,out:new Set(),oR:0,sh:[0,0],st:[0,0],ps:0,sc:[],speed:1};
-  M.xi.forEach(p=>{M.slot[p.id]=S.sl[p.id]||p.pos;M.en[p.id]=100});M.hurt=new Set(M.xi.filter(p=>p.inj).map(p=>p.id));if(home){M.att=attend(opp);let fl=M.att/SDC[SD().cap];M.tb.a+=.8*fl;M.tb.d+=.5*fl;M.fl=fl}M.fan=fan();if(G.scout&&G.scout.rd==G.round&&G.scout.sug==G.tactic){M.tb.a+=.6;M.tb.d+=.6;log('🔍 تقرير المساعد أفاد: خطتك تستغل نقاط ضعف الخصم','log-goal')}if(home){let ff=(M.fan-60)/50;M.tb.a+=ff;M.tb.d+=ff*.6}
+  M.xi.forEach(p=>{M.slot[p.id]=S.sl[p.id]||p.pos;M.en[p.id]=100});M.hurt=new Set(M.xi.filter(p=>p.inj).map(p=>p.id));initShadowMonitor();if(home){M.att=attend(opp);let fl=M.att/SDC[SD().cap];M.tb.a+=.8*fl;M.tb.d+=.5*fl;M.fl=fl}M.fan=fan();if(G.scout&&G.scout.rd==G.round&&G.scout.sug==G.tactic){M.tb.a+=.6;M.tb.d+=.6;log('🔍 تقرير المساعد أفاد: خطتك تستغل نقاط ضعف الخصم','log-goal')}if(home){let ff=(M.fan-60)/50;M.tb.a+=ff;M.tb.d+=ff*.6}
   $('console').innerHTML='';$('console').style.display='block';$('ctl').style.display='block';$('sb').style.display='block';$('content').style.display='none';
   $('bp').innerText='⏸ إيقاف';$('bs').innerText='⏩ x1';$('sl').innerText=5;
   log(`--- ${cup?'🏆 مباراة الكأس: '+CN[G.cup.s]:'انطلاق المباراة'} | ${home?'على أرضك':'خارج الأرض'} ضد ${opp.name} | ${wx=='rain'?'🌧️ ممطر':'☀️ صحو'} ---`,'log-info');
@@ -634,7 +661,7 @@ function flavor(){let us=Math.random()<.5,T=us?M.xi:M.O.xi,a=pick(T).name,b=pick
   ()=>Q(`${tm()} 📣 ${pick(['أهازيج الجماهير تهزّ المدرجات','المدرب يصرخ بالتعليمات من الخط','اللاعبون يطلبون الهدوء من الجمهور','عدسات التلفزيون تلتقط وجوه المتوترين'])}`,'log-info')];
   pick(K)()}
 function sb(){let ps=M.min?Math.round(M.ps/M.min):50,m=M.min>90&&!M.et?'90+'+(M.min-90):M.min;
-  sbPaint(`<div class="sbm">${badge(G.uid,24)}${C(G.uid).name} <b>${M.gu} - ${M.go}</b> ${M.opp.name}${badge(M.opp,24)}</div><div class="dim" style="text-align:center">⏱ ${m}' | تسديدات ${M.sh[0]}-${M.sh[1]} (على المرمى ${M.st[0]}-${M.st[1]}) | استحواذ ${ps}%-${100-ps}% | ${TAC[M.tac]} | ${M.xi.length} لاعباً</div>`)}
+  sbPaint(`<div class="sbm">${badge(G.uid,24)}${C(G.uid).name} <b>${M.gu} - ${M.go}</b> ${M.opp.name}${badge(M.opp,24)}</div><div class="dim" style="text-align:center">⏱ ${m}' | تسديدات ${M.sh[0]}-${M.sh[1]} (على المرمى ${M.st[0]}-${M.st[1]}) | استحواذ ${ps}%-${100-ps}% | ${TAC[M.tac]} | ${M.xi.length} لاعباً</div>${shadowMonitorHtml()}`)}
 
 function liveS(){let sum=0,mor=0;
   M.xi.forEach(p=>{let sl=M.slot[p.id],pen=p.pos==sl?0:(sl=='GK'||p.pos=='GK'?30:9);sum+=(p.ovr+(trt(p)=='big'&&(M.cup||M.derby||M.min>=75)?3:0)-pen-(M.hurt.has(p.id)?15:0))*(.85+.15*M.en[p.id]/100);mor+=p.morale});
@@ -644,7 +671,7 @@ function liveS(){let sum=0,mor=0;
 function tick(){
   if(M.done||M.paused||M.hold)return;if(M.so){M.so.ph==0?soKick():soOpp();return}
   if(M.q.length){let x=M.q.shift();if(x.t)log(x.t,x.c);if(x.f)x.f();sb();return}
-  M.min++;let m=M.min,L=liveS(),oa=M.O.a-3.5*M.oR-.03*m,od=M.O.d-3.5*M.oR-.03*m,d=M.go-M.gu;
+  M.min++;advanceShadowMonitor();let m=M.min,L=liveS(),oa=M.O.a-3.5*M.oR-.03*m,od=M.O.d-3.5*M.oR-.03*m,d=M.go-M.gu;
   if(m>70&&d){oa+=d<0?3:-2;od+=d<0?-2:3}
   M.xi.forEach(p=>M.en[p.id]=Math.max(20,M.en[p.id]-(p.age>31?.5:.38)*(trt(p)=='pro'?.85:1)*[.8,1,1.3][M.pr]*[.88,1,1.15][M.tp]*(M.ins[p.id]=='free'?1.25:M.ins[p.id]=='mark'?1.3:1)));
   let psv=cl(50+(L.a+L.d-oa-od)*.6,30,70);M.ps+=psv;M.bx=cl(50+(psv-50)*1.3+R(-10,10),18,82);M.by=R(20,80);M.mo+=(psv-M.mo)*.1;
@@ -896,7 +923,7 @@ function injure(){let c=M.xi.filter(p=>p.pos!='GK');if(!c.length)return;let p=pi
   log(`${tm()} 🚑 إصابة ${p.name}!`,'log-bad');let b=bench(p.pos);
   if(M.subs>0&&b.length){if(M.skip)doSub(p,b[0]);else menu('🚑 '+p.name+' مصاب — اختر البديل',b.map(x=>({l:lbl(x),fn:()=>doSub(p,x)})),false)}
   else{M.xi.splice(M.xi.indexOf(p),1);log('لا بدلاء: تكمل بنقص عددي','log-bad')}}
-function doSub(o,i){let k=M.xi.indexOf(o);if(k<0)return;M.xi[k]=i;M.slot[i.id]=M.slot[o.id];M.en[i.id]=100;M.out.add(o.id);delete M.ins[o.id];M.subs--;
+function doSub(o,i){let k=M.xi.indexOf(o);if(k<0)return;M.xi[k]=i;M.slot[i.id]=M.slot[o.id];M.en[i.id]=100;M.out.add(o.id);delete M.ins[o.id];M.subs--;syncShadowMonitor();
   $('sl').innerText=M.subs;log(`${tm()} 🔄 تبديل: خرج ${o.name} ودخل ${i.name}`,'log-info');sb()}
 function subMenu(){if(!M||M.done||M.hold)return;if(M.subs<=0)return log('استنفدت التبديلات الخمسة','log-bad');
   menu('من يخرج؟',M.xi.map(p=>({l:lbl(p)+' • طاقة '+Math.round(M.en[p.id])+'%',fn:()=>{let b=bench(p.pos);
