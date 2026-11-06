@@ -40,7 +40,7 @@ function measure(index){
  const a={matches:0,baseShots:0,subShots:0,basePasses:0,subPasses:0,baseInvolvements:0,subInvolvements:0,baseCarries:0,subCarries:0,basePlayerShots:0,subPlayerShots:0,basePlayerPasses:0,subPlayerPasses:0,basePlayerTackles:0,subPlayerTackles:0,
   baseCompleted:0,subCompleted:0,baseTackles:0,subTackles:0,
   baseGoals:0,subGoals:0,baseMove:0,subMove:0,baseEndFitness:0,subEndFitness:0};
- for(let seed=1;seed<=200;seed++){
+ for(let seed=1;seed<=1000;seed++){
   const baseline=match(seed,index),changed=match(seed,index);
   Engine.simulateMatch(baseline,65);Engine.simulateMatch(changed,65);
   const baseBefore={shots:baseline.shots[0],passes:baseline.passes[0],completed:baseline.completedPasses[0],tackles:baseline.tackles[0],goals:baseline.score[0]};
@@ -94,7 +94,7 @@ test('600 seeded matches compare fresh substitutions by position at minute 65',(
  for(const s of scenarios)report[s.label]=measure(s.index);
  console.log('FM4 position substitution audit:',JSON.stringify(report));
  for(const s of scenarios){
-  assert.equal(report[s.label].matches,200);
+  assert.equal(report[s.label].matches,1000);
   assert.ok(report[s.label].endStamina.freshSubstitute>report[s.label].endStamina.tiredStarter);
  }
 });
