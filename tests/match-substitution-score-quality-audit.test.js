@@ -44,7 +44,7 @@ test('2700 paired seeded matches compare substitute quality with mirrored home a
  const report={};
  for(const situation of ['leading','drawing','trailing']){
   const totals={baseline:{points:0,wins:0,draws:0,losses:0,goals:0,awayGoals:0,shots:0,awayShots:0}};
-  for(const quality of Object.keys(qualities))totals[quality]={points:0,wins:0,draws:0,losses:0,goals:0,shots:0};
+  for(const quality of Object.keys(qualities))totals[quality]={points:0,wins:0,draws:0,losses:0,goals:0,awayGoals:0,shots:0,awayShots:0};
   let matches=0,firstSeed=null,lastSeed=null;
   for(let seed=1;seed<=maxSeeds&&matches<perSituation;seed++){
    const base=match(seed);
