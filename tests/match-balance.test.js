@@ -102,3 +102,37 @@ test('1000 seeded matches audit scoring, shot volume, home bias and strength adv
   };
   console.log('FM4 1000-match balance audit:', JSON.stringify(report));
 });
+
+test('pressing mentality measurably changes defensive activity', () => {
+  const balancedHome = squad('BalancedHome', 70);
+  const balancedAway = squad('BalancedAway', 70);
+  const pressingHome = squad('PressingHome', 70);
+  const pressingAway = squad('PressingAway', 70);
+  pressingHome.mentality = 'pressing';
+  pressingAway.mentality = 'pressing';
+
+  let balancedTackles = 0;
+  let pressingTackles = 0;
+  let balancedPasses = 0;
+  let pressingPasses = 0;
+
+  for (let seed = 1; seed <= 100; seed++) {
+    const normal = play(balancedHome, balancedAway, 30000 + seed);
+    const highPress = play(pressingHome, pressingAway, 30000 + seed);
+    balancedTackles += normal.tackles[0] + normal.tackles[1];
+    pressingTackles += highPress.tackles[0] + highPress.tackles[1];
+    balancedPasses += normal.passes[0] + normal.passes[1];
+    pressingPasses += highPress.passes[0] + highPress.passes[1];
+  }
+
+  assert.ok(pressingTackles > balancedTackles,
+    'pressing should increase tackles: balanced=' + balancedTackles +
+    ', pressing=' + pressingTackles);
+  console.log('FM4 pressing audit:', JSON.stringify({
+    matchesPerMode: 100,
+    balancedTackles,
+    pressingTackles,
+    balancedPasses,
+    pressingPasses
+  }));
+});
