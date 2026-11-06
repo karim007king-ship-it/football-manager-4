@@ -96,7 +96,7 @@ function stepAction(s){
   s.shots[tid]++;
   const on=rnd()<clamp(.25+carrier.shooting/150,.25,.88);
   if(on)s.shotsOnTarget[tid]++;
-  const quality=clamp(.12+carrier.shooting/180+(25-goalDist)/55-Math.abs(50-carrier.y)/150-(pd<5?.16:0),.04,.72);
+  const quality=clamp(.07+carrier.shooting/280+(25-goalDist)/65-Math.abs(50-carrier.y)/170-(pd<5?.16:0),.03,.6);
   const goal=on&&rnd()<quality;
   if(goal)s.score[tid]++;
   event={type:goal?'goal':on?'save':'shot',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
@@ -108,7 +108,7 @@ function stepAction(s){
    const space=near?distance(near,p):30,pen=Math.abs(p.y-carrier.y)*.16;
    return{p,progress,space,score:progress*.65+space*.35+p.passing*.04-pen+(progress>=-3?2:0)};
   }).sort((a,b)=>b.score-a.score);
-  const best=options[0],closeTackle=press&&pd<4.5&&rnd()<.035+press.defending/1100;
+  const best=options[0],closeTackle=press&&pd<4.5&&rnd()<.11+press.defending/900;
   if(closeTackle){
    s.tackles[oid]++;
    s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};
