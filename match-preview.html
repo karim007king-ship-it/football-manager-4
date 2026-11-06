@@ -65,7 +65,7 @@ h2{font-size:15px;color:var(--gold);margin:0 0 10px}.notice{background:#102a22;b
 (()=>{'use strict';
 const $=id=>document.getElementById(id), names=['الحارس','مدافع أيسر','قلب دفاع 1','قلب دفاع 2','مدافع أيمن','وسط أيسر','وسط 1','وسط 2','وسط أيمن','مهاجم 1','مهاجم 2'];
 const positions=['GK','DEF','DEF','DEF','DEF','MID','MID','MID','MID','FWD','FWD'];
-const make=(base,offset)=>positions.map((pos,i)=>({id:base+i,name:names[i],pos,ovr:66+((i*7+offset)%17),morale:70+(i%4)*4,inj:0}));
+const make=(base,offset)=>positions.map((pos,i)=>({id:base+i,name:names[i],pos,ovr:66+((i*7+offset)%17),morale:70+(i%4)*4,inj:0,active:true})).concat([{pos:'GK',name:'حارس احتياطي'},{pos:'DEF',name:'مدافع احتياطي'},{pos:'MID',name:'وسط احتياطي'},{pos:'FWD',name:'مهاجم احتياطي 1'},{pos:'FWD',name:'مهاجم احتياطي 2'}].map((p,i)=>({id:base+11+i,name:p.name,pos:p.pos,ovr:64+((i*5+offset)%14),morale:72,inj:0,active:false})));
 const initialHome=make(100,3),initialAway=make(200,9);
 let state=null,timer=null,paused=true,speed=1,ended=false,halfPauseDone=false;
 const label=e=>{const team=e.team===0?'الأزرق':'الأحمر',player=state.teams[e.team].players.find(p=>p.id===String(e.playerId));const name=player?.name||'لاعب';switch(e.type){
