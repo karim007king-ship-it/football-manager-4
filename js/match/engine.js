@@ -21,6 +21,16 @@ function createMatch({teams,seed=1}={}){
  return {minute:0,score:[0,0],possession:[0,0],shots:[0,0],shotsOnTarget:[0,0],passes:[0,0],completedPasses:[0,0],tackles:[0,0],teams:normalized,ball:{x:kick.x,y:kick.y,team:0,playerId:kick.id},events:[],random};
 }
 const active=t=>t.players.filter(p=>p.active);
+function manpowerProfile(team,mentality='balanced'){
+ const count=active(team).length,shortage=Math.max(0,11-count);
+ return {
+  activeCount:count,
+  widthScale:clamp(1-shortage*.075,.7,1),
+  forwardScale:clamp(1-shortage*.11,.62,1),
+  pressScale:clamp(count/11,.65,1),
+  pressers:mentality==='pressing'?(count>=11?3:count>=9?2:1):1
+ };
+}
 // Fitness scales physical and technical execution without changing player ratings.
 // Calibrated through seeded multi-match fatigue and dismissal audits.
 function fitness(p){return .78+.22*clamp(Number(p.stamina??100),0,100)/100;}
@@ -38,10 +48,13 @@ function updateShape(s,teamId,carrier){
  const ballX=s.ball.x,ballY=s.ball.y;
  for(const t of s.teams){
   const has=t.id===teamId,dir=t.id===0?1:-1,mentality=effectiveMentality(s,t.id);
-  const pushScale=mentality==='attacking'?1.35:mentality==='defensive'?.62:mentality==='counter'?1.15:1;
-  const pressScale=mentality==='pressing'?1.7:mentality==='defensive'?.65:1;
-  const defenders=active(t);
-  const pressers=has?[]:defenders.filter(p=>!keeper(p.role)).sort((a,b)=>distance(a,carrier)-distance(b,carrier)).slice(0,mentality==='pressing'?3:1);
+  const defenders=active(t),manpower=manpowerProfile(t,mentality);
+  const basePush=mentality==='attacking'?1.35:mentality==='defensive'?.62:mentality==='counter'?1.15:1;
+  // A side with fewer players protects its central lanes and commits fewer
+  // runners forward; a high press also becomes less coordinated when short.
+  const pushScale=basePush*(has?manpower.forwardScale:1);
+  const pressScale=(mentality==='pressing'?1.7:mentality==='defensive'?.65:1)*manpower.pressScale;
+  const pressers=has?[]:defenders.filter(p=>!keeper(p.role)).sort((a,b)=>distance(a,carrier)-distance(b,carrier)).slice(0,manpower.pressers);
   const cover=pressers.length?pressers[0]:null;
   for(const p of defenders){
    if(has&&p.id===carrier.id)continue;
@@ -52,7 +65,8 @@ function updateShape(s,teamId,carrier){
    const ballProgress=(ballX-50)*dir;
    const forwardPush=has?(l>.68?10:l>.43?5.5:1.2)*pushScale:-1.2;
    let tx=p.baseX+dir*forwardPush+(ballX-50)*.075*dir*(has?1:1.35);
-   let ty=p.baseY+(ballY-50)*(has?.13:.19);
+   let ty=50+(p.baseY-50)*manpower.widthScale+(ballY-50)*(has?.13:.19);
+   if(manpower.activeCount<11&&!keeper(r)&&!has)tx-=dir*(11-manpower.activeCount)*.65;
 
    // Attack width and staggered runs: wide attackers stay in the channel,
    // fullbacks overlap when possession reaches their side of midfield.
@@ -175,11 +189,25 @@ function stepAction(s){
  }
  if(event)addEvent(s,event);
 }
+function drainTeamStamina(s){
+ for(const team of s.teams){
+  const mentality=effectiveMentality(s,team.id);
+  const intensity=mentality==='pressing'?.045:mentality==='attacking'?.018:0;
+  for(const p of active(team)){
+   const r=String(p.role||'').toUpperCase();
+   const roleLoad=keeper(r)?.45:/^(DM|CDM|CM|LM|RM|AM|CAM|MF|MID)$/.test(r)?1.15:/^(LW|RW|ST|CF|FW|FWD)$/.test(r)?1.05:.9;
+   p.stamina=clamp(p.stamina-(.10+intensity)*roleLoad,0,100);
+  }
+ }
+}
 function stepMatch(s){
  if(!s||!Array.isArray(s.teams)||s.teams.length!==2||!s.ball)throw Error('Invalid match state');
  // Three linked actions per displayed minute provide passing, pressing and
  // chance creation without making the match clock run faster.
  for(let action=0;action<3;action++)stepAction(s);
+ // Every active player accumulates a small role- and mentality-weighted load.
+ // Carrier-specific effort remains an additional cost inside stepAction.
+ drainTeamStamina(s);
  // Keep cumulative possession exact at one displayed minute per step.
  s.possession[0]=Number(s.possession[0].toFixed(6));
  s.possession[1]=s.minute+1-s.possession[0];
@@ -187,7 +215,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,distance,roleLine:line,choosePassTarget,effectiveMentality};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,distance,roleLine:line,choosePassTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
