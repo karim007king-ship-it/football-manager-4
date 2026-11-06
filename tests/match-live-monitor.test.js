@@ -92,3 +92,21 @@ test('monitor labels render failures and preserves the underlying stack',()=>{
   assert.throws(()=>Monitor.render(monitor,m),e=>e.message.includes('[FM4 shadow RENDER]')&&e.stack.includes('render-probe-failure'));
  }finally{Bridge.snapshotShadow=original;}
 });
+
+
+test('browser scripts expose all match modules without global lexical collisions',()=>{
+ const context={console};
+ context.window=context;
+ vm.createContext(context);
+ for(const file of ['engine.js','adapter.js','live-bridge.js','substitutions.js','live-monitor.js']){
+  const source=fs.readFileSync(path.join(__dirname,'..','js','match',file),'utf8');
+  assert.doesNotThrow(()=>vm.runInContext(source,context,{filename:file}),file+' must load as a browser script');
+ }
+ for(const name of ['FM4MatchEngine','FM4MatchAdapter','FM4LiveBridge','FM4Substitutions','FM4ShadowMonitor']){
+  assert.ok(context[name],name+' must be exposed on window');
+ }
+ const match=live();
+ const monitor=context.FM4ShadowMonitor.create({match,seed:98});
+ assert.equal(context.FM4ShadowMonitor.advance(monitor,match,1).minute,1);
+ assert.match(context.FM4ShadowMonitor.render(monitor,match),/المحاكاة الموازية/);
+});
