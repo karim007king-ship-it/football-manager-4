@@ -38,6 +38,28 @@ test('enforces the five-substitution limit without changing the lineup',()=>{
  assert.equal(s.teams[0].players.filter(p=>p.active).length,11);
 });
 
+test('a team can substitute after a red card without restoring the dismissed player',()=>{
+ const s=fixture();
+ const dismissed=s.teams[0].players.find(p=>p.id==='2');
+ dismissed.active=false;
+ const before=s.teams[0].players.filter(p=>p.active).length;
+ const rec=substitutePlayer(s,0,'1','11');
+ const after=s.teams[0].players.filter(p=>p.active).length;
+ assert.equal(before,10);
+ assert.equal(after,10);
+ assert.equal(dismissed.active,false);
+ assert.equal(s.teams[0].players.find(p=>p.id==='1').active,false);
+ assert.equal(s.teams[0].players.find(p=>p.id==='11').active,true);
+ assert.equal(rec.minute,37);
+});
+
+test('rejects a substitution when fewer than seven players remain active',()=>{
+ const s=fixture();
+ s.teams[0].players.filter(p=>p.active).slice(0,5).forEach(p=>p.active=false);
+ assert.equal(s.teams[0].players.filter(p=>p.active).length,6);
+ assert.throws(()=>substitutePlayer(s,0,'5','11'),/7 to 11 active players/);
+});
+
 test('a full match continues normally after a halftime substitution',()=>{
  const squad=Array.from({length:16},(_,i)=>({id:String(i),name:'H'+i,role:i===0?'GK':i<5?'CB':i<10?'CM':'ST',active:i<11,x:i===0?5:i<5?25:i<10?50:75,y:8+(i%9)*10,pace:65,passing:65,shooting:60,defending:60,stamina:100}));
  const away=Array.from({length:11},(_,i)=>({id:'A'+i,name:'A'+i,role:i===0?'GK':i<5?'CB':i<9?'CM':'ST',x:i===0?95:i<5?75:i<9?50:25,y:8+(i%9)*10}));
