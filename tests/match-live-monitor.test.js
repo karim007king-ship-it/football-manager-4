@@ -34,6 +34,23 @@ test('monitor mirrors a live substitution and keeps eleven active players',()=>{
  assert.equal(substitute.baseY,players.find(p=>p.id===String(out.id)).baseY);
  assert.equal(monitor.shadow.state.substitutions[side],1);
 });
+test('monitor preserves the goalkeeper role and slot after a goalkeeper substitution',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:935});
+ const outgoing=m.xi[0];
+ const incoming={id:'bench-goalkeeper',name:'الحارس البديل',pos:'GK',ovr:74,morale:80,inj:0};
+ m.xi[0]=incoming;
+ Monitor.sync(monitor,m);
+ const side=monitor.shadow.userTeamId,players=monitor.shadow.state.teams[side].players;
+ const oldKeeper=players.find(p=>p.id===String(outgoing.id));
+ const newKeeper=players.find(p=>p.id===incoming.id);
+ assert.equal(oldKeeper.active,false);
+ assert.equal(newKeeper.active,true);
+ assert.equal(newKeeper.role,'GK');
+ assert.equal(newKeeper.x,oldKeeper.x);
+ assert.equal(newKeeper.y,oldKeeper.y);
+ assert.equal(players.filter(p=>p.active).length,11);
+ assert.equal(monitor.shadow.state.substitutions[side],1);
+});
 test('monitor records two substitutions made between sync calls',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:933});
  const side=monitor.shadow.userTeamId;
