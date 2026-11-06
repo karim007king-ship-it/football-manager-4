@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createMatchFromGame } = require('../js/match/adapter');
-const { simulateMatch } = require('../js/match/engine');
+const { simulateMatch, effectiveMentality } = require('../js/match/engine');
 
 const POSITIONS = ['GK','DEF','DEF','DEF','DEF','MID','MID','MID','MID','FWD','FWD'];
 
@@ -135,4 +135,25 @@ test('pressing mentality measurably changes defensive activity', () => {
     balancedPasses,
     pressingPasses
   }));
+});
+
+test('adaptive tactics react to score and match minute only when enabled', () => {
+  const state = {
+    minute: 72,
+    score: [0, 1],
+    teams: [
+      { id: 0, mentality: 'balanced', adaptiveTactics: true },
+      { id: 1, mentality: 'balanced', adaptiveTactics: true }
+    ]
+  };
+  assert.equal(effectiveMentality(state, 0), 'attacking');
+  assert.equal(effectiveMentality(state, 1), 'balanced');
+
+  state.minute = 78;
+  state.score = [1, 0];
+  assert.equal(effectiveMentality(state, 0), 'defensive');
+  assert.equal(effectiveMentality(state, 1), 'attacking');
+
+  state.teams[0].adaptiveTactics = false;
+  assert.equal(effectiveMentality(state, 0), 'balanced');
 });
