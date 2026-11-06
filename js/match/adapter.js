@@ -46,7 +46,7 @@ function estimateSkills(p,role){
   passing:round(o+passBoost+mood-penalty),
   // OVR is a composite rating, not a pure finishing attribute. A softer
   // conversion prevents ordinary 65-75 OVR squads from becoming elite finishers.
-  shooting:round(o*.82+shotBoost*.55+mood-penalty),
+  shooting:round(o*.78+shotBoost*.45+mood-penalty),
   defending:round(o+defendBoost+mood-penalty)
  };
 }
