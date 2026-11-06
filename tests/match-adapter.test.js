@@ -43,3 +43,15 @@ test('rejects incomplete legacy teams instead of inventing a lineup',()=>{
  assert.throws(()=>toEngineTeam({name:'ناقص',players:[]}),/at least 7/);
  assert.throws(()=>createMatchFromGame({home:legacyTeam('المضيف')}),/required/);
 });
+
+test('bridges the current live match without mutating its legacy state',()=>{
+ const user=legacyTeam('المستخدم'),opp=legacyTeam('المنافس');
+ const live={xi:user.players,O:{xi:opp.players},home:false,tac:'attacking',en:{1:63}};
+ const before=JSON.stringify(live);
+ const {state,userTeamId}=require('../js/match/adapter').createMatchFromLive({match:live,userTeamName:'فريقي',opponentTeamName:'الخصم',seed:7});
+ assert.equal(userTeamId,1);
+ assert.equal(state.teams[userTeamId].name,'فريقي');
+ assert.equal(state.teams[1-userTeamId].name,'الخصم');
+ assert.equal(state.teams[userTeamId].players[0].stamina,63);
+ assert.equal(JSON.stringify(live),before);
+});
