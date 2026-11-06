@@ -8,7 +8,7 @@ function team(name,offset=0){
 }
 function live(home=true){
  const user=team('المستخدم'),opp=team('المنافس',100);
- return {xi:user.xi,O:opp,home,tac:'balanced',en:{1:61},min:12,gu:1,go:0};
+ return {xi:user.xi,O:opp,home,tac:'balanced',en:{1:61},min:12,gu:1,go:0,bx:95,by:50};
 }
 test('creates a read-only shadow from a live home match',()=>{
  const m=live(true),before=JSON.stringify(m),s=Bridge.createShadowFromLive({match:m,seed:44});
@@ -16,6 +16,7 @@ test('creates a read-only shadow from a live home match',()=>{
  assert.equal(s.state.teams[1].name,'الخصم');assert.equal(s.state.teams[0].players[0].stamina,61);
  assert.equal(JSON.stringify(m),before);assert.equal(s.source,'read-only-shadow');
  assert.equal(s.state.minute,12);assert.deepEqual(s.state.score,[1,0]);
+ assert.equal(s.state.ball.team,1);assert.equal(s.state.ball.playerId,'101');
 });
 test('maps the user team correctly when the legacy club plays away',()=>{
  const s=Bridge.createShadowFromLive({match:live(false),seed:45});
