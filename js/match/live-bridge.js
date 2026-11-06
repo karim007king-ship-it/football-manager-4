@@ -33,6 +33,22 @@ function snapshotShadow(shadow){
   eventCount:s.events.length,source:shadow.source
  };
 }
-const FM4LiveBridge={createShadowFromLive,stepShadow,snapshotShadow};
+
+function compareWithLegacy(shadow,match){
+ if(!shadow||!shadow.state||!match)throw new Error('Shadow and legacy match are required');
+ const s=snapshotShadow(shadow),u=shadow.userTeamId,o=1-u;
+ const total=s.possession[0]+s.possession[1];
+ const enginePossession=total?Math.round(s.possession[u]/total*100):50;
+ const legacyPossession=Number(match.min)>0?Math.round(Number(match.ps||0)/Number(match.min)):50;
+ const legacyShots=Array.isArray(match.sh)?match.sh:[0,0];
+ return {
+  minute:{engine:s.minute,legacy:Math.max(0,Math.floor(Number(match.min)||0))},
+  score:{engine:[s.userScore,s.opponentScore],legacy:[Math.max(0,Number(match.gu)||0),Math.max(0,Number(match.go)||0)]},
+  possession:{engine:enginePossession,legacy:Math.max(0,Math.min(100,legacyPossession))},
+  shots:{engine:[s.shots[u],s.shots[o]],legacy:[Number(legacyShots[0])||0,Number(legacyShots[1])||0]},
+  activePlayers:s.activePlayers
+ };
+}
+const FM4LiveBridge={createShadowFromLive,stepShadow,snapshotShadow,compareWithLegacy};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4LiveBridge;
 if(typeof window!=='undefined')window.FM4LiveBridge=FM4LiveBridge;
