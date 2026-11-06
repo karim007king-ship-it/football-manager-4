@@ -39,7 +39,9 @@ function playerInvolvement(events,id){
 function measure(index){
  const a={matches:0,baseShots:0,subShots:0,basePasses:0,subPasses:0,baseInvolvements:0,subInvolvements:0,baseCarries:0,subCarries:0,basePlayerShots:0,subPlayerShots:0,basePlayerPasses:0,subPlayerPasses:0,basePlayerTackles:0,subPlayerTackles:0,
   baseCompleted:0,subCompleted:0,baseTackles:0,subTackles:0,
-  baseGoals:0,subGoals:0,baseMove:0,subMove:0,baseEndFitness:0,subEndFitness:0};
+  baseGoals:0,subGoals:0,baseMove:0,subMove:0,baseEndFitness:0,subEndFitness:0,
+  basePoints:0,subPoints:0,baseGoalDiff:0,subGoalDiff:0,
+  baseResults:{win:0,draw:0,loss:0},subResults:{win:0,draw:0,loss:0}};
  for(let seed=1;seed<=1000;seed++){
   const baseline=match(seed,index),changed=match(seed,index);
   Engine.simulateMatch(baseline,65);Engine.simulateMatch(changed,65);
@@ -68,6 +70,13 @@ function measure(index){
   assert.equal(outgoing.active,false);assert.equal(incoming.active,true);
   assert.equal(outgoing.stamina,initialStamina);
   assert.ok(incoming.stamina<100);
+  const baseDiff=baseline.score[0]-baseline.score[1],subDiff=changed.score[0]-changed.score[1];
+  const baseResult=baseDiff>0?'win':baseDiff<0?'loss':'draw';
+  const subResult=subDiff>0?'win':subDiff<0?'loss':'draw';
+  a.baseResults[baseResult]++;a.subResults[subResult]++;
+  a.basePoints+=baseResult==='win'?3:baseResult==='draw'?1:0;
+  a.subPoints+=subResult==='win'?3:subResult==='draw'?1:0;
+  a.baseGoalDiff+=baseDiff;a.subGoalDiff+=subDiff;
   a.matches++;
   a.baseShots+=baseline.shots[0]-baseBefore.shots; a.subShots+=changed.shots[0]-before.shots;
   a.basePasses+=baseline.passes[0]-baseBefore.passes; a.subPasses+=changed.passes[0]-before.passes;
@@ -86,10 +95,15 @@ function measure(index){
    goals:+(a.subGoals/a.matches).toFixed(2),playerMovement:+(a.subMove/a.matches).toFixed(2)},
   trackedPlayerActions:{involvements:{withoutSubstitution:+(a.baseInvolvements/a.matches).toFixed(2),withFreshSubstitution:+(a.subInvolvements/a.matches).toFixed(2)},carries:{withoutSubstitution:+(a.baseCarries/a.matches).toFixed(2),withFreshSubstitution:+(a.subCarries/a.matches).toFixed(2)},shots:{withoutSubstitution:+(a.basePlayerShots/a.matches).toFixed(2),withFreshSubstitution:+(a.subPlayerShots/a.matches).toFixed(2)},completedPasses:{withoutSubstitution:+(a.basePlayerPasses/a.matches).toFixed(2),withFreshSubstitution:+(a.subPlayerPasses/a.matches).toFixed(2)},tackles:{withoutSubstitution:+(a.basePlayerTackles/a.matches).toFixed(2),withFreshSubstitution:+(a.subPlayerTackles/a.matches).toFixed(2)}},
   endStamina:{tiredStarter:+(a.baseEndFitness/a.matches).toFixed(1),
-   freshSubstitute:+(a.subEndFitness/a.matches).toFixed(1)}
+   freshSubstitute:+(a.subEndFitness/a.matches).toFixed(1)},
+  matchOutcomes:{withoutSubstitution:a.baseResults,withFreshSubstitution:a.subResults},
+  averagePoints:{withoutSubstitution:+(a.basePoints/a.matches).toFixed(3),
+   withFreshSubstitution:+(a.subPoints/a.matches).toFixed(3)},
+  averageGoalDifference:{withoutSubstitution:+(a.baseGoalDiff/a.matches).toFixed(3),
+   withFreshSubstitution:+(a.subGoalDiff/a.matches).toFixed(3)}
  };
 }
-test('600 seeded matches compare fresh substitutions by position at minute 65',()=>{
+test('3000 seeded matches compare fresh substitutions by position and match outcomes at minute 65',()=>{
  const report={};
  for(const s of scenarios)report[s.label]=measure(s.index);
  console.log('FM4 position substitution audit:',JSON.stringify(report));
