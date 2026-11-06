@@ -23,7 +23,7 @@ test('isolated match preview page has syntactically valid inline JavaScript',()=
  assert.match(html,/id="pause"/);
  assert.match(html,/id="events"/);
  assert.match(html,/id="subApply"/);
- assert.match(html,/js\\/match\\/substitutions\\.js/);
+ assert.ok(html.includes('js/match/substitutions.js'));
  assert.match(html,/مهاجم احتياطي 2/);
- assert.match(html,/FM4Substitutions\\.substitutePlayer/);
+ assert.ok(html.includes('FM4Substitutions.substitutePlayer'));
 });
