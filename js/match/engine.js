@@ -124,13 +124,13 @@ function stepAction(s){
  // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
  // Calibrated against the three-actions-per-minute clock and legacy OVR mapping.
- const shotChance=clamp(.07+carrier.shooting/1400-pd/1200,.025,.16);
+ const shotChance=clamp(.09+carrier.shooting/1400-pd/1200,.025,.16);
  let event=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
-  const on=rnd()<clamp(.2+carrier.shooting/180,.2,.75);
+  const on=rnd()<clamp(.28+carrier.shooting/180,.28,.8);
   if(on)s.shotsOnTarget[tid]++;
-  const quality=clamp(.05+carrier.shooting/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0),.03,.5);
+  const quality=clamp(.09+carrier.shooting/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0),.03,.5);
   const goal=on&&rnd()<quality;
   if(goal)s.score[tid]++;
   event={type:goal?'goal':on?'save':'shot',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
