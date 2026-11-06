@@ -21,5 +21,9 @@ test('isolated match preview page has syntactically valid inline JavaScript',()=
  assert.ok(start>8&&end>start,'inline preview controller script exists');
  new vm.Script(html.slice(start,end));
  assert.match(html,/id="pause"/);
- assert.match(html,/id="events"/);\n assert.match(html,/id="subApply"/);\n assert.match(html,/js\\/match\\/substitutions\\.js/);\n assert.match(html,/مهاجم احتياطي 2/);\n assert.match(html,/FM4Substitutions\\.substitutePlayer/);
+ assert.match(html,/id="events"/);
+ assert.match(html,/id="subApply"/);
+ assert.match(html,/js\\/match\\/substitutions\\.js/);
+ assert.match(html,/مهاجم احتياطي 2/);
+ assert.match(html,/FM4Substitutions\\.substitutePlayer/);
 });
