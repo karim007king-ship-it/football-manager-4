@@ -15,3 +15,31 @@ test('both teams carry toward their attacking goal when space is available',()=>
 test('same seed and inputs produce same match output',()=>{const a=simulateMatch(create(991),90),b=simulateMatch(create(991),90);assert.deepEqual(a.score,b.score);assert.deepEqual(a.events,b.events);assert.deepEqual(a.possession,b.possession);});
 test('rejects invalid team count and undersized squads',()=>{assert.throws(()=>createMatch({teams:[team('Only',0)]}),/Exactly two teams/);assert.throws(()=>createMatch({teams:[team('Home',0),{name:'Away',players:[]}] }),/at least 7 players/);});
 test('shots only occur in attacking third',()=>{const s=simulateMatch(create(),90);for(const e of s.events.filter(x=>['shot','save','goal'].includes(x.type))){const d=e.team===0?100-e.x:e.x;assert.ok(d<=25.001);}});
+test('defending team sends a presser toward the ball carrier',()=>{
+ const h=team('Home',0),a=team('Away',1);
+ h.players.forEach((p,i)=>{p.x=65;p.y=12+i*7;});
+ a.players.forEach((p,i)=>{p.x= i===1?53:82;p.y= i===1?50:8+i*8;});
+ const s=createMatch({teams:[h,a],seed:12}),carrier=h.players[6];
+ s.ball={x:carrier.x,y:carrier.y,team:0,playerId:carrier.id};
+ const presser=a.players[1],before=Math.hypot(presser.x-carrier.x,presser.y-carrier.y);
+ stepMatch(s);
+ const after=Math.hypot(presser.x-carrier.x,presser.y-carrier.y);
+ assert.ok(after<before,'nearest defender should close down the carrier');
+});
+
+test('wide players retain touchline lanes while team shape shifts',()=>{
+ const s=create(),wide=s.teams[0].players.find(p=>p.role==='LW');
+ const originalY=wide.y;
+ s.ball={x:70,y:35,team:0,playerId:s.teams[0].players[7].id};
+ stepMatch(s);
+ assert.ok(wide.y<40,'left-side wide player should remain in the upper channel');
+ assert.notEqual(wide.y,originalY,'wide player should still adjust with the phase');
+});
+
+test('all player coordinates remain inside pitch bounds over a full simulation',()=>{
+ const s=simulateMatch(create(443),90);
+ for(const t of s.teams)for(const p of t.players){
+  assert.ok(p.x>=2&&p.x<=98, t.name+' player '+p.id+' x out of bounds');
+  assert.ok(p.y>=2&&p.y<=98, t.name+' player '+p.id+' y out of bounds');
+ }
+});
