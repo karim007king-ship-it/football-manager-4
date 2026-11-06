@@ -35,3 +35,18 @@ test('shadow advancement is capped at 90 minutes and rejects missing state',()=>
  assert.equal(Bridge.stepShadow(s,100).minute,90);
  assert.throws(()=>Bridge.stepShadow(null,1),/shadow match/);
 });
+
+test('compares shadow statistics with legacy score, possession and shots',()=>{
+ const m=live(true);m.ps=624;m.sh=[4,3];
+ const s=Bridge.createShadowFromLive({match:m,seed:48});
+ const report=Bridge.compareWithLegacy(s,m);
+ assert.deepEqual(report.minute,{engine:12,legacy:12});
+ assert.deepEqual(report.score,{engine:[1,0],legacy:[1,0]});
+ assert.equal(report.possession.legacy,52);
+ assert.deepEqual(report.shots.legacy,[4,3]);
+ assert.deepEqual(report.activePlayers,[11,11]);
+});
+test('comparison rejects missing match inputs',()=>{
+ const s=Bridge.createShadowFromLive({match:live(),seed:49});
+ assert.throws(()=>Bridge.compareWithLegacy(s,null),/required/);
+});
