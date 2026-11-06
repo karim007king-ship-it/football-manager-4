@@ -88,6 +88,38 @@ test('monitor records multiple substitutions after a dismissal without restoring
  assert.equal(monitor.shadow.state.substitutions[side],2);
  assert.equal(monitor.shadow.state.substitutionLog.length,2);
 });
+test('monitor rejects an over-limit batch atomically without partially applying substitutions',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:937});
+ const side=monitor.shadow.userTeamId;
+ monitor.shadow.state.substitutions[side]=4;
+ const outA=m.xi[5],outB=m.xi[6];
+ const inA={id:'bench-atomic-a',name:'بديل ذري أ',pos:'MID',ovr:72,morale:80,inj:0};
+ const inB={id:'bench-atomic-b',name:'بديل ذري ب',pos:'MID',ovr:73,morale:80,inj:0};
+ m.xi[5]=inA;m.xi[6]=inB;
+ assert.throws(()=>Monitor.sync(monitor,m),/\\[FM4 shadow SYNC\\].*Maximum of five substitutions reached/);
+ const players=monitor.shadow.state.teams[side].players;
+ assert.equal(players.find(p=>p.id===String(outA.id)).active,true);
+ assert.equal(players.find(p=>p.id===String(outB.id)).active,true);
+ assert.equal(players.find(p=>p.id===inA.id).active,false);
+ assert.equal(players.find(p=>p.id===inB.id).active,false);
+ assert.equal(monitor.shadow.state.substitutions[side],4);
+ assert.equal(monitor.shadow.state.substitutionLog.length,0);
+});
+test('monitor maps simultaneous goalkeeper and striker substitutions to their correct roles',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:938});
+ const oldKeeper=m.xi[0],oldStriker=m.xi[9];
+ const newKeeper={id:'bench-mixed-gk',name:'الحارس الجديد',pos:'GK',ovr:74,morale:80,inj:0};
+ const newStriker={id:'bench-mixed-st',name:'المهاجم الجديد',pos:'FWD',ovr:76,morale:80,inj:0};
+ m.xi[0]=newKeeper;m.xi[9]=newStriker;
+ Monitor.sync(monitor,m);
+ const side=monitor.shadow.userTeamId,players=monitor.shadow.state.teams[side].players;
+ assert.equal(players.find(p=>p.id===newKeeper.id).role,'GK');
+ assert.equal(players.find(p=>p.id===newStriker.id).role,'ST');
+ assert.equal(players.find(p=>p.id===String(oldKeeper.id)).active,false);
+ assert.equal(players.find(p=>p.id===String(oldStriker.id)).active,false);
+ assert.equal(players.filter(p=>p.active).length,11);
+ assert.equal(monitor.shadow.state.substitutions[side],2);
+});
 test('monitor surfaces a substitution registration failure instead of hiding it',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:934});
  const side=monitor.shadow.userTeamId;
