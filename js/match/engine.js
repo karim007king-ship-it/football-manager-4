@@ -11,7 +11,7 @@ function createMatch({teams,seed=1}={}){
  const normalized=teams.map((src,tid)=>{
   if(!src||!Array.isArray(src.players)||src.players.length<7)throw Error('Each team needs at least 7 players');
   const dir=tid===0?1:-1;
-  return {id:tid,name:String(src.name||(tid?'Away':'Home')),mentality:src.mentality||'balanced',players:src.players.map((p,i)=>{
+  return {id:tid,name:String(src.name||(tid?'Away':'Home')),mentality:src.mentality||'balanced',adaptiveTactics:src.adaptiveTactics!==false,players:src.players.map((p,i)=>{
    const role=p.role||(i===0?'GK':i<5?'DF':i<9?'MF':'FW'),lx=line(role);
    const x=clamp(Number(p.x??(tid===0?lx*100:100-lx*100)),2,98),y=clamp(Number(p.y??(8+(i%9)*10.5)),2,98);
    return {id:String(p.id??i),name:String(p.name||'Player'),role,pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
@@ -23,10 +23,18 @@ function createMatch({teams,seed=1}={}){
 const active=t=>t.players.filter(p=>p.active);
 function nearest(players,point){let best=null,d=Infinity;for(const p of players){if(!p.active)continue;const n=distance(p,point);if(n<d){best=p;d=n;}}return best;}
 function moveToward(p,t,max){const dx=t.x-p.x,dy=t.y-p.y,len=Math.hypot(dx,dy);if(!len)return;if(len<=max){p.x=clamp(t.x,2,98);p.y=clamp(t.y,2,98);}else{p.x=clamp(p.x+dx/len*max,2,98);p.y=clamp(p.y+dy/len*max,2,98);}}
+function effectiveMentality(s,teamId){
+ const team=s.teams[teamId],base=String(team.mentality||'balanced').toLowerCase();
+ if(!team.adaptiveTactics)return base;
+ const difference=s.score[teamId]-s.score[1-teamId],minute=s.minute;
+ if(difference<0&&minute>=72)return 'attacking';
+ if(difference>0&&minute>=78)return 'defensive';
+ return base;
+}
 function updateShape(s,teamId,carrier){
  const ballX=s.ball.x,ballY=s.ball.y;
  for(const t of s.teams){
-  const has=t.id===teamId,dir=t.id===0?1:-1,mentality=String(t.mentality||'balanced').toLowerCase();
+  const has=t.id===teamId,dir=t.id===0?1:-1,mentality=effectiveMentality(s,t.id);
   const pushScale=mentality==='attacking'?1.35:mentality==='defensive'?.62:mentality==='counter'?1.15:1;
   const pressScale=mentality==='pressing'?1.7:mentality==='defensive'?.65:1;
   const defenders=active(t);
@@ -79,6 +87,27 @@ function updateShape(s,teamId,carrier){
  }
 }
 function addEvent(s,e){s.events.push(e);if(s.events.length>300)s.events.shift();}
+function pointSegmentDistance(point,a,b){
+ const dx=b.x-a.x,dy=b.y-a.y,len2=dx*dx+dy*dy;
+ if(!len2)return distance(point,a);
+ const u=clamp(((point.x-a.x)*dx+(point.y-a.y)*dy)/len2,0,1);
+ return Math.hypot(point.x-(a.x+u*dx),point.y-(a.y+u*dy));
+}
+function choosePassTarget(team,defenders,carrier,teamId){
+ const dir=teamId===0?1:-1;
+ const candidates=active(team).filter(p=>p.id!==carrier.id).map(p=>{
+  const progress=(p.x-carrier.x)*dir,nearestDef=nearest(defenders,p);
+  const space=nearestDef?distance(nearestDef,p):30;
+  const laneClearance=defenders.reduce((best,d)=>Math.min(best,pointSegmentDistance(d,carrier,p)),30);
+  const lateral=Math.abs(p.y-carrier.y);
+  const forwardBonus=progress>0?3:0;
+  const score=progress*.78+Math.min(space,24)*.42+Math.min(laneClearance,18)*.62+p.passing*.025-lateral*.22+forwardBonus;
+  return{p,progress,space,laneClearance,score};
+ });
+ if(!candidates.length)return null;
+ const safeForward=candidates.filter(c=>c.progress>1.5&&c.space>4&&c.laneClearance>2.5);
+ return (safeForward.length?safeForward:candidates).sort((a,b)=>b.score-a.score)[0];
+}
 function stepAction(s){
  const tid=s.ball.team,oid=1-tid,t=s.teams[tid],opp=s.teams[oid];
  const carrier=t.players.find(p=>p.active&&p.id===s.ball.playerId)||nearest(active(t),s.ball);
@@ -104,12 +133,8 @@ function stepAction(s){
   const restart=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
   if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
  }else{
-  const options=active(t).filter(p=>p.id!==carrier.id).map(p=>{
-   const progress=(p.x-carrier.x)*(tid===0?1:-1),near=nearest(def,p);
-   const space=near?distance(near,p):30,pen=Math.abs(p.y-carrier.y)*.16;
-   return{p,progress,space,score:progress*.65+space*.35+p.passing*.04-pen+(progress>=-3?2:0)};
-  }).sort((a,b)=>b.score-a.score);
-  const best=options[0],closeTackle=press&&pd<4.5&&rnd()<.11+press.defending/900;
+  const best=choosePassTarget(t,def,carrier,tid);
+  const closeTackle=press&&pd<4.5&&rnd()<.11+press.defending/900;
   if(closeTackle){
    s.tackles[oid]++;
    s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};
@@ -154,7 +179,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,distance,roleLine:line};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,distance,roleLine:line,choosePassTarget,effectiveMentality};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 

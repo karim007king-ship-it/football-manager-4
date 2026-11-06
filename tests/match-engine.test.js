@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,choosePassTarget,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -43,4 +43,29 @@ test('all player coordinates remain inside pitch bounds over a full simulation',
   assert.ok(p.x>=2&&p.x<=98, t.name+' player '+p.id+' x out of bounds');
   assert.ok(p.y>=2&&p.y<=98, t.name+' player '+p.id+' y out of bounds');
  }
+});
+
+test('safe forward passing lanes are preferred over backward support',()=>{
+ const h=team('Home',0),a=team('Away',1);
+ const carrier=h.players[6];carrier.x=40;carrier.y=50;
+ const forward=h.players[8];forward.x=67;forward.y=50;
+ const backward=h.players[5];backward.x=24;backward.y=50;
+ a.players.forEach((p,i)=>{p.x=90;p.y=5+i*9;});
+ const picked=choosePassTarget({players:h.players},a.players,carrier,0);
+ assert.equal(picked.p.id,forward.id);
+ assert.ok(picked.progress>0);
+ assert.ok(picked.laneClearance>2.5);
+});
+test('opponent adapts mentality to match state while a locked user tactic is preserved',()=>{
+ const s=create();
+ s.minute=74;s.score=[0,1];
+ assert.equal(effectiveMentality(s,0),'attacking');
+ s.minute=80;s.score=[2,0];
+ assert.equal(effectiveMentality(s,0),'defensive');
+ s.teams[0].adaptiveTactics=false;
+ assert.equal(effectiveMentality(s,0),'balanced');
+});
+test('adaptive mentality does not change before late-match thresholds',()=>{
+ const s=create();s.minute=60;s.score=[0,1];
+ assert.equal(effectiveMentality(s,0),'balanced');
 });
