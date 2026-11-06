@@ -96,7 +96,7 @@ test('monitor rejects an over-limit batch atomically without partially applying 
  const inA={id:'bench-atomic-a',name:'بديل ذري أ',pos:'MID',ovr:72,morale:80,inj:0};
  const inB={id:'bench-atomic-b',name:'بديل ذري ب',pos:'MID',ovr:73,morale:80,inj:0};
  m.xi[5]=inA;m.xi[6]=inB;
- assert.throws(()=>Monitor.sync(monitor,m),/\\[FM4 shadow SYNC\\].*Maximum of five substitutions reached/);
+ assert.throws(()=>Monitor.sync(monitor,m),/\[FM4 shadow SYNC\].*Maximum of five substitutions reached/);
  const players=monitor.shadow.state.teams[side].players;
  assert.equal(players.find(p=>p.id===String(outA.id)).active,true);
  assert.equal(players.find(p=>p.id===String(outB.id)).active,true);
