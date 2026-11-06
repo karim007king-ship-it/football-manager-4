@@ -1,134 +1,69 @@
 'use strict';
-
-/**
- * FM4 match simulation kernel (isolated v0).
- * Coordinates use a 0..100 pitch. Team 0 attacks right; team 1 attacks left.
- * No DOM, timers, global randomness, or UI dependencies.
- */
-const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const seededFallback = () => 0.5;
-
-function createMatch({ teams, seed = 1 } = {}) {
-  if (!Array.isArray(teams) || teams.length !== 2) throw new Error('Exactly two teams are required');
-  const normalized = teams.map((team, teamId) => {
-    if (!Array.isArray(team.players) || team.players.length < 7) throw new Error('Each team needs at least 7 players');
-    return {
-      id: teamId,
-      name: String(team.name || (teamId ? 'Away' : 'Home')),
-      players: team.players.map((p, index) => ({
-        id: String(p.id ?? index),
-        name: String(p.name || 'Player'),
-        role: p.role || 'MF',
-        pace: clamp(Number(p.pace ?? 60), 1, 100),
-        passing: clamp(Number(p.passing ?? 60), 1, 100),
-        shooting: clamp(Number(p.shooting ?? 50), 1, 100),
-        defending: clamp(Number(p.defending ?? 50), 1, 100),
-        stamina: clamp(Number(p.stamina ?? 100), 0, 100),
-        x: clamp(Number(p.x ?? (teamId ? 65 : 35)), 2, 98),
-        y: clamp(Number(p.y ?? (10 + (index % 10) * 8)), 2, 98),
-        active: true
-      }))
-    };
-  });
-  let rngState = (Number(seed) >>> 0) || 1;
-  const rng = () => {
-    rngState = (1664525 * rngState + 1013904223) >>> 0;
-    return rngState / 4294967296;
-  };
-  const kickoff = normalized[0].players.find(p => p.role !== 'GK') || normalized[0].players[0];
-  return {
-    minute: 0,
-    score: [0, 0],
-    possession: [0, 0],
-    shots: [0, 0],
-    passes: [0, 0],
-    teams: normalized,
-    ball: { x: kickoff.x, y: kickoff.y, team: 0, playerId: kickoff.id },
-    events: [],
-    rng
-  };
+// FM4 match kernel v2. Coordinates 0..100; home attacks right, away left.
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const keeper=r=>/^(GK|G|GOALKEEPER)$/i.test(String(r||''));
+const line=r=>{r=String(r||'').toUpperCase();if(/^(GK|G|GOALKEEPER)$/.test(r))return .07;if(/^(CB|LB|RB|LWB|RWB|DF|DEF)/.test(r))return .27;if(/^(DM|CDM|CM|LM|RM|AM|CAM|MF|MID)/.test(r))return .51;if(/^(LW|RW|ST|CF|FW|FWD)/.test(r))return .75;return .5;};
+function makeRandom(seed){let s=(Number(seed)>>>0)||1;return()=>{s=(1664525*s+1013904223)>>>0;return s/4294967296;};}
+function createMatch({teams,seed=1}={}){
+ if(!Array.isArray(teams)||teams.length!==2)throw Error('Exactly two teams are required');
+ const normalized=teams.map((src,tid)=>{
+  if(!src||!Array.isArray(src.players)||src.players.length<7)throw Error('Each team needs at least 7 players');
+  const dir=tid===0?1:-1;
+  return {id:tid,name:String(src.name||(tid?'Away':'Home')),mentality:src.mentality||'balanced',players:src.players.map((p,i)=>{
+   const role=p.role||(i===0?'GK':i<5?'DF':i<9?'MF':'FW'),lx=line(role);
+   const x=clamp(Number(p.x??(tid===0?lx*100:100-lx*100)),2,98),y=clamp(Number(p.y??(8+(i%9)*10.5)),2,98);
+   return {id:String(p.id??i),name:String(p.name||'Player'),role,pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
+  })};
+ });
+ const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
+ return {minute:0,score:[0,0],possession:[0,0],shots:[0,0],shotsOnTarget:[0,0],passes:[0,0],completedPasses:[0,0],tackles:[0,0],teams:normalized,ball:{x:kick.x,y:kick.y,team:0,playerId:kick.id},events:[],random};
 }
-
-function nearest(players, point) {
-  return players.filter(p => p.active).reduce((best, p) => !best || distance(p, point) < distance(best, point) ? p : best, null);
-}
-
-function stepMatch(state) {
-  if (!state || !state.teams || state.teams.length !== 2) throw new Error('Invalid match state');
-  const teamId = state.ball.team;
-  const opponentId = 1 - teamId;
-  const team = state.teams[teamId];
-  const opponent = state.teams[opponentId];
-  const player = team.players.find(p => p.id === state.ball.playerId && p.active) || nearest(team.players, state.ball);
-  if (!player) return state;
-  const direction = teamId === 0 ? 1 : -1;
-  const goalX = teamId === 0 ? 100 : 0;
-  const pressure = nearest(opponent.players, player);
-  const pressureDistance = pressure ? distance(pressure, player) : 30;
-  const attackDistance = Math.abs(goalX - player.x);
-  const centrality = Math.abs(50 - player.y);
-  let event;
-
-  state.possession[teamId] += 1;
-  player.stamina = clamp(player.stamina - 0.025, 0, 100);
-
-  // A shot can only occur after the carrier reaches the attacking third.
-  if (attackDistance <= 28 && centrality <= 27 && state.rng() < 0.12 + player.shooting / 500) {
-    state.shots[teamId] += 1;
-    const quality = clamp((player.shooting / 100) * 0.55 + (28 - attackDistance) / 70 - pressureDistance / 120, 0.04, 0.82);
-    const goal = state.rng() < quality;
-    if (goal) state.score[teamId] += 1;
-    event = { type: goal ? 'goal' : 'shot', minute: state.minute, team: teamId, playerId: player.id, x: player.x, y: player.y };
-    // Restart from the centre after a goal; otherwise the goalkeeper restarts.
-    if (goal) {
-      const restart = opponent.players.find(p => p.role === 'GK') || opponent.players[0];
-      state.ball = { x: 50, y: 50, team: opponentId, playerId: restart.id };
-    } else {
-      const keeper = opponent.players.find(p => p.role === 'GK') || opponent.players[0];
-      state.ball = { x: keeper.x, y: keeper.y, team: opponentId, playerId: keeper.id };
-    }
-  } else {
-    const forwardOptions = team.players.filter(p => p.active && p.id !== player.id)
-      .map(p => ({ p, progress: (p.x - player.x) * direction, space: pressure ? distance(p, pressure) : 20 }))
-      .filter(x => x.progress > 2);
-    const bestPass = forwardOptions.sort((a, b) => (b.progress + b.space * 0.25 + b.p.passing * 0.05) - (a.progress + a.space * 0.25 + a.p.passing * 0.05))[0];
-    const shouldPass = bestPass && (pressureDistance < 9 || (state.rng() < 0.28 && bestPass.progress > 8));
-    if (shouldPass) {
-      state.passes[teamId] += 1;
-      const successChance = clamp(0.52 + player.passing / 220 + (bestPass.space - 8) / 100 - (pressureDistance < 5 ? 0.12 : 0), 0.25, 0.96);
-      if (state.rng() < successChance) {
-        state.ball = { x: bestPass.p.x, y: bestPass.p.y, team: teamId, playerId: bestPass.p.id };
-        event = { type: 'pass', minute: state.minute, team: teamId, from: player.id, to: bestPass.p.id, x: bestPass.p.x, y: bestPass.p.y };
-      } else {
-        const winner = nearest(opponent.players, player) || opponent.players[0];
-        state.ball = { x: player.x, y: player.y, team: opponentId, playerId: winner.id };
-        event = { type: 'interception', minute: state.minute, team: opponentId, playerId: winner.id, x: player.x, y: player.y };
-      }
-    } else {
-      player.x = clamp(player.x + direction * (1.1 + player.pace / 100), 2, 98);
-      if (pressure) player.y = clamp(player.y + clamp((50 - player.y) * 0.035, -0.8, 0.8), 2, 98);
-      state.ball = { x: player.x, y: player.y, team: teamId, playerId: player.id };
-      event = { type: 'carry', minute: state.minute, team: teamId, playerId: player.id, x: player.x, y: player.y };
-      if (pressureDistance < 4 && state.rng() < 0.18 + (pressure.defending / 500)) {
-        state.ball = { x: player.x, y: player.y, team: opponentId, playerId: pressure.id };
-        event = { type: 'tackle', minute: state.minute, team: opponentId, playerId: pressure.id, x: player.x, y: player.y };
-      }
-    }
+const active=t=>t.players.filter(p=>p.active);
+function nearest(players,point){let best=null,d=Infinity;for(const p of players){if(!p.active)continue;const n=distance(p,point);if(n<d){best=p;d=n;}}return best;}
+function moveToward(p,t,max){const dx=t.x-p.x,dy=t.y-p.y,len=Math.hypot(dx,dy);if(!len)return;if(len<=max){p.x=clamp(t.x,2,98);p.y=clamp(t.y,2,98);}else{p.x=clamp(p.x+dx/len*max,2,98);p.y=clamp(p.y+dy/len*max,2,98);}}
+function updateShape(s,teamId,carrier){
+ for(const t of s.teams){const has=t.id===teamId,dir=t.id===0?1:-1;
+  for(const p of active(t)){if(has&&p.id===carrier.id)continue;const l=line(p.role),push=has?(l>.65?9:l>.4?5:1.5):-1.5;
+   let x=p.baseX+dir*push+(s.ball.x-50)*.09*dir*(has?1:1.4),y=p.baseY+(s.ball.y-50)*(has?.12:.2);
+   if(keeper(p.role)){x=t.id===0?5:95;y=clamp(50+(s.ball.y-50)*.12,38,62);}
+   else if(!has&&l<.35)x=clamp(x,t.id===0?8:62,t.id===0?38:92);
+   if(/^(LW|RW|LM|RM|LB|RB|LWB|RWB)$/i.test(p.role))y+=p.baseY<50?-3:3;
+   else if(/^(CM|DM|CDM|AM|CAM|MF)$/i.test(p.role))y+=(50-p.baseY)*.08;
+   moveToward(p,{x:clamp(x,2,98),y:clamp(y,3,97)},has?1.25:1.6);
   }
-
-  if (event) {
-    state.events.push(event);
-    if (state.events.length > 200) state.events.shift();
+ }
+}
+function addEvent(s,e){s.events.push(e);if(s.events.length>300)s.events.shift();}
+function stepMatch(s){
+ if(!s||!Array.isArray(s.teams)||s.teams.length!==2||!s.ball)throw Error('Invalid match state');
+ const tid=s.ball.team,oid=1-tid,t=s.teams[tid],opp=s.teams[oid],carrier=t.players.find(p=>p.active&&p.id===s.ball.playerId)||nearest(active(t),s.ball);
+ if(!carrier)throw Error('The team in possession has no active players');
+ const rnd=s.random||(s.random=makeRandom(1)),goalX=tid===0?100:0,def=active(opp),press=nearest(def,carrier),pd=press?distance(press,carrier):40,goalDist=Math.abs(goalX-carrier.x);
+ let event=null;s.possession[tid]++;carrier.stamina=clamp(carrier.stamina-.035,0,100);updateShape(s,tid,carrier);
+ const shotChance=clamp(.035+carrier.shooting/900-pd/500,.015,.13);
+ if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
+  s.shots[tid]++;const on=rnd()<clamp(.25+carrier.shooting/150,.25,.88);if(on)s.shotsOnTarget[tid]++;
+  const quality=clamp(.12+carrier.shooting/180+(25-goalDist)/55-Math.abs(50-carrier.y)/150-(pd<5?.16:0),.04,.72),goal=on&&rnd()<quality;
+  if(goal)s.score[tid]++;
+  event={type:goal?'goal':on?'save':'shot',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
+  const restart=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
+  if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
+ }else{
+  const options=active(t).filter(p=>p.id!==carrier.id).map(p=>{const pr=(p.x-carrier.x)*(tid===0?1:-1),near=nearest(def,p),space=near?distance(near,p):30,pen=Math.abs(p.y-carrier.y)*.16;return{p,progress:pr,space,score:pr*.65+space*.35+p.passing*.04-pen+(pr>=-3?2:0)};}).sort((a,b)=>b.score-a.score);
+  const best=options[0],pass=best&&(pd<8.5||(best.progress>7&&rnd()<.34));
+  if(pass){
+   s.passes[tid]++;const chance=clamp(.58+carrier.passing/260-Math.max(0,distance(carrier,best.p)-12)/120-(pd<4?.18:pd<8?.08:0),.28,.94);
+   if(rnd()<chance){s.completedPasses[tid]++;s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};event={type:'pass',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};}
+   else{const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;if(win){s.ball={x:win.x,y:win.y,team:oid,playerId:win.id};event={type:'interception',minute:s.minute+1,team:oid,playerId:win.id,x:win.x,y:win.y};}}
+  }else{
+   const dir=tid===0?1:-1,lateral=press&&Math.abs(press.y-carrier.y)<8?(carrier.y<50?-.65:.65):(50-carrier.y)*.012;
+   carrier.x=clamp(carrier.x+dir*(.7+carrier.pace/95),2,98);carrier.y=clamp(carrier.y+lateral,3,97);
+   s.ball={x:carrier.x,y:carrier.y,team:tid,playerId:carrier.id};event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
+   if(press&&pd<4.5&&rnd()<.12+press.defending/420){s.tackles[oid]++;s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};event={type:'tackle',minute:s.minute+1,team:oid,playerId:press.id,x:press.x,y:press.y};}
   }
-  state.minute += 1;
-  return state;
+ }
+ if(event)addEvent(s,event);s.minute++;return s;
 }
-
-function simulateMatch(state, minutes = 90) {
-  const count = clamp(Math.floor(minutes), 0, 120);
-  for (let i = 0; i < count; i += 1) stepMatch(state);
-  return state;
-}
-
-module.exports = { createMatch, stepMatch, simulateMatch, distance };
+function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
+module.exports={createMatch,stepMatch,simulateMatch,distance,roleLine:line};
