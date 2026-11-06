@@ -113,14 +113,14 @@ test('3000 seeded matches compare fresh substitutions by position and match outc
  }
 });
 
-function auditStrikerTiming(minute){
+function auditPositionTiming(minute,index,label){
  const a={matches:0,basePoints:0,subPoints:0,baseGoals:0,subGoals:0,
   baseResults:{win:0,draw:0,loss:0},subResults:{win:0,draw:0,loss:0},
   outgoingStamina:0,incomingStamina:0};
  for(let seed=1;seed<=500;seed++){
-  const baseline=match(seed,9),changed=match(seed,9);
+  const baseline=match(seed,index),changed=match(seed,index);
   Engine.simulateMatch(baseline,minute);Engine.simulateMatch(changed,minute);
-  const outgoing=changed.teams[0].players[9];
+  const outgoing=changed.teams[0].players[index];
   const incoming=changed.teams[0].players.find(p=>p.id==='Home-fresh');
   substitutePlayer(changed,0,outgoing.id,incoming.id);
   Engine.simulateMatch(baseline,90-minute);Engine.simulateMatch(changed,90-minute);
@@ -134,14 +134,23 @@ function auditStrikerTiming(minute){
   a.matches++;
   assert.equal(outgoing.active,false);assert.equal(incoming.active,true);
  }
- return {minute,matches:a.matches,
-  results:{withoutSubstitution:a.baseResults,withFreshStriker:a.subResults},
-  averagePoints:{withoutSubstitution:+(a.basePoints/a.matches).toFixed(3),withFreshStriker:+(a.subPoints/a.matches).toFixed(3)},
-  homeGoals:{withoutSubstitution:+(a.baseGoals/a.matches).toFixed(3),withFreshStriker:+(a.subGoals/a.matches).toFixed(3)},
+ return {position:label,minute,matches:a.matches,
+  results:{withoutSubstitution:a.baseResults,withFreshSubstitute:a.subResults},
+  averagePoints:{withoutSubstitution:+(a.basePoints/a.matches).toFixed(3),withFreshSubstitute:+(a.subPoints/a.matches).toFixed(3)},
+  homeGoals:{withoutSubstitution:+(a.baseGoals/a.matches).toFixed(3),withFreshSubstitute:+(a.subGoals/a.matches).toFixed(3)},
   staminaAtFullTime:{outgoing:+(a.outgoingStamina/a.matches).toFixed(1),incoming:+(a.incomingStamina/a.matches).toFixed(1)}};
 }
-test('1500 seeded matches audit striker substitution timing at minutes 55, 65 and 75',()=>{
- const report=[55,65,75].map(auditStrikerTiming);
- console.log('FM4 striker substitution timing audit:',JSON.stringify(report));
- for(const row of report)assert.equal(row.matches,500);
+test('4500 seeded matches audit substitution timing for midfield, wing and striker at minutes 55, 65 and 75',()=>{
+ const report={};
+ for(const scenario of scenarios){
+  report[scenario.label]=[55,65,75].map(minute=>auditPositionTiming(minute,scenario.index,scenario.label));
+ }
+ console.log('FM4 position substitution timing audit:',JSON.stringify(report));
+ for(const scenario of scenarios){
+  assert.equal(report[scenario.label].length,3);
+  for(const row of report[scenario.label]){
+   assert.equal(row.matches,500);
+   assert.ok(row.staminaAtFullTime.incoming>row.staminaAtFullTime.outgoing);
+  }
+ }
 });
