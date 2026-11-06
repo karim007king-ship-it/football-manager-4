@@ -55,3 +55,12 @@ test('bridges the current live match without mutating its legacy state',()=>{
  assert.equal(state.teams[userTeamId].players[0].stamina,63);
  assert.equal(JSON.stringify(live),before);
 });
+
+test('keeps bench players inactive and does not let them distort starting formation roles',()=>{
+ const t=legacyTeam('النادي');
+ t.players.push({id:12,name:'بديل دفاع',pos:'DEF',ovr:68,morale:70,inj:0,active:false});
+ const out=toEngineTeam(t);
+ assert.deepEqual(out.players.slice(0,11).map(p=>p.role),['GK','LB','CB','CB','RB','LM','CM','CM','RM','ST','ST']);
+ assert.equal(out.players[11].active,false);
+ assert.equal(out.players[11].role,'CB');
+});
