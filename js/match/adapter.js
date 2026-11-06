@@ -50,7 +50,7 @@ function estimateSkills(p,role){
   defending:round(o+defendBoost+mood-penalty)
  };
 }
-function toEngineTeam({name,players,side=0,mentality='balanced',energy={},adaptiveTactics=true}={}){
+function toEngineTeam({name,players,side=0,mentality='balanced',energy={},slotIndices={},adaptiveTactics=true}={}){
  if(!Array.isArray(players)||players.length<7)throw new Error('FM4 team must contain at least 7 selected players');
  const roles=rolesFor(players),counts={};
  players.forEach(p=>{const r=roles.get(p.id)||'CM';counts[r]=(counts[r]||0)+1;});
@@ -60,7 +60,7 @@ function toEngineTeam({name,players,side=0,mentality='balanced',energy={},adapti
   const skills=estimateSkills(p,role),sideId=side===1?1:0;
   const xBase=role==='GK'?6:/^(CB|LB|RB|LWB|RWB)$/.test(role)?27:/^(CM|DM|CDM|LM|RM|AM|CAM)$/.test(role)?50:74;
   return{
-   id:String(p.id??i),name:String(p.name||'لاعب'),role,...skills,
+   id:String(p.id??i),name:String(p.name||'لاعب'),role,slotIndex:Number(slotIndices[p.id]??i),...skills,
    stamina:round(energy[p.id]??100),x:sideId===0?xBase:100-xBase,
    y:laneY(role,n,counts[role]),active:p.active!==false
   };
@@ -81,8 +81,8 @@ function createMatchFromGame({home,away,seed=1}={}){
 function createMatchFromLive({match,userTeamName='فريقي',opponentTeamName='الخصم',seed=1}={}){
  if(!match||!Array.isArray(match.xi)||!match.O||!Array.isArray(match.O.xi))
   throw new Error('A live FM4 match with both selected lineups is required');
- const user=toEngineTeam({name:userTeamName,players:match.xi,side:match.home?0:1,mentality:match.tac||'balanced',energy:match.en||{},adaptiveTactics:false});
- const opponent=toEngineTeam({name:opponentTeamName,players:match.O.xi,side:match.home?1:0,mentality:'balanced',adaptiveTactics:true});
+ const user=toEngineTeam({name:userTeamName,players:match.xi,side:match.home?0:1,mentality:match.tac||'balanced',energy:match.en||{},slotIndices:match.shadowSlots||{},adaptiveTactics:false});
+ const opponent=toEngineTeam({name:opponentTeamName,players:match.O.xi,side:match.home?1:0,mentality:'balanced',slotIndices:match.opponentShadowSlots||{},adaptiveTactics:true});
  const userTeamId=match.home?0:1;
  const state=engineApi().createMatch({teams:match.home?[user,opponent]:[opponent,user],seed});
  return{state,userTeamId};
