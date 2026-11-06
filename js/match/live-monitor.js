@@ -28,7 +28,7 @@ function makeTeamLineup(match,userSide){
 function mappedPlayers(match,userSide){
  const x=makeTeamLineup(match,userSide);
  if(!Array.isArray(x.players)||x.players.length<7)return null;
- return adapterApi().toEngineTeam(x).players;
+ return adapterApi().toEngineTeam({...x,slotIndices:match.shadowSlots||{}}).players;
 }
 function ensurePlayer(team,p){
  let found=team.players.find(x=>x.id===p.id);
@@ -43,18 +43,27 @@ function syncTeam(state,teamId,mapped){
  const team=state.teams[teamId],wanted=new Set(mapped.map(p=>p.id));
  const leaving=team.players.filter(p=>p.active&&!wanted.has(p.id));
  const incoming=mapped.filter(p=>!team.players.some(x=>x.id===p.id&&x.active));
- incoming.forEach(p=>ensurePlayer(team,p));
- if(leaving.length>0&&leaving.length===incoming.length){
-  // Mirror every balanced lineup change in order. Do not hide substitution
-  // errors: the caller must see a failed shadow sync rather than false success.
+ if(leaving.length>0&&incoming.length===leaving.length){
+  // Match changes by their stable formation slot, never by array order.
+  // Substitutes may be appended to the engine roster in a different order
+  // from the live lineup after earlier substitutions.
   if(!state.substitutions)state.substitutions=[0,0];
   const used=Number(state.substitutions[teamId]||0);
-  // Preflight the whole batch so a later failure cannot leave a half-applied
-  // lineup change in the shadow state.
   if(used+leaving.length>5)throw new Error('Maximum of five substitutions reached');
-  for(let i=0;i<leaving.length;i++){
-   subApi().substitutePlayer(state,teamId,leaving[i].id,incoming[i].id);
+  const pairs=leaving.map(out=>({out,incoming:incoming.find(p=>p.slotIndex===out.slotIndex)}));
+  if(pairs.some(pair=>!pair.incoming))throw new Error('Unable to match substitution to its original formation slot');
+  const activeBefore=team.players.filter(p=>p.active).length;
+  if(activeBefore<7||activeBefore>11)throw new Error('A valid substitution requires 7 to 11 active players');
+  for(const pair of pairs){
+   if(pair.out===pair.incoming||!pair.out.active)throw new Error('Invalid outgoing player in substitution batch');
+   const existing=team.players.find(p=>p.id===pair.incoming.id);
+   if(existing&&existing.active)throw new Error('Incoming player is already active');
   }
+  // Add substitutes only after the complete batch passes preflight.
+  pairs.forEach(pair=>ensurePlayer(team,pair.incoming));
+  pairs.forEach(pair=>subApi().substitutePlayer(state,teamId,pair.out.id,pair.incoming.id));
+ }else if(incoming.length>0){
+  throw new Error('Incoming players must match outgoing formation slots');
  }
  team.players.forEach(p=>{p.active=wanted.has(p.id)});
 }
