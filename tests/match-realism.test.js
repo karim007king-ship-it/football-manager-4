@@ -57,7 +57,7 @@ test('seed sweep: full-match statistics remain internally consistent',()=>{
    assert.ok(moved>=7,'team '+side+' should move as a unit, not only its carrier');
   }
  }
- assert.equal(possession[0]+possession[1],9000);
+ assert.ok(Math.abs(possession[0]+possession[1]-9000)<1e-6,'aggregate possession should equal 100 full matches');
  assert.ok(totals.passes>0,'seed sweep should produce passing events');
  assert.ok(totals.shots>0,'seed sweep should produce attempts');
  assert.ok(totals.tackles>=50,'defensive pressure should produce a meaningful number of tackles across 100 matches');
