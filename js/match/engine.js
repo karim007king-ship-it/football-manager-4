@@ -120,8 +120,9 @@ function choosePassTarget(team,defenders,carrier,teamId){
   const space=nearestDef?distance(nearestDef,p):30;
   const laneClearance=defenders.reduce((best,d)=>Math.min(best,pointSegmentDistance(d,carrier,p)),30);
   const lateral=Math.abs(p.y-carrier.y);
-  const forwardBonus=progress>0?3:0;
-  const score=progress*.78+Math.min(space,24)*.42+Math.min(laneClearance,18)*.62+p.passing*.025-lateral*.22+forwardBonus;
+  const forwardScale=manpowerProfile(team).forwardScale;
+  const forwardBonus=progress>0?3*forwardScale:0;
+  const score=progress*.78*forwardScale+Math.min(space,24)*.42+Math.min(laneClearance,18)*.62+p.passing*.025-lateral*.22+forwardBonus;
   return{p,progress,space,laneClearance,score};
  });
  if(!candidates.length)return null;
@@ -142,7 +143,10 @@ function stepAction(s){
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
  // Calibrated against the three-actions-per-minute clock and legacy OVR mapping.
  const sharpness=fitness(carrier);
- const shotChance=clamp(.09+(carrier.shooting*sharpness)/1400-pd/1200,.025,.16);
+ const attackManpower=manpowerProfile(t,effectiveMentality(s,tid));
+ // Fewer active attackers means fewer coordinated runs and lower shot volume.
+ // Keep the penalty modest so a red card changes the match without deciding it alone.
+ const shotChance=clamp((.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045),.02,.16);
  let event=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
