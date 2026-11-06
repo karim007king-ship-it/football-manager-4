@@ -52,21 +52,23 @@ test('1000 seeded matches audit scoring, shot volume, home bias and strength adv
   const strong = squad('Strong', 84);
   const weak = squad('Weak', 54);
 
-  // 200 neutral fixtures, 200 strong-home fixtures and 200 strong-away fixtures.
-  // Each fixture is simulated for 90 minutes: 600 matches x 90 minutes.
-  for (let seed = 1; seed <= 200; seed++) {
+  // 400 neutral fixtures, 300 strong-home fixtures and 300 strong-away fixtures.
+  // Each fixture is simulated for 90 minutes: 1000 matches x 90 minutes.
+  for (let seed = 1; seed <= 400; seed++) {
     add(balanced, play(equalHome, equalAway, seed));
+  }
+  for (let seed = 1; seed <= 300; seed++) {
     add(strongHome, play(strong, weak, 10000 + seed));
     add(strongAway, play(weak, strong, 20000 + seed));
   }
 
-  const neutralGoals = balanced.goals / 200;
-  const neutralShots = balanced.shots / 200;
-  const neutralHomePossession = 100 * balanced.homePossession / (200 * 90);
+  const neutralGoals = balanced.goals / 400;
+  const neutralShots = balanced.shots / 400;
+  const neutralHomePossession = 100 * balanced.homePossession / (400 * 90);
   const strongHomeGoalDiff = (strongHome.homeWins - strongHome.awayWins);
   const strongAwayGoalDiff = (strongAway.awayWins - strongAway.homeWins);
-  const strongHomeAvgDiff = (strongHome.goals / 200);
-  const strongAwayAvgDiff = (strongAway.goals / 200);
+  const strongHomeAvgDiff = (strongHome.goals / 300);
+  const strongAwayAvgDiff = (strongAway.goals / 300);
 
   assert.ok(neutralGoals >= 1.2 && neutralGoals <= 4.8,
     'neutral average goals/match outside broad guardrails: ' + neutralGoals.toFixed(2));
@@ -80,11 +82,11 @@ test('1000 seeded matches audit scoring, shot volume, home bias and strength adv
     'strong away team should win more often than weak home team');
 
   const report = {
-    matches: 600,
+    matches: 1000,
     neutral: {
       averageGoals: +neutralGoals.toFixed(2),
       averageShots: +neutralShots.toFixed(2),
-      shotsOnTarget: +(balanced.onTarget / 200).toFixed(2),
+      shotsOnTarget: +(balanced.onTarget / 400).toFixed(2),
       homePossession: +neutralHomePossession.toFixed(1),
       homeWins: balanced.homeWins,
       draws: balanced.draws,
