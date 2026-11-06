@@ -26,8 +26,18 @@ function team(side,index){
  return {name:side?'Away':'Home',mentality:'balanced',adaptiveTactics:false,players};
 }
 function match(seed,index){return Engine.createMatch({teams:[team(0,index),team(1,index)],seed});}
+function playerInvolvement(events,id){
+ const own=events.filter(e=>e.playerId===id||e.from===id||e.to===id);
+ return {
+  involvements:own.length,
+  carries:own.filter(e=>e.type==='carry'&&e.playerId===id).length,
+  shots:own.filter(e=>['shot','save','goal'].includes(e.type)&&e.playerId===id).length,
+  completedPasses:own.filter(e=>e.type==='pass'&&e.from===id).length,
+  tackles:own.filter(e=>e.type==='tackle'&&e.playerId===id).length
+ };
+}
 function measure(index){
- const a={matches:0,baseShots:0,subShots:0,basePasses:0,subPasses:0,
+ const a={matches:0,baseShots:0,subShots:0,basePasses:0,subPasses:0,baseInvolvements:0,subInvolvements:0,baseCarries:0,subCarries:0,basePlayerShots:0,subPlayerShots:0,basePlayerPasses:0,subPlayerPasses:0,basePlayerTackles:0,subPlayerTackles:0,
   baseCompleted:0,subCompleted:0,baseTackles:0,subTackles:0,
   baseGoals:0,subGoals:0,baseMove:0,subMove:0,baseEndFitness:0,subEndFitness:0};
  for(let seed=1;seed<=200;seed++){
@@ -39,6 +49,7 @@ function measure(index){
   const outgoing=changed.teams[0].players[index];
   const incoming=changed.teams[0].players.find(p=>p.id==='Home-fresh');
   const initialStamina=outgoing.stamina;
+  const baseEventStart=baseline.events.length,subEventStart=changed.events.length;
   substitutePlayer(changed,0,outgoing.id,incoming.id);
   for(let minute=0;minute<25;minute++){
    const old=baseline.teams[0].players[index],fresh=changed.teams[0].players.find(p=>p.id==='Home-fresh');
@@ -47,6 +58,13 @@ function measure(index){
    a.baseMove+=Math.hypot(old.x-ox,old.y-oy);
    a.subMove+=Math.hypot(fresh.x-nx,fresh.y-ny);
   }
+  const baseActions=playerInvolvement(baseline.events.slice(baseEventStart),outgoing.id);
+  const subActions=playerInvolvement(changed.events.slice(subEventStart),incoming.id);
+  a.baseInvolvements+=baseActions.involvements;a.subInvolvements+=subActions.involvements;
+  a.baseCarries+=baseActions.carries;a.subCarries+=subActions.carries;
+  a.basePlayerShots+=baseActions.shots;a.subPlayerShots+=subActions.shots;
+  a.basePlayerPasses+=baseActions.completedPasses;a.subPlayerPasses+=subActions.completedPasses;
+  a.basePlayerTackles+=baseActions.tackles;a.subPlayerTackles+=subActions.tackles;
   assert.equal(outgoing.active,false);assert.equal(incoming.active,true);
   assert.equal(outgoing.stamina,initialStamina);
   assert.ok(incoming.stamina<100);
@@ -66,6 +84,7 @@ function measure(index){
   withFreshSubstitution:{shots:+(a.subShots/a.matches).toFixed(2),passes:+(a.subPasses/a.matches).toFixed(2),
    completedPasses:+(a.subCompleted/a.matches).toFixed(2),tackles:+(a.subTackles/a.matches).toFixed(2),
    goals:+(a.subGoals/a.matches).toFixed(2),playerMovement:+(a.subMove/a.matches).toFixed(2)},
+  trackedPlayerActions:{involvements:{withoutSubstitution:+(a.baseInvolvements/a.matches).toFixed(2),withFreshSubstitution:+(a.subInvolvements/a.matches).toFixed(2)},carries:{withoutSubstitution:+(a.baseCarries/a.matches).toFixed(2),withFreshSubstitution:+(a.subCarries/a.matches).toFixed(2)},shots:{withoutSubstitution:+(a.basePlayerShots/a.matches).toFixed(2),withFreshSubstitution:+(a.subPlayerShots/a.matches).toFixed(2)},completedPasses:{withoutSubstitution:+(a.basePlayerPasses/a.matches).toFixed(2),withFreshSubstitution:+(a.subPlayerPasses/a.matches).toFixed(2)},tackles:{withoutSubstitution:+(a.basePlayerTackles/a.matches).toFixed(2),withFreshSubstitution:+(a.subPlayerTackles/a.matches).toFixed(2)}},
   endStamina:{tiredStarter:+(a.baseEndFitness/a.matches).toFixed(1),
    freshSubstitute:+(a.subEndFitness/a.matches).toFixed(1)}
  };
