@@ -5,7 +5,7 @@ const adapterApi=()=>typeof module!=='undefined'&&module.exports?require('./adap
 const engineApi=()=>typeof module!=='undefined'&&module.exports?require('./engine'):window.FM4MatchEngine;
 function createShadowFromLive({match,userTeamName='فريقي',opponentTeamName='الخصم',seed=1}={}){
  const linked=adapterApi().createMatchFromLive({match,userTeamName,opponentTeamName,seed});
- const state=linked.state,user=linked.userTeamId,minute=Math.max(0,Math.min(90,Math.floor(Number(match.min)||0)));
+ const state=linked.state,user=linked.userTeamId,minute=Math.max(0,Math.min(120,Math.floor(Number(match.min)||0)));
  state.minute=minute;
  state.score[user]=Math.max(0,Math.floor(Number(match.gu)||0));
  state.score[1-user]=Math.max(0,Math.floor(Number(match.go)||0));
@@ -31,7 +31,7 @@ function createShadowFromLive({match,userTeamName='فريقي',opponentTeamName=
 }
 function stepShadow(shadow,minutes=1){
  if(!shadow||!shadow.state)throw new Error('A shadow match is required');
- const count=Math.max(0,Math.min(90-shadow.state.minute,Math.floor(Number(minutes)||0)));
+ const count=Math.max(0,Math.min(120-shadow.state.minute,Math.floor(Number(minutes)||0)));
  for(let i=0;i<count;i++)engineApi().stepMatch(shadow.state);
  return snapshotShadow(shadow);
 }
