@@ -20,7 +20,9 @@ function createMatch({teams,seed=1}={}){
  const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
  return {minute:0,score:[0,0],possession:[0,0],shots:[0,0],shotsOnTarget:[0,0],passes:[0,0],completedPasses:[0,0],tackles:[0,0],teams:normalized,ball:{x:kick.x,y:kick.y,team:0,playerId:kick.id},events:[],random};
 }
-const active=t=>t.players.filter(p=>p.active);\n// Fitness scales physical and technical execution without changing player ratings.\nfunction fitness(p){return .78+.22*clamp(Number(p.stamina??100),0,100)/100;}
+const active=t=>t.players.filter(p=>p.active);
+// Fitness scales physical and technical execution without changing player ratings.
+function fitness(p){return .78+.22*clamp(Number(p.stamina??100),0,100)/100;}
 function nearest(players,point){let best=null,d=Infinity;for(const p of players){if(!p.active)continue;const n=distance(p,point);if(n<d){best=p;d=n;}}return best;}
 function moveToward(p,t,max){const dx=t.x-p.x,dy=t.y-p.y,len=Math.hypot(dx,dy);if(!len)return;if(len<=max){p.x=clamp(t.x,2,98);p.y=clamp(t.y,2,98);}else{p.x=clamp(p.x+dx/len*max,2,98);p.y=clamp(p.y+dy/len*max,2,98);}}
 function effectiveMentality(s,teamId){
@@ -124,7 +126,8 @@ function stepAction(s){
  // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
  // Calibrated against the three-actions-per-minute clock and legacy OVR mapping.
- const sharpness=fitness(carrier);\n const shotChance=clamp(.09+(carrier.shooting*sharpness)/1400-pd/1200,.025,.16);
+ const sharpness=fitness(carrier);
+ const shotChance=clamp(.09+(carrier.shooting*sharpness)/1400-pd/1200,.025,.16);
  let event=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
