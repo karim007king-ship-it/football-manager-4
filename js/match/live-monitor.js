@@ -9,6 +9,7 @@ function stageError(stage,error){
  const message=String(error&&error.message||error||'Unknown error');
  const wrapped=new Error('[FM4 shadow '+stage+'] '+message);
  wrapped.stage=stage;wrapped.cause=error;
+ wrapped.stack=wrapped.message+'\\nCaused by: '+String(error&&error.stack||error||'Unknown error');
  if(typeof console!=='undefined'&&console.error)console.error('[FM4 shadow '+stage+']',error&&error.stack||error);
  return wrapped;
 }
@@ -85,6 +86,7 @@ function advance(monitor,match,minutes=1){
  }catch(error){throw stageError(error&&error.stage?'ADVANCE>'+error.stage:'ADVANCE',error);}
 }
 function render(monitor,match){
+ try{
  if(!monitor?.shadow?.state)return '';
  const s=monitor.shadow.state,u=monitor.shadow.userTeamId,o=1-u;
  const snap=bridgeApi().snapshotShadow(monitor.shadow);
