@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveRestart,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -319,4 +319,56 @@ test('striker holds its supporting position before the ball reaches midfield',()
  const run=strikerRunTarget(striker,{x:40,y:50},0,[{role:'CB',active:true,x:70,y:40}]);
  assert.equal(run.active,false);
  assert.deepEqual({x:run.x,y:run.y},striker);
+});
+
+
+test('goal kick restart assigns the active goalkeeper and keeps the ball inside the goal area',()=>{
+ const s=create(501);
+ const event=resolveRestart(s,'goal_kick',0,{x:1,y:50});
+ const keeper=s.teams[0].players.find(p=>p.role==='GK');
+ assert.equal(event.type,'restart');
+ assert.equal(event.restartType,'goal_kick');
+ assert.equal(event.playerId,keeper.id);
+ assert.equal(s.ball.team,0);
+ assert.equal(s.ball.playerId,keeper.id);
+ assert.equal(s.ball.x,5);
+ assert.ok(s.ball.y>=38&&s.ball.y<=62);
+});
+
+test('corner restart selects an active wide taker and places the ball at the correct attacking corner',()=>{
+ for(const teamId of [0,1]){
+  const s=create(502);
+  const event=resolveRestart(s,'corner',teamId,{y:12});
+  const taker=s.teams[teamId].players.find(p=>p.id===event.playerId);
+  assert.ok(/^(LW|RW|LM|RM|LB|RB|LWB|RWB)$/i.test(taker.role));
+  assert.equal(s.ball.x,teamId===0?97:3);
+  assert.equal(s.ball.y,3);
+  assert.equal(s.ball.team,teamId);
+ }
+});
+
+test('throw-in and free-kick restarts preserve awarded possession and bounded locations',()=>{
+ const s=create(503);
+ const throwIn=resolveRestart(s,'throw_in',1,{x:45,y:50});
+ assert.equal(throwIn.restartType,'throw_in');
+ assert.equal(s.ball.team,1);
+ assert.equal(s.ball.y,3);
+ assert.ok(s.ball.x>=2&&s.ball.x<=98);
+ const freeKick=resolveRestart(s,'free_kick',0,{x:120,y:101});
+ assert.equal(freeKick.restartType,'free_kick');
+ assert.equal(s.ball.team,0);
+ assert.equal(s.ball.x,98);
+ assert.equal(s.ball.y,97);
+});
+
+test('penalty restart selects the strongest active outfield shooter and rejects invalid restarts',()=>{
+ const s=create(504);
+ const players=s.teams[0].players.filter(p=>p.role!=='GK');
+ players.forEach((p,i)=>{p.shooting=40+i;});
+ const expected=players.sort((a,b)=>b.shooting-a.shooting)[0];
+ const event=resolveRestart(s,'penalty',0,{x:94,y:50});
+ assert.equal(event.playerId,expected.id);
+ assert.equal(s.ball.playerId,expected.id);
+ assert.throws(()=>resolveRestart(s,'offside',0,{x:50,y:50}),/Unsupported restart/);
+ assert.throws(()=>resolveRestart(s,'corner',2,{x:97,y:3}),/team must be 0 or 1/);
 });
