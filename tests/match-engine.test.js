@@ -398,3 +398,24 @@ test('boundary classifier ignores in-play and ambiguous exact-corner segments',(
  assert.throws(()=>classifyBoundaryRestart({x:20,y:20},{x:110,y:20},2),/Last-touch team/);
  assert.throws(()=>classifyBoundaryRestart({x:20,y:20},{x:NaN,y:20},0),/finite numeric/);
 });
+
+
+test('boundary decisions feed the restart resolver without changing awarded possession',()=>{
+ const cases=[
+  {from:{x:45,y:20},to:{x:48,y:-4},last:0,expected:'throw_in'},
+  {from:{x:90,y:40},to:{x:105,y:42},last:0,expected:'goal_kick'},
+  {from:{x:90,y:40},to:{x:105,y:42},last:1,expected:'corner'}
+ ];
+ for(const [index,c] of cases.entries()){
+  const decision=classifyBoundaryRestart(c.from,c.to,c.last);
+  assert.equal(decision.restartType,c.expected);
+  const s=create(610+index);
+  const event=resolveRestart(s,decision.restartType,decision.teamId,decision.spot);
+  assert.equal(event.restartType,decision.restartType);
+  assert.equal(s.ball.team,decision.teamId);
+  assert.equal(s.ball.playerId,event.playerId);
+  assert.ok(s.ball.x>=2&&s.ball.x<=98);
+  assert.ok(s.ball.y>=3&&s.ball.y<=97);
+  assert.ok(s.teams[decision.teamId].players.some(p=>p.active&&p.id===event.playerId));
+ }
+});
