@@ -15,7 +15,7 @@ function createMatch({teams,seed=1}={}){
   return {id:tid,name:String(src.name||(tid?'Away':'Home')),mentality:src.mentality||'balanced',adaptiveTactics:src.adaptiveTactics!==false,players:src.players.map((p,i)=>{
    const role=p.role||(i===0?'GK':i<5?'DF':i<9?'MF':'FW'),lx=line(role);
    const x=clamp(Number(p.x??(tid===0?lx*100:100-lx*100)),2,98),y=clamp(Number(p.y??(8+(i%9)*10.5)),2,98);
-   return {id:String(p.id??i),name:String(p.name||'Player'),role,slotIndex:Number(p.slotIndex??i),pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
+   return {id:String(p.id??i),name:String(p.name||'Player'),role,slotIndex:Number(p.slotIndex??i),pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),goalkeeping:clamp(Number(p.goalkeeping??(keeper(role)?60:35)),1,100),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
   })};
  });
  const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
@@ -153,11 +153,22 @@ function stepAction(s){
   s.shots[tid]++;
   const on=rnd()<clamp(.28+(carrier.shooting*sharpness)/180,.28,.8);
   if(on)s.shotsOnTarget[tid]++;
-  const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0),.03,.5);
+  const goalkeeper=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
+  const keeperSkill=goalkeeper?Number(goalkeeper.goalkeeping??60):60;
+  const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0)-(keeperSkill-60)*.0025,.03,.5);
   const goal=on&&rnd()<quality;
   if(goal)s.score[tid]++;
-  event={type:goal?'goal':on?'save':'shot',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
-  const restart=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
+  const saved=on&&!goal;
+  event={type:goal?'goal':saved?'save':'shot',minute:s.minute+1,
+   team:saved?oid:tid,playerId:saved?(goalkeeper?.id??carrier.id):carrier.id,
+   shooterId:carrier.id,goalkeeperId:goalkeeper?.id??null,
+   attackingTeam:tid,onTarget:on,x:carrier.x,y:carrier.y};
+  // A goal restarts from the centre with the conceding side. A save or miss
+  // returns possession to the goalkeeper/defence instead of leaving the ball
+  // attached to the shooter.
+  const restart=goal
+   ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
+   :goalkeeper;
   if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
  }else{
   const best=choosePassTarget(t,def,carrier,tid);
