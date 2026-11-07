@@ -147,6 +147,22 @@ function pointSegmentDistance(point,a,b){
  const u=clamp(((point.x-a.x)*dx+(point.y-a.y)*dy)/len2,0,1);
  return Math.hypot(point.x-(a.x+u*dx),point.y-(a.y+u*dy));
 }
+// Find an active outfield defender positioned in the actual passing corridor.
+function findPassInterceptor(carrier,target,defenders){
+ const dx=target.x-carrier.x,dy=target.y-carrier.y,len2=dx*dx+dy*dy;
+ if(!len2)return null;
+ let best=null,bestScore=-Infinity;
+ for(const p of defenders){
+  if(!p.active||keeper(p.role))continue;
+  const projection=((p.x-carrier.x)*dx+(p.y-carrier.y)*dy)/len2;
+  if(projection<.08||projection>.92)continue;
+  const gap=pointSegmentDistance(p,carrier,target);
+  if(gap>5.2)continue;
+  const score=Number(p.defending??50)-gap*8;
+  if(score>bestScore){best={player:p,gap,projection};bestScore=score;}
+ }
+ return best;
+}
 // Score receiver space and the entire pass corridor, not only the receiver's endpoint.
 function classifyPassPattern(carrier,target,team,teamId,laneClearance){
  const dir=teamId===0?1:-1;
@@ -278,7 +294,11 @@ function stepAction(s){
     s.passes[tid]++;
     const risk=best.passType==='through_ball'?.09:best.passType==='cross'?.07:best.passType==='cutback'?.045:best.passType==='switch'?.035:0;
     const chance=clamp(.66+(carrier.passing*sharpness)/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0)-risk,.30,.97);
-    if(rnd()<chance){
+    const laneDefender=findPassInterceptor(carrier,best.p,def);
+    const laneRisk=laneDefender?clamp(.04+(Number(laneDefender.player.defending??50)*.0025)-laneDefender.gap*.025,.04,.28):0;
+    if(laneDefender&&rnd()<laneRisk){
+     event=resolveDefensiveRecovery(s,opp,laneDefender.player,tid,rnd);
+    }else if(rnd()<chance){
      s.completedPasses[tid]++;
      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
      event={type:'pass',passType:best.passType||'normal',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};
@@ -326,7 +346,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
