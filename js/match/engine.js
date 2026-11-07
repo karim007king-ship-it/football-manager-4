@@ -67,7 +67,9 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const lanes=[36,50,64];
  const lane=lanes.map(y=>({y,space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-targetX,d.y-y)),40)}))
   .sort((a,b)=>b.space-a.space)[0];
- const targetProgress=clamp(lineProgress+2.5,progress+2,Math.min(98,progress+18));
+ const minTarget=Math.min(98,progress+2);
+ const maxTarget=Math.max(minTarget,Math.min(98,progress+18));
+ const targetProgress=clamp(lineProgress+2.5,minTarget,maxTarget);
  return{x:clamp(teamId===0?targetProgress:100-targetProgress,2,98),y:lane.y,active:true};
 }
 function updateShape(s,teamId,carrier,counterActive=false){
