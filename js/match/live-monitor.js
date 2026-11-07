@@ -166,8 +166,11 @@ function render(monitor,match){
  const active=snap.activePlayers;
  const last=s.events.slice(-3).reverse().map(e=>{
   const t=s.teams[e.team]?.name||'الفريق',p=s.teams[e.team]?.players.find(x=>x.id===e.playerId);
-  const labels={carry:'تقدم بالكرة',pass:'تمريرة',interception:'اعتراض',tackle:'افتكاك',shot:'تسديدة',save:'تصدي',goal:'هدف',yellow_card:'بطاقة صفراء',second_yellow:'إنذار ثانٍ وطرد',red_card:'بطاقة حمراء',penalty:'ركلة جزاء',corner:'ركنية',free_kick:'ضربة حرة',injury:'إصابة'};
-  return '<div style="font-size:11px;color:#cbd5e1;margin-top:3px">'+esc(e.minute)+"' • "+esc(t)+' • '+esc(labels[e.type]||e.type)+(p?' — '+esc(p.name):'')+'</div>';
+  const labels={carry:'تقدم بالكرة',pass:'تمريرة',interception:'اعتراض',clearance:'إبعاد دفاعي',rebound:'كرة مرتدة',tackle:'افتكاك',shot:'تسديدة',save:'تصدي',goal:'هدف',yellow_card:'بطاقة صفراء',second_yellow:'إنذار ثانٍ وطرد',red_card:'بطاقة حمراء',penalty:'ركلة جزاء',corner:'ركنية',free_kick:'ضربة حرة',injury:'إصابة'};
+  const second=e.secondBall;
+  const secondPlayer=second&&s.teams[second.team]?.players.find(x=>x.id===second.playerId);
+  const secondLabel=second?(second.outcome==='retained'?' • الدفاع يحتفظ بالكرة الثانية':' • الخصم يستعيد الكرة الثانية')+(secondPlayer?' ('+esc(secondPlayer.name)+')':''):'';
+  return '<div style="font-size:11px;color:#cbd5e1;margin-top:3px">'+esc(e.minute)+"' • "+esc(t)+' • '+esc(labels[e.type]||e.type)+(p?' — '+esc(p.name):'')+secondLabel+'</div>';
  }).join('');
  const scoreDiff=(cmp.score.engine[0]===cmp.score.legacy[0]&&cmp.score.engine[1]===cmp.score.legacy[1])?'متطابق':'مختلف';
  return `<section id="fm4-shadow-monitor" style="margin:10px 0;padding:10px;border:1px solid #53708a;border-radius:10px;background:#101c2a;color:#e8eef5;text-align:right">
