@@ -5,7 +5,8 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const keeper=r=>/^(GK|G|GOALKEEPER)$/i.test(String(r||''));
 const line=r=>{r=String(r||'').toUpperCase();if(/^(GK|G|GOALKEEPER)$/.test(r))return .07;if(/^(CB|LB|RB|LWB|RWB|DF|DEF)/.test(r))return .27;if(/^(DM|CDM|CM|LM|RM|AM|CAM|MF|MID)/.test(r))return .51;if(/^(LW|RW|ST|CF|FW|FWD)/.test(r))return .75;return .5;};
-function makeRandom(seed){let s=(Number(seed)>>>0)||1;return()=>{s=(1664525*s+1013904223)>>>0;return s/4294967296;};}
+function makeRandom(seed){let s=(Number(seed)>>>0)||1;const next=()=>{s=(1664525*s+1013904223)>>>0;next.state=s;return s/4294967296;};next.state=s;return next;}
+ function restoreRandom(state){return makeRandom(Number(state)>>>0);}
 function createMatch({teams,seed=1}={}){
  if(!Array.isArray(teams)||teams.length!==2)throw Error('Exactly two teams are required');
  const normalized=teams.map((src,tid)=>{
@@ -219,7 +220,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,distance,roleLine:line,choosePassTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
