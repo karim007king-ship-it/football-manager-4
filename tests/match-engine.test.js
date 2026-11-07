@@ -763,6 +763,7 @@ test('cross-originated clearances resolve pressured second balls for either winn
   for(const p of state.teams[defendingTeam].players){
    if(p!==defender&&p!==outlet){p.x=attackingTeam===0?95:5;p.y=5;}
   }
+  const rngState=state.random.state;
   const event=resolveCrossContest(state,carrier,receiver,attackingTeam);
   const winningTeam=attackingWins?attackingTeam:defendingTeam;
   const winner=attackingWins?pressing:outlet;
@@ -775,6 +776,7 @@ test('cross-originated clearances resolve pressured second balls for either winn
   assert.equal(event.secondBall.playerId,winner.id);
   assert.equal(state.ball.team,winningTeam);
   assert.equal(state.ball.playerId,winner.id);
+  assert.equal(state.random.state,rngState,'resolving a cross second ball must not consume additional random draws');
   assert.equal(state.transition?.team,attackingWins?undefined:defendingTeam);
   if(attackingWins)assert.equal(state.transition,null,'the attacking recovery cancels the defending counter transition');
  };
