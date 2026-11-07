@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveKeeperParryRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -587,4 +587,32 @@ test('live unblocked off-target shots award a goal kick with valid restart owner
   }
  }
  assert.ok(misses>0,'the deterministic seed cohort must exercise off-target shots');
+});
+
+test('woodwork rebounds remain in play and mirror second-ball ownership at both goals',()=>{
+ const home=create(1201),homeShooter=home.teams[0].players[9];
+ homeShooter.x=92;homeShooter.y=50;
+ const homeEvent=resolveWoodworkRebound(home,homeShooter,0,100,'crossbar');
+ assert.equal(homeEvent.type,'rebound');
+ assert.equal(homeEvent.source,'woodwork');
+ assert.equal(homeEvent.woodworkType,'crossbar');
+ assert.equal(homeEvent.x,95);
+ assert.equal(homeEvent.y,50);
+ assert.ok(homeEvent.x>=2&&homeEvent.x<=98&&homeEvent.y>=42&&homeEvent.y<=58);
+ assert.equal(home.ball.team,homeEvent.team);
+ assert.equal(home.ball.playerId,homeEvent.playerId);
+ assert.equal(home.reboundOpportunity.attackingTeam,0);
+ assert.equal(home.events.at(-1).type,'rebound');
+ const away=create(1202),awayShooter=away.teams[1].players[9];
+ awayShooter.x=8;awayShooter.y=40;
+ const awayEvent=resolveWoodworkRebound(away,awayShooter,1,0,'post');
+ assert.equal(awayEvent.source,'woodwork');
+ assert.equal(awayEvent.woodworkType,'post');
+ assert.equal(awayEvent.x,5);
+ assert.equal(awayEvent.y,46.7);
+ assert.equal(away.ball.team,awayEvent.team);
+ assert.equal(away.ball.playerId,awayEvent.playerId);
+ assert.equal(away.reboundOpportunity.attackingTeam,1);
+ assert.ok(away.teams[awayEvent.team].players.some(p=>p.active&&!/^GK$/i.test(p.role)&&p.id===awayEvent.playerId));
+ assert.throws(()=>resolveWoodworkRebound(away,awayShooter,2,0,'post'),/Attacking team/);
 });
