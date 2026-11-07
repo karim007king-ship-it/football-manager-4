@@ -191,3 +191,84 @@
 2. Add missing correctness tests for event/state invariants, mirrored home/away scenarios, goalkeeper/restart behavior and substitutions/dismissals.
 3. Fix the highest-impact defects revealed by those tests.
 4. Then deepen player decision-making and attacking/defensive phase logic before adding decorative features.
+
+
+## 7. Professional execution plan — active revision (2026-11-07)
+
+The following sequence is the release-oriented plan. A phase is not considered complete because code exists; it must pass its acceptance gate and be reflected in the test/report artifacts.
+
+### P0 — Stabilize current branch
+- Verify the active striker-run implementation with both-direction tests.
+- Correct any coordinate-mirroring, defensive-line selection, or bounds defects before extending behavior.
+- Avoid stacking duplicate feature commits while CI is still running; validate the newest commit, not an earlier SHA.
+- Preserve the known-good APK from `927019963f85838040d49996aa1d342d5f6a52c2` as a rollback reference.
+
+**Acceptance:** newest FM4 checks and Android APK workflows both succeed on the same commit; no claim of device verification until installed and tested by the user.
+
+### P1 — Match-engine correctness audit
+- Audit the engine, adapter, bridge, live monitor, serialization and restore paths as one connected system.
+- Check ball ownership after every event and restart; player IDs must resolve to active players unless the event explicitly records a dismissed/inactive actor.
+- Check event schemas, monotonic action/minute clocks, possession totals, shots/on-target/goals, substitutions, red cards, keeper behavior and restart ownership.
+- Add mirrored home/away tests for every spatial rule and edge-case tests for missing defensive lines, inactive players and reduced squads.
+- Ensure seeded replay remains identical across snapshot/restore and version migration.
+
+**Acceptance:** invariant/property-style tests across broad deterministic seed cohorts; no known crash, NaN, invalid coordinate, stale player reference or nondeterministic restore defect.
+
+### P2 — Football intelligence and match balance
+- Striker runs behind the defensive line and into channels.
+- Wide forwards, overlapping fullbacks, midfield support, third-player runs and defensive cover.
+- Pass selection should consider receiver run timing, pressure, lane, foot/role suitability and risk.
+- Defenders should track runners, hold line, pass runners between defenders and avoid unrealistic synchronized chasing.
+- Add tactical instructions (line height, width, tempo, pressing, directness) only when they change decisions in observable and testable ways.
+- Calibrate with 1,000+ seeded matches per important scenario where practical; compare home/away, strong/weak, styles, fatigue and dismissals.
+
+**Acceptance:** purposeful movement and varied attacking patterns, stable scoring/pass/shot distributions, no one tactic exploiting the simulation.
+
+### P3 — Complete football rules
+- Set pieces and restarts: throw-ins, goal kicks, corners, free kicks and penalties.
+- Offside, fouls, advantage, cards and referee profile.
+- Rebounds, second balls, deflections and goalkeeper parries.
+- Extra time and penalty shootouts; substitution windows and roster rules.
+
+**Acceptance:** each restart and rule has state-transition tests and produces consistent commentary/statistics.
+
+### P4 — Match UI redesign
+- Rebuild live match presentation around a clear pitch, score/time, team identity and event timeline.
+- Add readable player markers, ball movement, selected player, cards, substitutions and injury indicators.
+- Tactical and substitution drawers designed for touch input and Arabic RTL.
+- Match center: live stats, player ratings, commentary, half-time/full-time reports and replay.
+- Optimize animations and rendering for mid-range Android devices; provide reduced-motion/performance mode.
+
+**Acceptance:** every match state is readable and actionable on the target phone size; no clipped Arabic, overlapping controls or lost state after pause/restore.
+
+### P5 — Whole-game UI and UX
+- Establish shared design tokens, typography, spacing, iconography, cards, tables, dialogs and navigation.
+- Main dashboard: next match, table position, recent form, objectives, finances, inbox and urgent actions.
+- Squad/player profiles, tactics, transfers, scouting, training, fixtures, competition tables, finance, staff, news, inbox and settings.
+- Add useful search/filter/sort, consistent back navigation, confirmation for destructive actions and empty/error/loading states.
+- Maintain RTL and responsive layouts consistently, not screen-by-screen overrides.
+
+**Acceptance:** all screens use one coherent visual system, all primary actions work, and no dead-end navigation.
+
+### P6 — Career simulation depth
+- Contracts, renewals, loans, transfer windows, registration and AI negotiations.
+- Scouting uncertainty, player development, training load, staff and youth academy.
+- League/cup scheduling, tie-breakers, AI club decisions, finances and season transitions.
+- Player aging, retirement, generated youth and multi-season world consistency.
+
+**Acceptance:** multi-season simulations retain valid squads, contracts, finances, competition schedules and save integrity.
+
+### P7 — Save system, performance and release hardening
+- Versioned saves, migrations, rotating backups, crash recovery and safe write/restore.
+- Offline-first behavior, memory/battery profiling, asset loading and Android lifecycle handling.
+- Accessibility, text scaling, localization-ready dates/numbers and device compatibility.
+- Automated regression, APK reproducibility, release notes, checksum and staged rollout.
+
+**Acceptance:** clean install, upgrade install, offline play, save/restore, app pause/resume and long-session soak tests pass on real Android devices.
+
+### Non-negotiable release rules
+- No milestone is marked complete without evidence from tests and its acceptance gate.
+- No generated APK is called install-ready until the matching commit's test and build workflows pass.
+- No phone compatibility claim until the user tests the exact APK on the target device.
+- The legacy match engine remains authoritative until shadow comparison, rollback and explicit user approval are complete.
+- Do not merge PR #1 or alter FM3.
