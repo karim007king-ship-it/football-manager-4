@@ -617,6 +617,26 @@ test('woodwork rebounds remain in play and mirror second-ball ownership at both 
  assert.throws(()=>resolveWoodworkRebound(away,awayShooter,2,0,'post'),/Attacking team/);
 });
 
+test('striker attacks the far-post lane on advanced wide crosses in both directions',()=>{
+ const defenders=[
+  {id:'cb1',role:'CB',active:true,x:82,y:38},
+  {id:'cb2',role:'CB',active:true,x:84,y:62},
+  {id:'fb',role:'LB',active:true,x:78,y:50}
+ ];
+ const striker={x:72,y:50};
+ const homeUpper=strikerRunTarget(striker,{x:76,y:12},0,defenders);
+ const homeLower=strikerRunTarget(striker,{x:76,y:88},0,defenders);
+ assert.equal(homeUpper.active,true);assert.equal(homeUpper.crossingLane,true);assert.equal(homeUpper.y,64);
+ assert.equal(homeLower.active,true);assert.equal(homeLower.crossingLane,true);assert.equal(homeLower.y,36);
+ const mirrored=defenders.map(p=>({...p,x:100-p.x,y:100-p.y}));
+ const awayUpper=strikerRunTarget({x:28,y:50},{x:24,y:12},1,mirrored);
+ const awayLower=strikerRunTarget({x:28,y:50},{x:24,y:88},1,mirrored);
+ assert.equal(awayUpper.crossingLane,true);assert.equal(awayUpper.y,36);
+ assert.equal(awayLower.crossingLane,true);assert.equal(awayLower.y,64);
+ const central=strikerRunTarget(striker,{x:76,y:50},0,defenders);
+ assert.equal(central.crossingLane,false);
+});
+
 test('cross contests resolve completed delivery, interception and defensive clearance without RNG draws',()=>{
  const completed=create(1401),carrier=completed.teams[0].players[8],receiver=completed.teams[0].players[9];
  carrier.x=78;carrier.y=12;receiver.x=84;receiver.y=48;
