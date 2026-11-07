@@ -299,7 +299,8 @@ test('striker run target attacks space behind the defensive line in both directi
  assert.ok([36,50,64].includes(home.y),'home striker should select a supported channel');
  const away=strikerRunTarget({x:30,y:50},{x:38,y:50},1,homeDefenders.map(p=>({...p,x:100-p.x})));
  assert.equal(away.active,true);
- assert.ok(away.x<26,'away striker should attack beyond the mirrored defensive line');
+ assert.ok(away.x<24,'away striker should attack beyond the mirrored defensive line');
+ assert.ok(away.x<38,'away run must move toward the left attacking goal, not outside pitch bounds');
 });
 test('striker holds its supporting position before the ball reaches midfield',()=>{
  const striker={x:30,y:50};
