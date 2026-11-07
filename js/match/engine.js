@@ -364,7 +364,7 @@ function stepAction(s){
  const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
  const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
  const shotChance=clamp(baseShotChance+(reboundFollowUp ? .16 : 0),.02,reboundFollowUp ? .34 : .16);
- let event=null,boundaryShot=null,reboundShot=null,woodworkShot=null;
+ let event=null,boundaryShot=null,reboundShot=null,woodworkShot=null,passBoundary=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
@@ -441,7 +441,11 @@ function stepAction(s){
     }else if(rnd()<chance){
      s.completedPasses[tid]++;
      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
-     event={type:'pass',passType:best.passType||'normal',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,x:best.p.x,y:best.p.y};
+     const passType=best.passType||'normal';
+     const overhitChance=passType==='cross'?.12:passType==='switch'?.07:passType==='through_ball'?.04:.02;
+     const overhit=rnd()<overhitChance;
+     event={type:'pass',passType,minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit,x:best.p.x,y:best.p.y};
+     if(overhit)passBoundary={from:{x:carrier.x,y:carrier.y},to:{x:best.p.x,y:best.p.y},lastTouchTeam:tid};
     }else{
      const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;
      if(win){
@@ -462,6 +466,7 @@ function stepAction(s){
  // The shot is logged before its secondary outcome: rebound or boundary restart.
  if(reboundShot)resolveKeeperParryRebound(s,reboundShot.goalkeeper,reboundShot.shooter,reboundShot.attackingTeam);
  if(woodworkShot)resolveWoodworkRebound(s,woodworkShot.shooter,woodworkShot.attackingTeam,woodworkShot.goalX,woodworkShot.woodworkType);
+ if(passBoundary)resolvePassBoundary(s,passBoundary.from,passBoundary.to,passBoundary.lastTouchTeam);
  if(boundaryShot?.deflection){
   resolveShotDeflectionBoundary(s,boundaryShot.contact,boundaryShot.attackingTeam,boundaryShot.goalX,boundaryShot.spillY);
  }else if(boundaryShot)resolveBallBoundary(s,boundaryShot.from,boundaryShot.to,boundaryShot.lastTouchTeam);
@@ -503,6 +508,16 @@ function classifyBoundaryRestart(from,to,lastTouchTeam){
   return{restartType:'goal_kick',teamId:defendingTeam,spot:{x:defendingTeam===0?5:95,y:clamp(y,38,62)}};
  }
  return{restartType:'corner',teamId:attackingTeam,spot:{x:attackingTeam===0?97:3,y:exit.side==='right'? (y<50?3:97):(y<50?3:97)}};
+}
+// A pass may be overhit beyond its intended receiver. Extrapolate the
+// supplied pass vector, then reuse the shared first-boundary/restart resolver.
+function resolvePassBoundary(s,from,to,lastTouchTeam,extension=.22){
+ if(!from||!to||![from.x,from.y,to.x,to.y,extension].every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error('Pass trajectory must be finite');
+ if(extension<=0)throw Error('Pass extension must be positive');
+ const dx=to.x-from.x,dy=to.y-from.y;
+ if(Math.hypot(dx,dy)<.001)throw Error('Pass trajectory must have length');
+ const beyond={x:to.x+dx*extension,y:to.y+dy*extension};
+ return resolveBallBoundary(s,from,beyond,lastTouchTeam);
 }
 // Resolve a defender's glancing shot contact into a goal-line corner.
 // The defending team touched last; this helper models only the supplied segment.
@@ -572,7 +587,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
