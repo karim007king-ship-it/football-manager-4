@@ -11,6 +11,7 @@
 <meta name="theme-color" content="#0b141d">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>مدير كرة القدم Pro</title>
+<link rel="stylesheet" href="ui-polish.css">
 <style>
 :root{--bg:#0F1A24;--card:#1E2A3A;--pr:#4CAF50;--gold:#FFC107;--tx:#fff;--dim:#B0BEC5;--red:#E53935;--blue:#42A5F5}
 *{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
@@ -298,7 +299,7 @@ function endCup(){let U=G.uid,c=G.cup,opp=M.opp,h=M.home,w=M.gu>M.go||(M.gu==M.g
   let ld=M.xi.some(x=>trt(x)=='leader');
   G.players.forEach(p=>{if(p.clubId==U){p.morale=cl(p.morale+(w?4:-4+(ld?2:0))-(trt(p)=='hot'&&!p.inj&&!M.xi.includes(p)?2:0),30,100);if(!p.inj&&Math.random()<.015*(trt(p)=='fragile'?2.2:1)){p.inj=R(1,4);log(`🚑 إصابة ${p.name} (${p.inj} أسابيع)`,'log-bad')}}});
   pressAfter(w?'win':'loss',M.gu,M.go,opp,true);cupAdvance({w,l});G.date+=3*864e5;if(c.done)log(c.msg,'log-goal');
-  sb();save();clearMatchSession();busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
+  sb();save();clearMatchSession();document.body.classList.remove('match-live');busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;setTimeout(lockerEvent,700)}
 const ST=p=>p.st||(p.st={g:0,a:0,ap:0,rs:0,mo:0});
 function aiGoals(cid,n){let ps=G.players.filter(p=>p.clubId==cid&&p.pos!='GK'),l=[];
@@ -415,6 +416,7 @@ function restoreMatchSession(){
   const raw=localStorage.getItem(MATCH_KEY);if(!raw)return false;
   const snapshot=JSON.parse(raw),restored=window.FM4MatchSession.restore(snapshot,G);
   M=restored.match;
+  document.body.classList.add('match-live');
   shadowMonitor=restored.shadowSnapshot?window.FM4ShadowMonitor.restore(restored.shadowSnapshot):null;
   shadowMonitorError='';busy=true;snd.start();
   $('console').innerHTML='';$('console').style.display='block';
@@ -423,7 +425,7 @@ function restoreMatchSession(){
   $('bs').innerText='⏩ x'+(M.speed||1);$('sl').innerText=M.subs;
   sb();log('🔄 تمت استعادة المباراة المحفوظة عند الدقيقة '+M.min,'log-info');
   M.t=setInterval(tick,650/(M.speed||1));return true;
- }catch(e){clearMatchSession();M=null;shadowMonitor=null;busy=false;return false}
+ }catch(e){document.body.classList.remove('match-live');clearMatchSession();M=null;shadowMonitor=null;busy=false;return false}
 }
 function shadowErrorText(e){return String(e&&e.stack||e&&e.message||e||'Unknown error').slice(0,2200)}
 function shadowErrorHtml(){
@@ -677,7 +679,7 @@ function closeM(){$('modal').style.display='none';MN=[];if(M)M.hold=false}
 function menuPick(i){let f=MN[i].fn;closeM();f();saveMatchSession()}
 
 function startMatch(cup){
-  if(busy)return;if(!cup&&G.cup&&G.cup.due)return say('عليك لعب مباراة الكأس أولاً 🏆');
+  if(busy)return;document.body.classList.add('match-live');if(!cup&&G.cup&&G.cup.due)return say('عليك لعب مباراة الكأس أولاً 🏆');
   let U=G.uid,pr=cup?G.cup.pairs.find(x=>x.includes(U)):G.fix[G.round].find(x=>x.includes(U)),home=pr[0]==U,opp=C(home?pr[1]:pr[0]);
   let S=teamS(U),O=teamS(opp.id);
   if(S.xi.length<11)return say('⚠️ لا يوجد لاعبون أصحاء كفاية لتشكيلة '+G.form+'. اشترِ لاعبين أو غيّر الخطة.');
@@ -1090,7 +1092,7 @@ function endMatch(){
   pressAfter(res,gu,go_,opp);trainWeek();sdMatch(home,res);G.date+=7*864e5;G.round++;cupCheck();offerCheck();
   if(G.round%2==0)refreshMarket();
   let done=G.round>=14;if(done)endSeason();
-  save();clearMatchSession();busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
+  save();clearMatchSession();document.body.classList.remove('match-live');busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;if(!done)setTimeout(lockerEvent,700)}
 
 function endSeason(){
