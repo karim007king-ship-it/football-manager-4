@@ -41,9 +41,18 @@ function estimateSkills(p,role){
  const passBoost=/^(CM|DM|CDM|AM|CAM|LM|RM)$/.test(role)?6:0;
  const shotBoost=/^(ST|CF|LW|RW|AM|CAM)$/.test(role)?8:0;
  const defendBoost=/^(CB|LB|RB|LWB|RWB|DM|CDM)$/.test(role)?8:0;
+ const isKeeper=role==='GK';
+ const keeperValue=(key,offset=0)=>round((p[key]??(o+offset))+mood-penalty);
+ const reflexes=keeperValue('gkReflexes');
+ const handling=keeperValue('gkHandling');
+ const positioning=keeperValue('gkPositioning');
+ const oneOnOne=keeperValue('gkOneOnOne');
+ const distribution=keeperValue('gkDistribution');
+ const keeperComposite=round(reflexes*.28+handling*.20+positioning*.22+oneOnOne*.20+distribution*.10);
  return{
   pace:round(o+paceBoost+mood-penalty),
-  goalkeeping:round(o+mood-penalty),
+  goalkeeping:isKeeper?keeperComposite:35,
+  ...(isKeeper?{gkReflexes:reflexes,gkHandling:handling,gkPositioning:positioning,gkOneOnOne:oneOnOne,gkDistribution:distribution}:{}),
   passing:round(o+passBoost+mood-penalty),
   // OVR is a composite rating, not a pure finishing attribute. A softer
   // conversion prevents ordinary 65-75 OVR squads from becoming elite finishers.
