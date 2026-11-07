@@ -365,6 +365,33 @@ function drainTeamStamina(s){
   }
  }
 }
+// Classify the first pitch boundary crossed by a ball segment.
+// Home attacks right (x=100); away attacks left (x=0). This is deliberately
+// pure: the live action loop must call it when ball trajectories are introduced.
+function classifyBoundaryRestart(from,to,lastTouchTeam){
+ if(!from||!to||![from.x,from.y,to.x,to.y].every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error('Boundary points must contain finite numeric coordinates');
+ if(lastTouchTeam!==0&&lastTouchTeam!==1)throw Error('Last-touch team must be 0 or 1');
+ if(from.x<0||from.x>100||from.y<0||from.y>100)throw Error('Ball segment must start inside the pitch');
+ const dx=to.x-from.x,dy=to.y-from.y,crossings=[];
+ if(dx>0&&to.x>100)crossings.push({t:(100-from.x)/dx,axis:'goal',side:'right'});
+ if(dx<0&&to.x<0)crossings.push({t:(0-from.x)/dx,axis:'goal',side:'left'});
+ if(dy>0&&to.y>100)crossings.push({t:(100-from.y)/dy,axis:'touchline',side:'bottom'});
+ if(dy<0&&to.y<0)crossings.push({t:(0-from.y)/dy,axis:'touchline',side:'top'});
+ if(!crossings.length)return null;
+ crossings.sort((a,b)=>a.t-b.t);
+ if(crossings.length>1&&Math.abs(crossings[0].t-crossings[1].t)<1e-9)return null;
+ const exit=crossings[0],x=clamp(from.x+dx*exit.t,0,100),y=clamp(from.y+dy*exit.t,0,100);
+ if(exit.axis==='touchline')return{
+  restartType:'throw_in',teamId:1-lastTouchTeam,
+  spot:{x:clamp(x,2,98),y:exit.side==='top'?3:97}
+ };
+ const attackingTeam=exit.side==='right'?0:1;
+ if(lastTouchTeam===attackingTeam){
+  const defendingTeam=1-attackingTeam;
+  return{restartType:'goal_kick',teamId:defendingTeam,spot:{x:defendingTeam===0?5:95,y:clamp(y,38,62)}};
+ }
+ return{restartType:'corner',teamId:attackingTeam,spot:{x:attackingTeam===0?97:3,y:exit.side==='right'? (y<50?3:97):(y<50?3:97)}};
+}
 // Resolve a dead-ball restart into an explicit, deterministic ball owner.
 // The caller supplies the awarded team and restart location after the referee/
 // touchline decision; this helper owns taker selection and legal pitch placement.
@@ -416,7 +443,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveRestart,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
