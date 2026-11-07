@@ -1,0 +1,193 @@
+# Football Manager 4 — Development Roadmap
+
+> Living plan for FM4. Keep the working branch isolated until the acceptance gates below are met. Do not merge PR #1 or replace the legacy match engine without explicit approval.
+
+## 1. Current verified baseline
+
+- Working branch: `fix/match-engine-v2`.
+- Legacy match engine remains authoritative for career results and saves.
+- New engine is isolated in read-only shadow mode.
+- New engine currently supports seeded deterministic simulation, player coordinates and role-aware team shape, possession, carrying, passing, interceptions, tackles, shots, saves, goals, basic adaptive mentality, stamina drain, manpower effects, substitutions, and shadow comparison.
+- The live monitor mirrors user/opponent lineups, dismissals, substitutions and selected legacy incidents.
+- Match session and shadow RNG serialization/restoration exist. The match event timeline is now persisted and replayed without replaying audio.
+- Latest verified automated run for commit `5b6df859f62efe12c7a950acf48e81cc574eac8b`: 91 tests passed, 0 failed. Android APK workflow also completed successfully for that commit.
+- These are CI results, not proof of real-device behavior. Phone testing remains required.
+- PR #1 remains open as a draft. Do not merge it without approval.
+
+## 2. Match-engine roadmap — highest priority
+
+### M0 — Freeze, inspect and define contracts
+- Preserve the legacy engine and FM3 baseline.
+- Define canonical match state, team/player IDs, coordinates, event schema, minute/action clock, possession accounting, substitutions, cards, injuries and restart rules.
+- Separate simulation rules from presentation and legacy-game adapters.
+- Add invariants: no duplicate active IDs, valid ball carrier, legal active-player counts, bounded coordinates/stamina, monotonic match clock, deterministic seeded replay.
+
+**Gate:** contract tests pass; no writes from the shadow engine into legacy match/game/player objects.
+
+### M1 — Core simulation correctness
+- Audit possession and clock accounting over every action and minute.
+- Make ball ownership and transitions explicit: carry, pass, interception, tackle, shot, save, goal, restart and dead-ball state.
+- Handle missing/inactive carrier, goalkeeper ownership, substitutions while in possession, dismissals, extra time and safe restart points.
+- Ensure every event has stable ID, minute, team, player references and source.
+- Add home/away mirror tests and identical-seed replay tests.
+
+**Gate:** invariant tests across large seed sets; mirrored teams show no unexplained directional bias.
+
+### M2 — Player movement and football intelligence
+- Formation-aware position targets and role responsibilities.
+- Support angles, passing triangles, width, depth, overlap/underlap, forward runs and defensive recovery.
+- Individual decisions based on attributes, stamina, role, morale, pressure and tactical instructions.
+- Team compactness, line height, pressing triggers, marking, cover shadows and transition behavior.
+- Avoid teleportation, bunching, static lines and endless midfield circulation.
+
+**Gate:** movement heatmaps and event sequences demonstrate purposeful progression, width, support and defensive recovery for both sides.
+
+### M3 — Attacking model
+- Build-up from goalkeeper and defenders.
+- Short/long passing, through balls, switches, crosses, cutbacks and counterattacks.
+- Shot selection based on angle, distance, pressure, body/role skill and goalkeeper position.
+- Rebounds, blocks, deflections and second balls.
+- Chance quality (xG-like internal measure) and clear separation of shots, shots on target and goals.
+
+**Gate:** chance quality predicts scoring frequency across large seeded cohorts; no unrealistic shot spam or guaranteed goals.
+
+### M4 — Defensive model
+- Pressing intensity and triggers, low/mid/high blocks, marking and cover.
+- Tackles, interceptions, blocks, clearances and defensive errors.
+- Fouls and advantage where appropriate.
+- Team shape reacts to score, minute, opponent style and manpower.
+
+**Gate:** stronger defensive attributes and coherent defensive tactics measurably improve prevention without making matches sterile.
+
+### M5 — Goalkeeper model
+- Positioning, angles, reflexes, handling, distribution and one-on-ones.
+- Saves, catches, parries, rebounds, punches and goalkeeper errors.
+- Correct goal-kick, corner and restart ownership.
+
+**Gate:** goalkeeper quality affects save outcomes; shots on target and goals remain internally consistent.
+
+### M6 — Referee, discipline and set pieces
+- Fouls, yellow cards, second yellows, direct reds, advantage and penalties.
+- Offside decisions and restart locations.
+- Corners, free kicks, penalties, throw-ins and goal kicks with attacking/defending routines.
+- Match officials may vary by strictness, but decisions must remain explainable and deterministic.
+
+**Gate:** event rates and consequences are calibrated; dismissals affect shape and strength without deciding every match automatically.
+
+### M7 — Fitness, injuries and substitutions
+- Workload by role, pressing intensity, match tempo and player traits.
+- Fatigue affects movement, decisions, passing, shooting and recovery gradually.
+- Injury risk tied to load, condition and contact; avoid random injury spam.
+- Substitution rules, formation-slot inheritance, tactical role changes and post-red-card legality.
+- Tactical AI substitutions based on score, fatigue, cards, player performance and remaining windows.
+
+**Gate:** substitutions and fatigue have measurable but non-scripted impact; all roster limits and player states remain valid.
+
+### M8 — Match context and AI coaches
+- Home advantage, crowd, weather/pitch conditions only where supported by the game data.
+- Opponent scouting and tactical identity.
+- Pre-match plan, in-match adaptation, mentality and risk management.
+- Distinct team styles rather than one generic opponent behavior.
+
+**Gate:** teams with different styles produce distinguishable but balanced match patterns.
+
+### M9 — Statistics, commentary and analysis
+- Possession, passes/accuracy, shots/on target, chances, xG-like quality, tackles, interceptions, fouls, cards, corners, saves, distance/workload and player ratings.
+- Event log and commentary generated from actual simulation events.
+- Half-time and full-time reports; player and team heatmaps.
+- Ensure displayed statistics are derived from the same event/state source.
+
+**Gate:** score, events, statistics and reports reconcile; no contradictory commentary.
+
+### M10 — Calibration and comparison
+- Run at least 1,000 seeded matches per key scenario where practical.
+- Test equal teams, stronger/weaker teams, home/away reversals, tactical styles, fatigue bands, red cards, substitutions and extra time.
+- Compare both engines on matched initial lineups and scenarios; compare distributions, not just individual scores.
+- Record metrics and accepted ranges in versioned audit reports.
+- Investigate outliers; do not tune only to make a single test pass.
+
+**Gate:** no unexplained home/away bias, extreme score inflation, implausible shot/pass rates, or tactical exploits.
+
+### M11 — Shadow integration and staged activation
+- Keep the new engine read-only while fixing differences.
+- Compare score, minute, possession, shots, cards, substitutions, injuries, events and player availability.
+- Run a shadow soak over complete matches and career scenarios.
+- Add feature flag and immediate rollback path before any live result authority changes.
+- Activate only after explicit approval and a verified rollback build.
+
+**Gate:** full parity/reconciliation report, device testing, backup/rollback test and user approval.
+
+## 3. Match presentation — second priority, developed alongside engine milestones
+
+- Live match screen: readable score/time, pitch, player positions, ball, event feed and controls.
+- Clear visual distinction between user and opponent, home/away orientation, active/inactive/sent-off players.
+- Tactical panel: formation, mentality, line/press settings and player roles.
+- Substitution panel: bench, position compatibility, fatigue, cards and remaining substitutions.
+- Match statistics and player ratings that update from engine data.
+- Half-time, extra-time, penalties and full-time screens.
+- Match replay/incident detail where performance permits.
+- Responsive Arabic RTL layout, touch-sized controls, readable typography and small-screen support.
+- Preserve the event feed across pause, app close and session restore; prevent duplicate events/audio.
+
+## 4. Whole-game roadmap — do not lose these systems
+
+### Club and navigation
+- Professional home dashboard with next fixture, recent results, league position, objectives, finances and urgent notices.
+- Consistent design system across every screen: club, squad, tactics, player profile, transfers, training, fixtures, table, cup, finance, staff, news, inbox, settings and reports.
+- Search, filters, sorting, clear back navigation and contextual help.
+
+### Squad and player lifecycle
+- Full squad/bench/reserves, positions and role familiarity.
+- Player profiles: attributes, form, morale, fitness, condition, contracts, history and statistics.
+- Development, potential, aging, retirement and new player generation.
+- Injuries, suspensions, discipline and availability.
+
+### Transfers and scouting
+- Transfer/loan/renewal/contract negotiations, wages, bonuses and squad registration.
+- Scouting assignments, reports, player fit, potential and uncertainty.
+- AI club behavior, realistic budgets and transfer windows.
+
+### Training and staff
+- Weekly schedules, individual training, tactical familiarity and development.
+- Coaches, scouts, medical staff and board responsibilities.
+- Training load, recovery and injury prevention.
+
+### Competitions and calendar
+- League, cups, fixtures, standings, tie-breakers and schedule congestion.
+- Home/away fixtures, postponements if supported, extra time and penalties.
+- AI-controlled matches and consistent simulation rules across all competitions.
+
+### Club management and finances
+- Income, wages, prize money, transfers, facilities, attendance and operating costs.
+- Board objectives, confidence, sponsorship and stadium/facility upgrades.
+- Financial warnings and season-to-season accounting.
+
+### Career depth and world simulation
+- News, press conferences, rivalries, player conversations and dressing-room morale.
+- Youth academy, scouting network, staff changes and manager reputation.
+- AI clubs make transfers, develop players, change tactics and respond to results.
+- Long-term database consistency and believable multi-season progression.
+
+### Technical quality and release
+- Reliable offline operation and versioned save migrations.
+- Automatic safe saves, backups, recovery from corrupted/incompatible saves.
+- Android performance, memory use, battery use, responsive UI and accessibility.
+- Arabic RTL everywhere; localization-ready text and number/date formatting.
+- Regression tests, device smoke tests, APK reproducibility and release notes.
+
+## 5. Quality gates for every change
+
+1. Read the current implementation before editing.
+2. Add a focused regression test before or with the fix.
+3. Run the complete test suite; report exact pass/fail counts.
+4. Build APK only from a tested commit; verify artifact and checksum.
+5. Never claim device testing unless the user has tested that APK.
+6. Keep changes isolated and reversible; never merge PR #1 or change match-result authority without approval.
+7. Update this roadmap when a milestone is completed or a new gap is found.
+
+## 6. Immediate next work
+
+1. Finish the code-level audit of the engine, adapter, bridge and monitor.
+2. Add missing correctness tests for event/state invariants, mirrored home/away scenarios, goalkeeper/restart behavior and substitutions/dismissals.
+3. Fix the highest-impact defects revealed by those tests.
+4. Then deepen player decision-making and attacking/defensive phase logic before adding decorative features.
