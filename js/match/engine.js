@@ -443,7 +443,12 @@ function stepAction(s){
      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
      const passType=best.passType||'normal';
      const overhitChance=passType==='cross'?.12:passType==='switch'?.07:passType==='through_ball'?.04:.02;
-     const overhit=rnd()<overhitChance;
+     // Peek at a decorrelated value derived from the current PRNG state.
+     // This models overhit risk without consuming a draw or shifting every
+     // later match decision in the established calibration stream.
+     const overhitState=(Number(rnd.state)||0)>>>0;
+     const overhitRoll=((overhitState^0xA5A5A5A5)>>>0)/4294967296;
+     const overhit=overhitRoll<overhitChance;
      event={type:'pass',passType,minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit,x:best.p.x,y:best.p.y};
      if(overhit)passBoundary={from:{x:carrier.x,y:carrier.y},to:{x:best.p.x,y:best.p.y},lastTouchTeam:tid};
     }else{
