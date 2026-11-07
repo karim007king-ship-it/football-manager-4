@@ -201,6 +201,9 @@ function resolveKeeperParryRebound(s,goalkeeper,shooter,attackingTeam){
  s.ball={x:landing.x,y:landing.y,team:winner.teamId,playerId:winner.player.id};
  if(winner.teamId===defendingTeam)startCounterTransition(s,defendingTeam);
  else s.transition=null;
+ // The next action resolves the rebound: an attacker may shoot again, while
+ // a defender gets an immediate clearance/recovery decision.
+ s.reboundOpportunity={team:winner.teamId,attackingTeam,expiresAtAction:(s.actionCount||0)+1};
  const event={type:'rebound',minute:s.minute+1,team:winner.teamId,playerId:winner.player.id,
   goalkeeperId:goalkeeper.id,shooterId:shooter.id,attackingTeam,contested:true,x:landing.x,y:landing.y};
  addEvent(s,event);
@@ -313,11 +316,20 @@ function stepAction(s){
  const rnd=s.random||(s.random=makeRandom(1)),goalX=tid===0?100:0,def=active(opp);
  const counterActive=counterTransitionActive(s,tid);
  if(s.transition&&s.actionCount>s.transition.expiresAtAction)s.transition=null;
+ const reboundOpportunity=s.reboundOpportunity&&s.actionCount<=s.reboundOpportunity.expiresAtAction?s.reboundOpportunity:null;
+ s.reboundOpportunity=null;
  let press=nearest(def,carrier),pd=press?distance(press,carrier):40;
  const goalDist=Math.abs(goalX-carrier.x);
  s.possession[tid]+=1/3;
  carrier.stamina=clamp(carrier.stamina-.012,0,100);
  updateShape(s,tid,carrier,counterActive);
+ // If a defender won the rebound, resolve the loose-ball contest immediately
+ // through the existing clearance/interception model instead of delaying it.
+ if(reboundOpportunity&&tid!==reboundOpportunity.attackingTeam){
+  const recovery=resolveDefensiveRecovery(s,t,carrier,reboundOpportunity.attackingTeam,rnd);
+  addEvent(s,recovery);
+  return;
+ }
  // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
  // Calibrated against the three-actions-per-minute clock and legacy OVR mapping.
@@ -325,7 +337,9 @@ function stepAction(s){
  const attackManpower=manpowerProfile(t,effectiveMentality(s,tid));
  // Fewer active attackers means fewer coordinated runs and lower shot volume.
  // Keep the penalty modest so a red card changes the match without deciding it alone.
- const shotChance=clamp((.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045),.02,.16);
+ const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
+ const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
+ const shotChance=clamp(baseShotChance+(reboundFollowUp?.16:0),.02,reboundFollowUp?.34:.16);
  let event=null,boundaryShot=null,reboundShot=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
@@ -358,7 +372,7 @@ function stepAction(s){
   event={type:blocked?'block':goal?'goal':saved?'save':'shot',minute:s.minute+1,
    team:blocked||saved?oid:tid,playerId:blocked?blocker.id:saved?(goalkeeper?.id??carrier.id):carrier.id,
    shooterId:carrier.id,goalkeeperId:blocked?null:goalkeeper?.id??null,
-   attackingTeam:tid,onTarget:on,parried,deflectedOut,counterattack:counterActive,
+   attackingTeam:tid,onTarget:on,parried,deflectedOut,reboundFollowUp,counterattack:counterActive,
    x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
