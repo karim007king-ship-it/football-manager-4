@@ -365,6 +365,42 @@ function drainTeamStamina(s){
   }
  }
 }
+// Resolve a dead-ball restart into an explicit, deterministic ball owner.
+// The caller supplies the awarded team and restart location after the referee/
+// touchline decision; this helper owns taker selection and legal pitch placement.
+function resolveRestart(s,restartType,teamId,spot={}){
+ const type=String(restartType||'').toLowerCase();
+ const supported=['corner','goal_kick','throw_in','free_kick','penalty'];
+ if(!supported.includes(type))throw Error('Unsupported restart type: '+type);
+ if(teamId!==0&&teamId!==1)throw Error('Restart team must be 0 or 1');
+ const team=s?.teams?.[teamId];
+ if(!team)throw Error('Restart team is missing');
+ const players=active(team);
+ if(!players.length)throw Error('Restart team has no active players');
+ const goalSide=teamId===0?1:-1;
+ let x=Number.isFinite(Number(spot.x))?Number(spot.x):(type==='goal_kick'?(teamId===0?5:95):type==='corner'?(teamId===0?97:3):s.ball.x);
+ let y=Number.isFinite(Number(spot.y))?Number(spot.y):(type==='corner'?3:s.ball.y);
+ if(type==='corner'){x=teamId===0?97:3;y=y<50?3:97;}
+ if(type==='goal_kick'){x=teamId===0?5:95;y=clamp(y,38,62);}
+ if(type==='throw_in')y=y<50?3:97;
+ x=clamp(x,2,98);y=clamp(y,3,97);
+ let taker;
+ if(type==='goal_kick')taker=players.find(p=>keeper(p.role));
+ if(type==='corner'){
+  const wide=players.filter(p=>!keeper(p.role)&&/^(LW|RW|LM|RM|LB|RB|LWB|RWB)$/i.test(String(p.role||'')));
+  taker=nearest(wide.length?wide:players.filter(p=>!keeper(p.role)),{x,y});
+ }
+ if(type==='penalty'){
+  taker=players.filter(p=>!keeper(p.role)).sort((a,b)=>Number(b.shooting||0)-Number(a.shooting||0))[0];
+ }
+ if(!taker)taker=nearest(players.filter(p=>!keeper(p.role)),{x,y})||players[0];
+ taker.x=x;taker.y=y;
+ s.ball={x,y,team:teamId,playerId:taker.id};
+ s.transition=null;
+ const event={type:'restart',restartType:type,minute:s.minute+1,team:teamId,playerId:taker.id,x,y};
+ addEvent(s,event);
+ return event;
+}
 function stepMatch(s){
  if(!s||!Array.isArray(s.teams)||s.teams.length!==2||!s.ball)throw Error('Invalid match state');
  // Three linked actions per displayed minute provide passing, pressing and
@@ -380,7 +416,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveRestart,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
