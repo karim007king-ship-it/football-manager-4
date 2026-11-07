@@ -14,9 +14,9 @@ function live(home=true){
 }
 test('shadow monitor snapshot restores events, deduplication and deterministic continuation',()=>{
  const m=live(),first=Monitor.create({match:m,seed:712}),event={eventId:'persisted-legacy-event',type:'corner',teamId:0,minute:0};
+ Monitor.advance(first,m,13);
  first.shadow.state.actionCount=10;
  first.shadow.state.transition={team:1,expiresAtAction:13};
- Monitor.advance(first,m,13);
  assert.equal(Monitor.recordLegacyEvent(first,event),true);
  const stored=JSON.parse(JSON.stringify(Monitor.serialize(first)));
  const restored=Monitor.restore(stored);
