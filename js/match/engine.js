@@ -430,7 +430,7 @@ function stepAction(s){
   const keeperResponse=goalkeeper
    ?(Number(goalkeeper.gkReflexes??keeperSkill)*.5+Number(goalkeeper.gkPositioning??keeperSkill)*.25+Number(goalDist<12?goalkeeper.gkOneOnOne??keeperSkill:goalkeeper.gkHandling??keeperSkill)*.25)
    :60;
-  const quality=clamp(.104+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0)-(keeperSkill-60)*.0015-(keeperResponse-60)*.0015,.03,.5);
+  const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0)-(keeperSkill-60)*.0015-(keeperResponse-60)*.0015,.03,.5);
   const goalRoll=(!blocked&&on)?rnd():1;
   const goal=!blocked&&on&&goalRoll<quality;
   if(goal){s.score[tid]++;s.transition=null;}
