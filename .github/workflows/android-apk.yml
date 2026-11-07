@@ -6,6 +6,7 @@ on:
     branches: ["fix/match-engine-v2"]
     paths:
       - "index.html"
+      - "ui-polish.css"
       - "manifest.json"
       - "sw.js"
       - "js/**"
@@ -35,7 +36,7 @@ jobs:
       - name: Prepare web files
         run: |
           mkdir -p www
-          cp index.html manifest.json sw.js www/
+          cp index.html manifest.json sw.js ui-polish.css www/
           cp -R js www/
           cp match-preview.html www/
 
