@@ -96,8 +96,9 @@ function updateShape(s,teamId,carrier){
 
    if(keeper(r)){tx=t.id===0?5:95;ty=clamp(50+(ballY-50)*.14,38,62);}
    else if(!has&&l<.35){
-    tx=clamp(tx,t.id===0?8:62,t.id===0?38:92);
-    ty=p.baseY+(ballY-p.baseY)*.16;
+    const lineTarget=defensiveLineTarget(p,carrier,t.id,mentality);
+    tx=lineTarget.x;
+    ty=lineTarget.y;
    }
 
    // A compact, coordinated press: one player closes the ball, nearby
@@ -112,6 +113,18 @@ function updateShape(s,teamId,carrier){
    }
   }
  }
+}
+// Defensive line retreats in proportion to ball danger and narrows its
+// far-side spacing, while preserving mirrored coordinates for both teams.
+function defensiveLineTarget(player,carrier,teamId,mentality='balanced'){
+ const dir=teamId===0?1:-1;
+ const threat=clamp((50-carrier.x*dir-(teamId===0?0:-100))/50,0,1);
+ const retreat=threat*(mentality==='defensive'?5.5:3.6);
+ const compactness=.10+threat*.12;
+ return{
+  x:clamp(player.baseX-dir*retreat,teamId===0?8:62,teamId===0?38:92),
+  y:clamp(player.baseY+(50-player.baseY)*compactness+(carrier.y-50)*.035,3,97)
+ };
 }
 // Give the first presser a direct close-down, the second a goal-side cover
 // angle, and the third a central screen. The same geometry mirrors for both ends.
@@ -313,7 +326,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
