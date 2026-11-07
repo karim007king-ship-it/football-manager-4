@@ -64,13 +64,20 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const lineX=teamId===0?Math.max(...linePlayers.map(p=>p.x)):Math.min(...linePlayers.map(p=>p.x));
  const lineProgress=teamId===0?lineX:100-lineX;
  const targetX=lineX+dir*2;
+ const crossingLane=(carrier.y<22||carrier.y>78)&&progress>=68;
+ const preferredY=carrier.y<50?64:36;
  const lanes=[36,50,64];
- const lane=lanes.map(y=>({y,space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-targetX,d.y-y)),40)}))
-  .sort((a,b)=>b.space-a.space)[0];
+ const lane=lanes.map(y=>({
+  y,
+  space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-targetX,d.y-y)),40),
+  preference:crossingLane?(y===preferredY?5:y===50?1:0):0
+ })).sort((a,b)=>(b.space+b.preference)-(a.space+a.preference)||Math.abs(a.y-50)-Math.abs(b.y-50))[0];
  const minTarget=Math.min(98,progress+2);
  const maxTarget=Math.max(minTarget,Math.min(98,progress+18));
- const targetProgress=clamp(lineProgress+2.5,minTarget,maxTarget);
- return{x:clamp(teamId===0?targetProgress:100-targetProgress,2,98),y:lane.y,active:true};
+ // On an advanced wide delivery, the striker attacks the far-post corridor
+ // just behind the defensive line; central attacks retain the normal run.
+ const targetProgress=clamp(lineProgress+(crossingLane?1.5:2.5),minTarget,maxTarget);
+ return{x:clamp(teamId===0?targetProgress:100-targetProgress,2,98),y:lane.y,active:true,crossingLane};
 }
 function updateShape(s,teamId,carrier,counterActive=false){
  const ballX=s.ball.x,ballY=s.ball.y;
