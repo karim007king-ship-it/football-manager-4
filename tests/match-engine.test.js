@@ -349,7 +349,7 @@ test('corner restart selects an active wide taker and places the ball at the cor
 
 test('throw-in and free-kick restarts preserve awarded possession and bounded locations',()=>{
  const s=create(503);
- const throwIn=resolveRestart(s,'throw_in',1,{x:45,y:50});
+ const throwIn=resolveRestart(s,'throw_in',1,{x:45,y:20});
  assert.equal(throwIn.restartType,'throw_in');
  assert.equal(s.ball.team,1);
  assert.equal(s.ball.y,3);
