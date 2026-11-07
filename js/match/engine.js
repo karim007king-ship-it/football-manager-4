@@ -105,13 +105,27 @@ function updateShape(s,teamId,carrier){
    const isPresser=pressers.some(q=>q.id===p.id);
    if(!has&&isPresser){
     const rank=pressers.findIndex(q=>q.id===p.id);
-    const target=rank===0?{x:carrier.x,y:carrier.y}:{x:carrier.x-dir*5,y:carrier.y+(p.baseY<50?-7:7)};
+    const target=defensiveCoverTarget(carrier,p,t.id,rank);
     moveToward(p,target,rank===0?1.8*pressScale:1.15*pressScale);
    }else{
     moveToward(p,{x:clamp(tx,2,98),y:clamp(ty,3,97)},(has?1.3:1.25)*fitness(p));
    }
   }
  }
+}
+// Give the first presser a direct close-down, the second a goal-side cover
+// angle, and the third a central screen. The same geometry mirrors for both ends.
+function defensiveCoverTarget(carrier,player,teamId,rank){
+ const dir=teamId===0?1:-1;
+ if(rank===0)return{x:carrier.x,y:carrier.y};
+ if(rank===1)return{
+  x:clamp(carrier.x-dir*5.5,2,98),
+  y:clamp(carrier.y+(player.baseY<50?-5.5:5.5),3,97)
+ };
+ return{
+  x:clamp(carrier.x-dir*8,2,98),
+  y:clamp(carrier.y+(50-carrier.y)*.55,3,97)
+ };
 }
 function addEvent(s,e){s.events.push(e);if(s.events.length>300)s.events.shift();}
 function pointSegmentDistance(point,a,b){
@@ -299,7 +313,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
