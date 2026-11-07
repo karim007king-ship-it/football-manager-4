@@ -254,6 +254,39 @@ function findPassInterceptor(carrier,target,defenders){
  }
  return best;
 }
+// Resolve an aerial cross at its landing point without consuming RNG.
+// Nearby active outfield players contest it; attributes and distance decide the
+// first contact, with stable team/player tie-breakers for deterministic replay.
+function resolveCrossContest(s,carrier,receiver,attackingTeam){
+ if(attackingTeam!==0&&attackingTeam!==1)throw Error('Attacking team must be 0 or 1');
+ if(!s||!Array.isArray(s.teams)||s.teams.length!==2)throw Error('Cross contest requires two teams');
+ const attack=s.teams[attackingTeam],defend=s.teams[1-attackingTeam];
+ if(!attack.players.includes(receiver)||!receiver.active||!carrier||!carrier.active)throw Error('Cross carrier and receiver must be active players');
+ const landing={x:receiver.x,y:receiver.y},candidates=[];
+ for(const team of s.teams){for(const player of active(team)){
+  if(keeper(player.role))continue;
+  const d=distance(player,landing);
+  if(d>18)continue;
+  const aerialSkill=Number(player.pace??50)*.012+(team.id===attackingTeam?(Number(player.passing??50)+Number(player.shooting??50))*.002:Number(player.defending??50)*.004);
+  candidates.push({teamId:team.id,player,score:d-aerialSkill,d});
+ }}
+ if(!candidates.some(c=>c.player.id===receiver.id&&c.teamId===attackingTeam))candidates.push({teamId:attackingTeam,player:receiver,score:distance(receiver,landing)-Number(receiver.pace??50)*.012-(Number(receiver.passing??50)+Number(receiver.shooting??50))*.002,d:0});
+ candidates.sort((a,b)=>a.score-b.score||a.teamId-b.teamId||String(a.player.id).localeCompare(String(b.player.id)));
+ const winner=candidates[0];
+ if(winner.teamId===attackingTeam){
+  s.ball={x:landing.x,y:landing.y,team:attackingTeam,playerId:winner.player.id};
+  s.transition=null;
+  return{type:'cross',outcome:'completed',minute:s.minute+1,team:attackingTeam,playerId:winner.player.id,from:carrier.id,to:winner.player.id,attackingTeam,x:landing.x,y:landing.y};
+ }
+ const outlet=isDefensiveThird(winner.player,defend.id)?chooseClearanceTarget(defend,winner.player,defend.id):null;
+ startCounterTransition(s,defend.id);
+ if(outlet){
+  s.ball={x:outlet.x,y:outlet.y,team:defend.id,playerId:outlet.id};
+  return{type:'clearance',source:'cross',minute:s.minute+1,team:defend.id,playerId:winner.player.id,from:winner.player.id,to:outlet.id,attackingTeam,x:outlet.x,y:outlet.y};
+ }
+ s.ball={x:winner.player.x,y:winner.player.y,team:defend.id,playerId:winner.player.id};
+ return{type:'interception',source:'cross',minute:s.minute+1,team:defend.id,playerId:winner.player.id,attackingTeam,x:winner.player.x,y:winner.player.y};
+}
 // Score receiver space and the entire pass corridor, not only the receiver's endpoint.
 function classifyPassPattern(carrier,target,team,teamId,laneClearance){
  const dir=teamId===0?1:-1;
@@ -439,18 +472,23 @@ function stepAction(s){
     if(laneDefender&&rnd()<laneRisk){
      event=resolveDefensiveRecovery(s,opp,laneDefender.player,tid,rnd);
     }else if(rnd()<chance){
-     s.completedPasses[tid]++;
-     s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
      const passType=best.passType||'normal';
      const overhitChance=passType==='cross'?.12:passType==='switch'?.07:passType==='through_ball'?.04:.02;
-     // Peek at a decorrelated value derived from the current PRNG state.
-     // This models overhit risk without consuming a draw or shifting every
-     // later match decision in the established calibration stream.
+     // Derive overhit risk from the current PRNG state without advancing it.
      const overhitState=(Number(rnd.state)||0)>>>0;
      const overhitRoll=((overhitState^0xA5A5A5A5)>>>0)/4294967296;
      const overhit=overhitRoll<overhitChance;
-     event={type:'pass',passType,minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit,x:best.p.x,y:best.p.y};
-     if(overhit)passBoundary={from:{x:carrier.x,y:carrier.y},to:{x:best.p.x,y:best.p.y},lastTouchTeam:tid};
+     if(overhit){
+      event={type:passType==='cross'?'cross':'pass',passType,outcome:passType==='cross'?'overhit':undefined,minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit:true,x:best.p.x,y:best.p.y};
+      passBoundary={from:{x:carrier.x,y:carrier.y},to:{x:best.p.x,y:best.p.y},lastTouchTeam:tid};
+     }else if(passType==='cross'){
+      event=resolveCrossContest(s,carrier,best.p,tid);
+      if(event.outcome==='completed')s.completedPasses[tid]++;
+     }else{
+      s.completedPasses[tid]++;
+      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
+      event={type:'pass',passType,minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit:false,x:best.p.x,y:best.p.y};
+     }
     }else{
      const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;
      if(win){
@@ -592,7 +630,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveCrossContest,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
