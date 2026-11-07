@@ -293,7 +293,8 @@ function stepAction(s){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
   const blockChance=blocker?clamp(.16+(blocker.defending*.0035)+(pd<9?.08:0),.12,.58):0;
-  const blocked=!!blocker&&rnd()<blockChance;
+  const blockRoll=blocker?rnd():1;
+  const blocked=!!blocker&&blockRoll<blockChance;
   const on=!blocked&&rnd()<clamp(.28+(carrier.shooting*sharpness)/180,.28,.8);
   // Off-target shots receive a real goal-line trajectory. The aim point is
   // deliberately outside the goal mouth but remains inside the pitch, so an
@@ -306,15 +307,16 @@ function stepAction(s){
    ?(Number(goalkeeper.gkReflexes??keeperSkill)*.5+Number(goalkeeper.gkPositioning??keeperSkill)*.25+Number(goalDist<12?goalkeeper.gkOneOnOne??keeperSkill:goalkeeper.gkHandling??keeperSkill)*.25)
    :60;
   const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0)-(keeperSkill-60)*.0015-(keeperResponse-60)*.0015,.03,.5);
-  const goal=!blocked&&on&&rnd()<quality;
+  const goalRoll=(!blocked&&on)?rnd():1;
+  const goal=!blocked&&on&&goalRoll<quality;
   if(goal){s.score[tid]++;s.transition=null;}
   const saved=!blocked&&on&&!goal;
-  // A minority of saves are parried rather than held; model the parry as a
-  // real segment beyond the defending goal line so the last-touch rule awards
-  // a corner. Stronger handling reduces the chance of spilling the ball.
-  const parried=saved&&rnd()<clamp(.06+(100-Number(goalkeeper?.gkHandling??keeperSkill))*.0015,.06,.18);
-  // A blocked attempt can also glance off a defender and run behind the goal.
-  const deflectedOut=blocked&&rnd()<clamp(.05+Number(blocker?.defending||0)*.001,.05,.15);
+  // Reuse the existing shot/block rolls for secondary outcomes. This keeps
+  // the seeded random stream stable for every action that follows the shot.
+  const parryChance=clamp(.06+(100-Number(goalkeeper?.gkHandling??keeperSkill))*.0015,.06,.18);
+  const parried=saved&&((goalRoll-quality)/Math.max(.000001,1-quality))<parryChance;
+  const deflectionChance=clamp(.05+Number(blocker?.defending||0)*.001,.05,.15);
+  const deflectedOut=blocked&&(blockRoll/Math.max(.000001,blockChance))<deflectionChance;
   if(blocked||saved)startCounterTransition(s,oid);
   event={type:blocked?'block':goal?'goal':saved?'save':'shot',minute:s.minute+1,
    team:blocked||saved?oid:tid,playerId:blocked?blocker.id:saved?(goalkeeper?.id??carrier.id):carrier.id,
