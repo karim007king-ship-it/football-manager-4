@@ -288,7 +288,7 @@ function stepAction(s){
   event={type:blocked?'block':goal?'goal':saved?'save':'shot',minute:s.minute+1,
    team:blocked||saved?oid:tid,playerId:blocked?blocker.id:saved?(goalkeeper?.id??carrier.id):carrier.id,
    shooterId:carrier.id,goalkeeperId:blocked?null:goalkeeper?.id??null,
-   attackingTeam:tid,onTarget:on,counterattack:counterActive||undefined,x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
+   attackingTeam:tid,onTarget:on,counterattack:counterActive,x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
    :goalkeeper;
@@ -314,7 +314,7 @@ function stepAction(s){
     }else if(rnd()<chance){
      s.completedPasses[tid]++;
      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
-     event={type:'pass',passType:best.passType||'normal',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive||undefined,x:best.p.x,y:best.p.y};
+     event={type:'pass',passType:best.passType||'normal',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,x:best.p.x,y:best.p.y};
     }else{
      const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;
      if(win){
@@ -327,7 +327,7 @@ function stepAction(s){
     carrier.x=clamp(carrier.x+dir*(.7+(carrier.pace*fitness(carrier))/95)*(counterActive?1.18:1),2,98);
     carrier.y=clamp(carrier.y+lateral,3,97);
     s.ball={x:carrier.x,y:carrier.y,team:tid,playerId:carrier.id};
-    event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,counterattack:counterActive||undefined,x:carrier.x,y:carrier.y};
+    event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,counterattack:counterActive,x:carrier.x,y:carrier.y};
    }
   }
  }
