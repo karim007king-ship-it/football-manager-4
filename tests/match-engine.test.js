@@ -302,6 +302,18 @@ test('striker run target attacks space behind the defensive line in both directi
  assert.ok(away.x<24,'away striker should attack beyond the mirrored defensive line');
  assert.ok(away.x<38,'away run must move toward the left attacking goal, not outside pitch bounds');
 });
+test('striker run targets remain inside pitch bounds near either attacking goal',()=>{
+ const defendersHome=[{role:'CB',active:true,x:90,y:40},{role:'CB',active:true,x:92,y:60}];
+ const home=strikerRunTarget({x:88,y:50},{x:97,y:50},0,defendersHome);
+ assert.equal(home.active,true);
+ assert.equal(home.x,98);
+ assert.ok(home.x>=2&&home.x<=98);
+ const defendersAway=defendersHome.map(p=>({...p,x:100-p.x}));
+ const away=strikerRunTarget({x:12,y:50},{x:3,y:50},1,defendersAway);
+ assert.equal(away.active,true);
+ assert.equal(away.x,2);
+ assert.ok(away.x>=2&&away.x<=98);
+});
 test('striker holds its supporting position before the ball reaches midfield',()=>{
  const striker={x:30,y:50};
  const run=strikerRunTarget(striker,{x:40,y:50},0,[{role:'CB',active:true,x:70,y:40}]);
