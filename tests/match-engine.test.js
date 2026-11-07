@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveRestart,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveRestart,classifyBoundaryRestart,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -371,4 +371,30 @@ test('penalty restart selects the strongest active outfield shooter and rejects 
  assert.equal(s.ball.playerId,expected.id);
  assert.throws(()=>resolveRestart(s,'offside',0,{x:50,y:50}),/Unsupported restart/);
  assert.throws(()=>resolveRestart(s,'corner',2,{x:97,y:3}),/team must be 0 or 1/);
+});
+
+test('boundary classification awards throw-ins to the team that did not touch last',()=>{
+ const top=classifyBoundaryRestart({x:45,y:20},{x:48,y:-4},0);
+ assert.deepEqual(top,{restartType:'throw_in',teamId:1,spot:{x:47.5,y:3}});
+ const bottom=classifyBoundaryRestart({x:45,y:80},{x:48,y:104},1);
+ assert.deepEqual(bottom,{restartType:'throw_in',teamId:0,spot:{x:47.5,y:97}});
+});
+
+test('goal-line classification mirrors corner and goal-kick awards for both ends',()=>{
+ const homeCorner=classifyBoundaryRestart({x:90,y:40},{x:105,y:42},1);
+ assert.deepEqual(homeCorner,{restartType:'corner',teamId:0,spot:{x:97,y:41.333333333333336}});
+ const awayGoalKick=classifyBoundaryRestart({x:90,y:40},{x:105,y:42},0);
+ assert.deepEqual(awayGoalKick,{restartType:'goal_kick',teamId:1,spot:{x:95,y:41.333333333333336}});
+ const awayCorner=classifyBoundaryRestart({x:10,y:60},{x:-5,y:58},0);
+ assert.deepEqual(awayCorner,{restartType:'corner',teamId:1,spot:{x:3,y:58.666666666666664}});
+ const homeGoalKick=classifyBoundaryRestart({x:10,y:60},{x:-5,y:58},1);
+ assert.deepEqual(homeGoalKick,{restartType:'goal_kick',teamId:0,spot:{x:5,y:58.666666666666664}});
+});
+
+test('boundary classifier ignores in-play and ambiguous exact-corner segments',()=>{
+ assert.equal(classifyBoundaryRestart({x:40,y:40},{x:60,y:60},0),null);
+ assert.equal(classifyBoundaryRestart({x:90,y:90},{x:110,y:110},0),null);
+ assert.throws(()=>classifyBoundaryRestart({x:-1,y:20},{x:5,y:20},0),/start inside/);
+ assert.throws(()=>classifyBoundaryRestart({x:20,y:20},{x:110,y:20},2),/Last-touch team/);
+ assert.throws(()=>classifyBoundaryRestart({x:20,y:20},{x:NaN,y:20},0),/finite numeric/);
 });
