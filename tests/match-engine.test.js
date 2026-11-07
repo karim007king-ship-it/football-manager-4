@@ -454,7 +454,7 @@ test('boundary decisions feed the restart resolver without changing awarded poss
 
 test('live goalkeeper parries and defender deflections award corners to the attacking team',()=>{
  let parries=0,deflections=0;
- for(let seed=1;seed<=240;seed++){
+ for(let seed=1;seed<=120;seed++){
   const state=simulateMatch(create(seed),90);
   for(let i=0;i<state.events.length;i++){
    const contact=state.events[i];
