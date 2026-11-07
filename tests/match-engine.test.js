@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -234,4 +234,25 @@ test('defensive recovery never attempts a clearance outside the defending third'
  const event=resolveDefensiveRecovery(state,defending,defender,0,()=>0);
  assert.equal(event.type,'interception');
  assert.equal(state.ball.playerId,defender.id);
+});
+
+test('passing-lane interception detects active outfield defenders symmetrically',()=>{
+ const homeBlocker={id:'home-blocker',role:'DF',active:true,x:52,y:51,defending:82};
+ const homeKeeper={id:'home-gk',role:'GK',active:true,x:58,y:50,defending:99};
+ const homeFar={id:'home-far',role:'DF',active:true,x:55,y:60,defending:99};
+ const home=findPassInterceptor({x:40,y:50},{x:75,y:50},[homeKeeper,homeFar,homeBlocker]);
+ assert.equal(home.player.id,'home-blocker');
+ assert.ok(home.gap<2);
+ const awayBlocker={id:'away-blocker',role:'DF',active:true,x:48,y:51,defending:82};
+ const away=findPassInterceptor({x:60,y:50},{x:25,y:50},[awayBlocker]);
+ assert.equal(away.player.id,'away-blocker');
+ assert.ok(away.gap<2);
+});
+test('passing-lane interception ignores inactive, goalkeeper and distant defenders',()=>{
+ const result=findPassInterceptor({x:40,y:50},{x:75,y:50},[
+  {id:'inactive',role:'DF',active:false,x:52,y:50,defending:99},
+  {id:'keeper',role:'GK',active:true,x:52,y:50,defending:99},
+  {id:'wide',role:'DF',active:true,x:52,y:60,defending:99}
+ ]);
+ assert.equal(result,null);
 });
