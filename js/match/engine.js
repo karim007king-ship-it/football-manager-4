@@ -61,7 +61,7 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const backLine=defenders.filter(p=>p.active&&!keeper(p.role)&&/^(CB|LB|RB|LWB|RWB|DF|DEF)/i.test(String(p.role||'')));
  const linePlayers=backLine.length?backLine:defenders.filter(p=>p.active&&!keeper(p.role));
  if(!linePlayers.length)return{x:player.x,y:player.y,active:false};
- const lineX=teamId===0?Math.max(...linePlayers.map(p=>p.x)):Math.min(...backLine.map(p=>p.x));
+ const lineX=teamId===0?Math.max(...linePlayers.map(p=>p.x)):Math.min(...linePlayers.map(p=>p.x));
  const lanes=[36,50,64];
  const lane=lanes.map(y=>({y,space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-(lineX-dir*2),d.y-y)),40)}))
   .sort((a,b)=>b.space-a.space)[0];
