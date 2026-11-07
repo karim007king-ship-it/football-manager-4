@@ -479,7 +479,7 @@ function stepAction(s){
      const overhitRoll=((overhitState^0xA5A5A5A5)>>>0)/4294967296;
      const overhit=overhitRoll<overhitChance;
      if(overhit){
-      event={type:passType==='cross'?'cross':'pass',passType,outcome:passType==='cross'?'overhit':undefined,minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit:true,x:best.p.x,y:best.p.y};
+      event=passType==='cross'?{type:'cross',passType,outcome:'overhit',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit:true,x:best.p.x,y:best.p.y}:{type:'pass',passType,minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive,overhit:true,x:best.p.x,y:best.p.y};
       passBoundary={from:{x:carrier.x,y:carrier.y},to:{x:best.p.x,y:best.p.y},lastTouchTeam:tid};
      }else if(passType==='cross'){
       event=resolveCrossContest(s,carrier,best.p,tid);
