@@ -339,7 +339,7 @@ function stepAction(s){
  // Keep the penalty modest so a red card changes the match without deciding it alone.
  const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
  const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
- const shotChance=clamp(baseShotChance+(reboundFollowUp?.16:0),.02,reboundFollowUp?.34:.16);
+ const shotChance=clamp(baseShotChance+(reboundFollowUp ? .16 : 0),.02,reboundFollowUp ? .34 : .16);
  let event=null,boundaryShot=null,reboundShot=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
