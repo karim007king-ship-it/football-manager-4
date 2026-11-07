@@ -450,6 +450,9 @@ function stepAction(s){
    team:blocked||saved&&!woodwork?oid:tid,playerId:blocked?blocker.id:saved&&!woodwork?(goalkeeper?.id??carrier.id):carrier.id,
    shooterId:carrier.id,goalkeeperId:blocked||woodwork?null:goalkeeper?.id??null,
    attackingTeam:tid,onTarget:on&&!woodwork,parried,woodwork,woodworkType:woodwork?woodworkType:null,deflectedOut,reboundFollowUp,crossFollowUp,counterattack:counterActive,
+   // Shot-context telemetry supports calibration without changing match decisions.
+   shotQuality:+quality.toFixed(5),goalDistance:+goalDist.toFixed(3),pressureDistance:+pd.toFixed(3),
+   shooterSkill:carrier.shooting,keeperSkill:+keeperSkill.toFixed(3),keeperResponse:+keeperResponse.toFixed(3),
    x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
