@@ -18,8 +18,12 @@ test('shadow monitor snapshot restores events, deduplication and deterministic c
  first.shadow.state.actionCount=10;
  first.shadow.state.transition={team:1,expiresAtAction:13};
  assert.equal(Monitor.recordLegacyEvent(first,event),true);
+ // Clearance second-ball metadata is part of the event contract and must survive
+ // the same JSON checkpoint/restore path used by the shadow monitor.
+ first.shadow.state.events.push({type:'clearance',minute:13,team:1,playerId:'outlet-7',from:'def-2',to:'outlet-7',x:55,y:32,secondBall:{contested:true,outcome:'lost',team:0,playerId:'press-9',x:55,y:32}});
  const stored=JSON.parse(JSON.stringify(Monitor.serialize(first)));
  const restored=Monitor.restore(stored);
+ assert.deepEqual(restored.shadow.state.events.find(e=>e.type==='clearance').secondBall,{contested:true,outcome:'lost',team:0,playerId:'press-9',x:55,y:32});
  assert.equal(restored.shadow.state.actionCount,first.shadow.state.actionCount);
  assert.deepEqual(restored.shadow.state.transition,first.shadow.state.transition);
  assert.equal(Monitor.recordLegacyEvent(restored,event),false);
