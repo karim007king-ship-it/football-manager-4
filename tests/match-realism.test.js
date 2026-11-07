@@ -68,7 +68,7 @@ test('seed sweep: full-match statistics remain internally consistent',()=>{
  const avgShots=totals.shots/100,avgPasses=totals.passes/100;
  const passRate=totals.passes?totals.completed/totals.passes*100:0;
  const avgTackles=totals.tackles/100,avgGoals=totals.goals/100;
- assert.ok(avgShots>=7&&avgShots<=22,'shot volume should remain in a plausible range');
+ assert.ok(avgShots>=7&&avgShots<=22,'shot volume should remain in a plausible range; average='+avgShots.toFixed(2));
  assert.ok(avgPasses>=60&&avgPasses<=220,'passing volume should remain in a plausible range');
  assert.ok(passRate>=55&&passRate<=85,'pass completion should remain plausible');
  assert.ok(avgTackles>=8&&avgTackles<=20,'tackle volume should remain in a plausible range');
