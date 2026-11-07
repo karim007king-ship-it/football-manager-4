@@ -1,14 +1,23 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
  return{name,players:roles.map((role,i)=>({id:name+'-'+i,name:'P'+i,role,pace:66,passing:68,shooting:62,defending:61,x:xs[i],y:[50,18,39,61,82,50,34,64,12,50,88][i]}))};
 }
 const create=(seed=23)=>createMatch({teams:[team('Home',0),team('Away',1)],seed});
-test('creates valid two-team match state',()=>{const s=create();assert.equal(s.minute,0);assert.deepEqual(s.score,[0,0]);assert.equal(s.teams.length,2);assert.equal(s.ball.team,0);});
+
+test('classifies through balls, crosses, cutbacks and switches from pitch context',()=>{
+ const team={players:[]};
+ assert.equal(classifyPassPattern({x:55,y:50},{x:67,y:51},team,0,9),'through_ball');
+ assert.equal(classifyPassPattern({x:75,y:12},{x:80,y:48},team,0,9),'cross');
+ assert.equal(classifyPassPattern({x:92,y:12},{x:87,y:50},team,0,9),'cutback');
+ assert.equal(classifyPassPattern({x:50,y:15},{x:48,y:60},team,0,9),'switch');
+ assert.equal(classifyPassPattern({x:40,y:40},{x:43,y:42},team,0,9),'normal');
+});
+\ntest('creates valid two-team match state',()=>{const s=create();assert.equal(s.minute,0);assert.deepEqual(s.score,[0,0]);assert.equal(s.teams.length,2);assert.equal(s.ball.team,0);});
 
 test('same seed and same lineups reproduce identical match output',()=>{
  const first=simulateMatch(create(991),90),second=simulateMatch(create(991),90);
