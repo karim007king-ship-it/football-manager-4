@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -18,6 +18,16 @@ test('classifies through balls, crosses, cutbacks and switches from pitch contex
  assert.equal(classifyPassPattern({x:40,y:40},{x:43,y:42},team,0,9),'normal');
 });
 
+test('shot blocker detection finds defenders in the shooting corridor but ignores keepers and distant players',()=>{
+ const shooter={x:82,y:50};
+ const defenders=[
+  {id:'wide',role:'CB',active:true,x:90,y:52,defending:80},
+  {id:'keeper',role:'GK',active:true,x:96,y:50,defending:99},
+  {id:'distant',role:'CB',active:true,x:90,y:70,defending:90}
+ ];
+ assert.equal(findShotBlocker(shooter,100,defenders).id,'wide');
+ assert.equal(findShotBlocker(shooter,100,[defenders[1],defenders[2]]),null);
+});
 test('creates valid two-team match state',()=>{const s=create();assert.equal(s.minute,0);assert.deepEqual(s.score,[0,0]);assert.equal(s.teams.length,2);assert.equal(s.ball.team,0);});
 
 test('same seed and same lineups reproduce identical match output',()=>{
@@ -26,7 +36,7 @@ test('same seed and same lineups reproduce identical match output',()=>{
  assert.deepEqual(stripRandom(first),stripRandom(second));
 });
 
-test('advances 90 minutes and event times stay aligned',()=>{const s=simulateMatch(create(7),90);assert.equal(s.minute,90);assert.ok(s.events.length>0);assert.equal(s.possession[0]+s.possession[1],90);assert.ok(s.events.every(e=>e.minute>=1&&e.minute<=90));assert.ok(s.events.every(e=>['carry','pass','interception','tackle','shot','save','goal'].includes(e.type)));});
+test('advances 90 minutes and event times stay aligned',()=>{const s=simulateMatch(create(7),90);assert.equal(s.minute,90);assert.ok(s.events.length>0);assert.equal(s.possession[0]+s.possession[1],90);assert.ok(s.events.every(e=>e.minute>=1&&e.minute<=90));assert.ok(s.events.every(e=>['carry','pass','interception','tackle','shot','block','save','goal'].includes(e.type)));});
 test('off-ball teammates move to support play',()=>{const s=create();const before=s.teams[0].players.filter(p=>p.id!==s.ball.playerId).map(p=>({id:p.id,x:p.x,y:p.y}));stepMatch(s);assert.ok(before.some(old=>{const p=s.teams[0].players.find(x=>x.id===old.id);return Math.abs(p.x-old.x)>.001||Math.abs(p.y-old.y)>.001;}));});
 test('both teams can progress toward their attacking goal when space is available',()=>{for(const side of [0,1]){const h=team('Home',0),a=team('Away',1),att=side===0?h:a,def=side===0?a:h;att.players.forEach((p,i)=>{p.x=side===0?(i===1?50:60):(i===1?50:40);p.y=10+i*7;});def.players.forEach((p,i)=>{p.x=side===0?98:2;p.y=5+i*9;});const s=createMatch({teams:[h,a],seed:101}),c=att.players[1],x=c.x;s.ball={x:c.x,y:c.y,team:side,playerId:c.id};stepMatch(s);const advanced=s.events.some(e=>e.team===side&&(e.type==='carry'||e.type==='pass')&&(side===0?e.x>x:e.x<x));assert.ok(advanced,'team '+side+' should record a forward carry or pass during the minute');}});
 test('random state zero is preserved exactly when restoring a saved generator',()=>{
