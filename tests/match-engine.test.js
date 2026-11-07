@@ -452,6 +452,29 @@ test('boundary decisions feed the restart resolver without changing awarded poss
  }
 });
 
+test('live goalkeeper parries and defender deflections award corners to the attacking team',()=>{
+ let parries=0,deflections=0;
+ for(let seed=1;seed<=240;seed++){
+  const state=simulateMatch(create(seed),90);
+  for(let i=0;i<state.events.length;i++){
+   const contact=state.events[i];
+   if(contact.parried!==true&&contact.deflectedOut!==true)continue;
+   const restart=state.events[i+1];
+   assert.ok(restart,'a parry or defensive deflection out must be followed by a restart');
+   assert.equal(restart.type,'restart');
+   assert.equal(restart.restartType,'corner');
+   assert.equal(restart.team,contact.attackingTeam);
+   assert.equal(state.ball.team,restart.team);
+   assert.ok(state.teams[restart.team].players.some(p=>p.active&&p.id===restart.playerId));
+   assert.ok(restart.x>=2&&restart.x<=98&&restart.y>=3&&restart.y<=97);
+   if(contact.parried)parries++;
+   if(contact.deflectedOut)deflections++;
+  }
+ }
+ assert.ok(parries>0,'the deterministic cohort must exercise goalkeeper parries');
+ assert.ok(deflections>0,'the deterministic cohort must exercise defender deflections');
+});
+
 test('live unblocked off-target shots award a goal kick with valid restart ownership',()=>{
  let misses=0;
  for(let seed=1;seed<=120;seed++){
