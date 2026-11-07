@@ -272,3 +272,12 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - No phone compatibility claim until the user tests the exact APK on the target device.
 - The legacy match engine remains authoritative until shadow comparison, rollback and explicit user approval are complete.
 - Do not merge PR #1 or alter FM3.
+
+
+## 8. Latest execution update — 2026-11-07
+
+- The striker-run boundary and home/away direction changes are now covered by the passing CI run for commit `e42011b86aa4fb04a37db54af5ebbdd37cf51d43`.
+- Added `tests/match-state-invariants.test.js`: 60 deterministic seeds, checked after every minute for 90 minutes.
+- The new audit checks score/shot/on-target consistency, possession reconciliation, bounded player and ball coordinates, stamina bounds, active ball ownership, event clock validity and player-reference integrity.
+- This audit is pending its own CI result; it is not yet an accepted milestone.
+- Continue next with integration-level movement/defensive tracking tests, then set-piece/restart correctness. Keep the shadow engine read-only and the legacy engine authoritative.
