@@ -740,9 +740,9 @@ test('cross contests resolve completed delivery, interception and defensive clea
 });
 
 
-test('cross-originated clearances resolve pressured second balls in both attack directions',()=>{
- const run=(attackingTeam)=>{
-  const state=create(attackingTeam===0?1601:1602);
+test('cross-originated clearances resolve pressured second balls for either winner and attack direction',()=>{
+ const run=(attackingTeam,attackingWins)=>{
+  const state=create(1601+attackingTeam+(attackingWins?0:10));
   const defendingTeam=1-attackingTeam;
   const carrier=state.teams[attackingTeam].players[8];
   const receiver=state.teams[attackingTeam].players[9];
@@ -755,8 +755,8 @@ test('cross-originated clearances resolve pressured second balls in both attack 
   receiver.x=landingX;receiver.y=48;
   receiver.pace=25;receiver.passing=25;receiver.shooting=25;
   defender.x=landingX;defender.y=48;defender.pace=100;defender.defending=100;
-  outlet.x=outletX;outlet.y=32;outlet.pace=30;outlet.defending=30;
-  pressing.x=outletX;pressing.y=32;pressing.pace=100;pressing.passing=100;
+  outlet.x=outletX;outlet.y=32;outlet.pace=attackingWins?30:100;outlet.defending=attackingWins?30:100;
+  pressing.x=outletX;pressing.y=32;pressing.pace=attackingWins?100:25;pressing.passing=attackingWins?100:25;
   for(const p of state.teams[attackingTeam].players){
    if(p!==carrier&&p!==receiver&&p!==pressing){p.x=attackingTeam===0?20:80;p.y=5;}
   }
@@ -764,19 +764,24 @@ test('cross-originated clearances resolve pressured second balls in both attack 
    if(p!==defender&&p!==outlet){p.x=attackingTeam===0?95:5;p.y=5;}
   }
   const event=resolveCrossContest(state,carrier,receiver,attackingTeam);
+  const winningTeam=attackingWins?attackingTeam:defendingTeam;
+  const winner=attackingWins?pressing:outlet;
   assert.equal(event.type,'clearance');
   assert.equal(event.team,defendingTeam);
   assert.equal(event.to,outlet.id);
   assert.equal(event.secondBall.contested,true);
-  assert.equal(event.secondBall.outcome,'lost');
-  assert.equal(event.secondBall.team,attackingTeam);
-  assert.equal(event.secondBall.playerId,pressing.id);
-  assert.equal(state.ball.team,attackingTeam);
-  assert.equal(state.ball.playerId,pressing.id);
-  assert.equal(state.transition,null,'the attacking recovery cancels the defending counter transition');
+  assert.equal(event.secondBall.outcome,attackingWins?'lost':'retained');
+  assert.equal(event.secondBall.team,winningTeam);
+  assert.equal(event.secondBall.playerId,winner.id);
+  assert.equal(state.ball.team,winningTeam);
+  assert.equal(state.ball.playerId,winner.id);
+  assert.equal(state.transition?.team,attackingWins?undefined:defendingTeam);
+  if(attackingWins)assert.equal(state.transition,null,'the attacking recovery cancels the defending counter transition');
  };
- run(0);
- run(1);
+ run(0,true);
+ run(1,true);
+ run(0,false);
+ run(1,false);
 });
 
 test('completed crosses create a one-action mirrored shooting opportunity inside the box',()=>{
