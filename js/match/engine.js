@@ -70,7 +70,7 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const lane=lanes.map(y=>({
   y,
   space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-targetX,d.y-y)),40),
-  preference:crossingLane?(y===preferredY?1:y===50?.25:0):0
+  preference:crossingLane?(y===preferredY?6:y===50?.25:0):0
  })).sort((a,b)=>(b.space+b.preference)-(a.space+a.preference)||Math.abs(a.y-50)-Math.abs(b.y-50))[0];
  const minTarget=Math.min(98,progress+2);
  const maxTarget=Math.max(minTarget,Math.min(98,progress+18));
