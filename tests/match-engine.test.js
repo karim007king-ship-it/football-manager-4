@@ -246,6 +246,7 @@ test('defensive recovery resolves a real clearance and transfers possession to i
  assert.equal(event.to,outlet.id);
  assert.equal(state.ball.team,1);
  assert.equal(state.ball.playerId,outlet.id);
+ assert.equal(state.transition.team,1,'a clearance should initiate a counterattack for the recovering side');
 });
 test('defensive recovery keeps an ordinary interception when clearance is not rolled',()=>{
  const state=create(74),defending=state.teams[1];
@@ -256,6 +257,7 @@ test('defensive recovery keeps an ordinary interception when clearance is not ro
  assert.equal(event.playerId,defender.id);
  assert.equal(state.ball.team,1);
  assert.equal(state.ball.playerId,defender.id);
+ assert.equal(state.transition.team,1,'an interception should initiate a counterattack for the recovering side');
 });
 test('defensive recovery never attempts a clearance outside the defending third',()=>{
  const state=create(75),defending=state.teams[1];
@@ -264,6 +266,7 @@ test('defensive recovery never attempts a clearance outside the defending third'
  const event=resolveDefensiveRecovery(state,defending,defender,0,()=>0);
  assert.equal(event.type,'interception');
  assert.equal(state.ball.playerId,defender.id);
+ assert.equal(state.transition.team,1);
 });
 
 test('passing-lane interception detects active outfield defenders symmetrically',()=>{
