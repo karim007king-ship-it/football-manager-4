@@ -679,11 +679,11 @@ function closeM(){$('modal').style.display='none';MN=[];if(M)M.hold=false}
 function menuPick(i){let f=MN[i].fn;closeM();f();saveMatchSession()}
 
 function startMatch(cup){
-  if(busy)return;document.body.classList.add('match-live');if(!cup&&G.cup&&G.cup.due)return say('عليك لعب مباراة الكأس أولاً 🏆');
+  if(busy)return;if(!cup&&G.cup&&G.cup.due)return say('عليك لعب مباراة الكأس أولاً 🏆');
   let U=G.uid,pr=cup?G.cup.pairs.find(x=>x.includes(U)):G.fix[G.round].find(x=>x.includes(U)),home=pr[0]==U,opp=C(home?pr[1]:pr[0]);
   let S=teamS(U),O=teamS(opp.id);
   if(S.xi.length<11)return say('⚠️ لا يوجد لاعبون أصحاء كفاية لتشكيلة '+G.form+'. اشترِ لاعبين أو غيّر الخطة.');
-  snd.start();busy=true;let wx=Math.random()<.3?'rain':'clear';
+  document.body.classList.add('match-live');snd.start();busy=true;let wx=Math.random()<.3?'rain':'clear';
   M={yc:{},pw0:S.pw,pg:{},pa:{},pr:1,tp:1,wd:1,ins:{},rt:{},ast:null,bx:50,by:50,mo:50,mom:0,q:[],tb:{a:0,d:0},cup:!!cup,derby:isDerby(C(U).name,opp.name),min:0,end:90,gu:0,go:0,home,opp,O,wx,done:false,paused:false,hold:false,skip:false,tac:G.tactic,xi:[...S.xi],slot:{},en:{},subs:5,out:new Set(),oR:0,oSentOff:[],sh:[0,0],st:[0,0],ps:0,sc:[],speed:1};
   M.shadowSlots={};M.xi.forEach((p,i)=>{M.shadowSlots[p.id]=i;M.slot[p.id]=S.sl[p.id]||p.pos;M.en[p.id]=100});M.hurt=new Set(M.xi.filter(p=>p.inj).map(p=>p.id));initShadowMonitor();if(home){M.att=attend(opp);let fl=M.att/SDC[SD().cap];M.tb.a+=.8*fl;M.tb.d+=.5*fl;M.fl=fl}M.fan=fan();if(G.scout&&G.scout.rd==G.round&&G.scout.sug==G.tactic){M.tb.a+=.6;M.tb.d+=.6;log('🔍 تقرير المساعد أفاد: خطتك تستغل نقاط ضعف الخصم','log-goal')}if(home){let ff=(M.fan-60)/50;M.tb.a+=ff;M.tb.d+=ff*.6}
   $('console').innerHTML='';$('console').style.display='block';$('ctl').style.display='block';$('sb').style.display='block';$('content').style.display='none';
