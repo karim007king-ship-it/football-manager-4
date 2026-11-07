@@ -294,3 +294,15 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - This first live shot path is pending the latest CI checks and matching Android APK build for commit `47a17b47af2792d1704cba153f6609872ad213a4`; do not treat it as accepted until those workflows finish successfully. No phone runtime test is implied.
 - **Remaining gaps:** blocked shots still resolve directly to the blocker without a modeled deflection trajectory; saved shots still transfer directly to the goalkeeper without a parry/rebound path; crosses and ordinary passes do not yet carry modeled ball segments through the boundary classifier. Corner awards from live deflections are therefore not implemented.
 - Next: model goalkeeper parries and defender deflections as explicit, deterministic ball segments, then test corner/goal-kick ownership in both attacking directions. Preserve deterministic replay, event/stat consistency, Shadow Mode and legacy result authority.
+
+
+## 10. Rebound follow-up and defensive recovery — 2026-11-07
+
+- Added an in-box goalkeeper-parry rebound resolution that selects the nearest active outfield player using distance, pace and stable tie-breakers; the loose ball remains inside the pitch and the event records the goalkeeper, shooter and attacking team.
+- A parry now creates a one-action rebound opportunity. If the attacking side wins the loose ball, its immediate next action receives a bounded follow-up-shot probability boost and the shot event records `reboundFollowUp`.
+- If the defending side wins the loose ball, its immediate next action is resolved through the existing defensive-recovery decision, allowing a clearance to a forward outlet or a normal interception. The opportunity is consumed once and does not persist into later actions.
+- Added deterministic mirrored rebound geometry tests, a 1,200-seed parry/deflection event audit, and focused tests for attacking follow-up shots and defensive recovery. The defender-deflection corner geometry remains covered by controlled mirrored tests rather than relying on rare random occurrence.
+- Verified commit: `40b77006115d3f1eab72a512477794fc9df7307a`. CI runs `42394290493` and `42394284558` (FM4 checks) passed; Android APK run `42394284405` passed.
+- This is automated CI evidence only. No real-device install or match-play test has been performed. The new engine remains shadow-only; legacy match results and saves remain authoritative.
+
+**Next:** model crossbar/post rebounds as explicit in-play second-ball trajectories, then integrate crosses and passes that leave the pitch through the same boundary/restart resolver. Keep trajectory generation deterministic and test both attacking directions before broader balance tuning.
