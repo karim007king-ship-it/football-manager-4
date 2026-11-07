@@ -293,7 +293,12 @@ function resolveCrossContest(s,carrier,receiver,attackingTeam){
  startCounterTransition(s,defend.id);
  if(outlet){
   s.ball={x:outlet.x,y:outlet.y,team:defend.id,playerId:outlet.id};
-  return{type:'clearance',source:'cross',minute:s.minute+1,team:defend.id,playerId:winner.player.id,from:winner.player.id,to:outlet.id,attackingTeam,x:outlet.x,y:outlet.y};
+  const event={type:'clearance',source:'cross',minute:s.minute+1,team:defend.id,playerId:winner.player.id,from:winner.player.id,to:outlet.id,attackingTeam,x:outlet.x,y:outlet.y};
+  // Cross-originated clearances use the same nearby-pressure second-ball
+  // resolver as defensive recoveries, keeping possession and transition state consistent.
+  const secondBall=resolveClearanceSecondBall(s,defend,attackingTeam,outlet);
+  if(secondBall)event.secondBall=secondBall;
+  return event;
  }
  s.ball={x:winner.player.x,y:winner.player.y,team:defend.id,playerId:winner.player.id};
  return{type:'interception',source:'cross',minute:s.minute+1,team:defend.id,playerId:winner.player.id,attackingTeam,x:winner.player.x,y:winner.player.y};
