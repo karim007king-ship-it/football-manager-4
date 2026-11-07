@@ -629,8 +629,8 @@ test('striker attacks the far-post lane on advanced wide crosses in both directi
  assert.equal(homeUpper.active,true);assert.equal(homeUpper.crossingLane,true);assert.equal(homeUpper.y,64);
  assert.equal(homeLower.active,true);assert.equal(homeLower.crossingLane,true);assert.equal(homeLower.y,36);
  const mirrored=defenders.map(p=>({...p,x:100-p.x,y:100-p.y}));
- const awayUpper=strikerRunTarget({x:28,y:50},{x:24,y:12},1,mirrored);
- const awayLower=strikerRunTarget({x:28,y:50},{x:24,y:88},1,mirrored);
+ const awayUpper=strikerRunTarget({x:28,y:50},{x:24,y:88},1,mirrored);
+ const awayLower=strikerRunTarget({x:28,y:50},{x:24,y:12},1,mirrored);
  assert.equal(awayUpper.crossingLane,true);assert.equal(awayUpper.y,36);
  assert.equal(awayLower.crossingLane,true);assert.equal(awayLower.y,64);
  const central=strikerRunTarget(striker,{x:76,y:50},0,defenders);
