@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -450,6 +450,13 @@ test('boundary decisions feed the restart resolver without changing awarded poss
   assert.ok(s.ball.y>=3&&s.ball.y<=97);
   assert.ok(s.teams[decision.teamId].players.some(p=>p.active&&p.id===event.playerId));
  }
+});
+
+test('shot deflection outcome uses the conditional block roll without extra randomness',()=>{
+ assert.equal(shotDeflectionOutcome(false,.001,.4,90),false,'unblocked shots cannot deflect off a defender');
+ assert.equal(shotDeflectionOutcome(true,.01,.4,60),true,'a low conditional contact roll should produce a glancing deflection');
+ assert.equal(shotDeflectionOutcome(true,.30,.4,60),false,'a high conditional contact roll should remain a controlled block');
+ assert.equal(shotDeflectionOutcome(true,.001,.4,1),true,'even a low-skill defender has a bounded minimum deflection chance');
 });
 
 test('live goalkeeper parries and defender deflections award corners to the attacking team',()=>{
