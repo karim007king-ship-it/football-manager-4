@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,resolveCrossContest,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,resolveCrossContest,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveClearanceSecondBall,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -247,6 +247,46 @@ test('defensive recovery resolves a real clearance and transfers possession to i
  assert.equal(state.ball.team,1);
  assert.equal(state.ball.playerId,outlet.id);
  assert.equal(state.transition.team,1,'a clearance should initiate a counterattack for the recovering side');
+});
+test('clearance second balls are contested only under nearby pressure and can be won by either side',()=>{
+ const retained=create(731),defending=retained.teams[1];
+ const defender=defending.players.find(p=>p.role==='DF');
+ defender.x=80;defender.y=50;defender.defending=90;
+ const outlet=defending.players.find(p=>p.id!==defender.id&&p.role!=='GK');
+ defending.players.filter(p=>p.id!==defender.id&&p.id!==outlet.id).forEach(p=>{p.x=95;p.y=50;});
+ outlet.x=55;outlet.y=32;
+ const opponent=retained.teams[0].players.find(p=>p.role==='ST');
+ opponent.x=61;opponent.y=36;
+ const event=resolveDefensiveRecovery(retained,defending,defender,0,()=>0);
+ assert.equal(event.type,'clearance');
+ assert.equal(event.secondBall.contested,true);
+ assert.equal(event.secondBall.outcome,'retained');
+ assert.equal(event.secondBall.team,1);
+ assert.equal(retained.ball.playerId,outlet.id);
+ assert.equal(retained.transition.team,1);
+
+ const lost=create(732),away=lost.teams[1],awayDefender=away.players.find(p=>p.role==='DF');
+ awayDefender.x=80;awayDefender.y=50;awayDefender.defending=90;
+ const awayOutlet=away.players.find(p=>p.id!==awayDefender.id&&p.role!=='GK');
+ away.players.filter(p=>p.id!==awayDefender.id&&p.id!==awayOutlet.id).forEach(p=>{p.x=95;p.y=50;});
+ awayOutlet.x=55;awayOutlet.y=32;
+ const pressing=lost.teams[0].players.find(p=>p.role==='ST');
+ pressing.x=55.5;pressing.y=32.5;
+ const lostEvent=resolveDefensiveRecovery(lost,away,awayDefender,0,()=>0);
+ assert.equal(lostEvent.type,'clearance');
+ assert.equal(lostEvent.secondBall.outcome,'lost');
+ assert.equal(lostEvent.secondBall.team,0);
+ assert.equal(lost.ball.playerId,pressing.id);
+ assert.equal(lost.transition,null);
+
+ const safe=create(733),safeDefending=safe.teams[1],safeDefender=safeDefending.players.find(p=>p.role==='DF');
+ safeDefender.x=80;safeDefender.y=50;safeDefender.defending=90;
+ const safeOutlet=safeDefending.players.find(p=>p.id!==safeDefender.id&&p.role!=='GK');
+ safeDefending.players.filter(p=>p.id!==safeDefender.id&&p.id!==safeOutlet.id).forEach(p=>{p.x=95;p.y=50;});
+ safeOutlet.x=55;safeOutlet.y=32;
+ const safeEvent=resolveDefensiveRecovery(safe,safeDefending,safeDefender,0,()=>0);
+ assert.equal(safeEvent.secondBall,undefined,'an uncontested clearance must keep its original outlet');
+ assert.equal(safe.ball.playerId,safeOutlet.id);
 });
 test('defensive recovery keeps an ordinary interception when clearance is not rolled',()=>{
  const state=create(74),defending=state.teams[1];
