@@ -72,7 +72,7 @@ test('seed sweep: full-match statistics remain internally consistent',()=>{
  assert.ok(avgPasses>=60&&avgPasses<=220,'passing volume should remain in a plausible range');
  assert.ok(passRate>=55&&passRate<=85,'pass completion should remain plausible');
  assert.ok(avgTackles>=8&&avgTackles<=20,'tackle volume should remain in a plausible range');
- assert.ok(avgGoals>=1.2&&avgGoals<=4,'goal volume should remain in a plausible range for this lower-rated direct-engine fixture');
+ assert.ok(avgGoals>=1.2&&avgGoals<=4,'goal volume should remain in a plausible range for this lower-rated direct-engine fixture; average='+avgGoals.toFixed(2));
  console.log('FM4 100-seed diagnostics:',JSON.stringify({
   matches:100,averagePossession:possession.map(v=>+(v/90).toFixed(1)),
   averageShotsPerMatch:+avgShots.toFixed(2),
