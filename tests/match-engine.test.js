@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -172,6 +172,23 @@ test('legacy engine inputs without a goalkeeper breakdown remain compatible',()=
  assert.equal(goalkeeper.gkDistribution,60);
 });
 
+test('coordinated defensive cover and central screen mirror correctly for both teams',()=>{
+ const carrier={x:68,y:32};
+ const upper={baseY:20},lower={baseY:80};
+ const homeCover=defensiveCoverTarget(carrier,upper,1,1);
+ const awayCover=defensiveCoverTarget({x:32,y:32},upper,0,1);
+ assert.equal(homeCover.x,73.5);
+ assert.equal(awayCover.x,26.5);
+ assert.equal(homeCover.y,26.5);
+ assert.equal(defensiveCoverTarget(carrier,lower,1,1).y,37.5);
+ const homeScreen=defensiveCoverTarget(carrier,upper,1,2);
+ const awayScreen=defensiveCoverTarget({x:32,y:68},upper,0,2);
+ assert.equal(homeScreen.x,76);
+ assert.equal(awayScreen.x,24);
+ assert.ok(homeScreen.y>carrier.y,'central screen shades toward the pitch center');
+ assert.ok(awayScreen.y<68,'mirrored screen shades toward the pitch center');
+ assert.deepEqual(defensiveCoverTarget(carrier,upper,1,0),carrier);
+});
 test('defensive recovery resolves a real clearance and transfers possession to its forward outlet',()=>{
  const state=create(73),defending=state.teams[1];
  const defender=defending.players.find(p=>p.role==='DF');
