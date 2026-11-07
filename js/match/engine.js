@@ -298,7 +298,7 @@ function stepAction(s){
   // Off-target shots receive a real goal-line trajectory. The aim point is
   // deliberately outside the goal mouth but remains inside the pitch, so an
   // untouched miss correctly awards a goal kick rather than teleporting to GK.
-  const missAimY=!on?(rnd()<.5?38+rnd()*5:57+rnd()*5):null;
+  const missAimY=!blocked&&!on?(rnd()<.5?38+rnd()*5:57+rnd()*5):null;
   if(on)s.shotsOnTarget[tid]++;
   const goalkeeper=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
   const keeperSkill=goalkeeper?Number(goalkeeper.goalkeeping??60):60;
