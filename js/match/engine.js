@@ -165,6 +165,19 @@ function findShotBlocker(shooter,goalX,defenders){
  }
  return best;
 }
+function isDefensiveThird(player,teamId){
+ return teamId===0?player.x<=34:player.x>=66;
+}
+function chooseClearanceTarget(team,carrier,teamId){
+ const dir=teamId===0?1:-1;
+ const candidates=active(team).filter(p=>p.id!==carrier.id);
+ if(!candidates.length)return null;
+ return candidates.map(p=>{
+  const progress=(p.x-carrier.x)*dir;
+  const width=Math.abs(p.y-50);
+  return{p,score:progress*.8+width*.12+Math.min(distance(p,carrier),30)*.08};
+ }).sort((a,b)=>b.score-a.score)[0].p;
+}
 function stepAction(s){
  const tid=s.ball.team,oid=1-tid,t=s.teams[tid],opp=s.teams[oid];
  const carrier=t.players.find(p=>p.active&&p.id===s.ball.playerId)||nearest(active(t),s.ball);
@@ -228,8 +241,15 @@ function stepAction(s){
     }else{
      const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;
      if(win){
-      s.ball={x:win.x,y:win.y,team:oid,playerId:win.id};
-      event={type:'interception',minute:s.minute+1,team:oid,playerId:win.id,x:win.x,y:win.y};
+      const clearanceTarget=isDefensiveThird(win,oid)&&rnd()<clamp(.24+(win.defending*.003),.24,.52)
+       ?chooseClearanceTarget(opp,win,oid):null;
+      if(clearanceTarget){
+       s.ball={x:clearanceTarget.x,y:clearanceTarget.y,team:oid,playerId:clearanceTarget.id};
+       event={type:'clearance',minute:s.minute+1,team:oid,playerId:win.id,from:win.id,to:clearanceTarget.id,x:clearanceTarget.x,y:clearanceTarget.y};
+      }else{
+       s.ball={x:win.x,y:win.y,team:oid,playerId:win.id};
+       event={type:'interception',minute:s.minute+1,team:oid,playerId:win.id,x:win.x,y:win.y};
+      }
      }
     }
    }else{
@@ -270,7 +290,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findShotBlocker,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
