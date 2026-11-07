@@ -82,7 +82,7 @@ test('same seed and same lineups reproduce identical match output',()=>{
  assert.deepEqual(stripRandom(first),stripRandom(second));
 });
 
-test('advances 90 minutes and event times stay aligned',()=>{const s=simulateMatch(create(7),90);assert.equal(s.minute,90);assert.ok(s.events.length>0);assert.equal(s.possession[0]+s.possession[1],90);assert.ok(s.events.every(e=>e.minute>=1&&e.minute<=90));assert.ok(s.events.every(e=>['carry','pass','interception','clearance','tackle','shot','block','save','goal'].includes(e.type)));});
+test('advances 90 minutes and event times stay aligned',()=>{const s=simulateMatch(create(7),90);assert.equal(s.minute,90);assert.ok(s.events.length>0);assert.equal(s.possession[0]+s.possession[1],90);assert.ok(s.events.every(e=>e.minute>=1&&e.minute<=90));assert.ok(s.events.every(e=>['carry','pass','interception','clearance','tackle','shot','block','save','goal','restart'].includes(e.type)));});
 test('off-ball teammates move to support play',()=>{const s=create();const before=s.teams[0].players.filter(p=>p.id!==s.ball.playerId).map(p=>({id:p.id,x:p.x,y:p.y}));stepMatch(s);assert.ok(before.some(old=>{const p=s.teams[0].players.find(x=>x.id===old.id);return Math.abs(p.x-old.x)>.001||Math.abs(p.y-old.y)>.001;}));});
 test('both teams can progress toward their attacking goal when space is available',()=>{for(const side of [0,1]){const h=team('Home',0),a=team('Away',1),att=side===0?h:a,def=side===0?a:h;att.players.forEach((p,i)=>{p.x=side===0?(i===1?50:60):(i===1?50:40);p.y=10+i*7;});def.players.forEach((p,i)=>{p.x=side===0?98:2;p.y=5+i*9;});const s=createMatch({teams:[h,a],seed:101}),c=att.players[1],x=c.x;s.ball={x:c.x,y:c.y,team:side,playerId:c.id};stepMatch(s);const advanced=s.events.some(e=>e.team===side&&(e.type==='carry'||e.type==='pass')&&(side===0?e.x>x:e.x<x));assert.ok(advanced,'team '+side+' should record a forward carry or pass during the minute');}});
 test('random state zero is preserved exactly when restoring a saved generator',()=>{
@@ -450,4 +450,24 @@ test('boundary decisions feed the restart resolver without changing awarded poss
   assert.ok(s.ball.y>=3&&s.ball.y<=97);
   assert.ok(s.teams[decision.teamId].players.some(p=>p.active&&p.id===event.playerId));
  }
+});
+
+test('live unblocked off-target shots award a goal kick with valid restart ownership',()=>{
+ let misses=0;
+ for(let seed=1;seed<=120;seed++){
+  const state=simulateMatch(create(seed),90);
+  for(let i=0;i<state.events.length;i++){
+   const shot=state.events[i];
+   if(shot.type!=='shot'||shot.onTarget!==false)continue;
+   const restart=state.events[i+1];
+   assert.ok(restart,'an off-target shot must be followed by its restart event');
+   assert.equal(restart.type,'restart');
+   assert.equal(restart.restartType,'goal_kick');
+   assert.equal(restart.team,1-shot.attackingTeam);
+   assert.ok(state.teams[restart.team].players.some(p=>p.active&&p.id===restart.playerId));
+   assert.ok(restart.x>=2&&restart.x<=98&&restart.y>=3&&restart.y<=97);
+   misses++;
+  }
+ }
+ assert.ok(misses>0,'the deterministic seed cohort must exercise off-target shots');
 });
