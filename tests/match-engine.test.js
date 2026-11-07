@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,resolveCrossContest,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -615,6 +615,33 @@ test('woodwork rebounds remain in play and mirror second-ball ownership at both 
  assert.equal(away.reboundOpportunity.attackingTeam,1);
  assert.ok(away.teams[awayEvent.team].players.some(p=>p.active&&!/^GK$/i.test(p.role)&&p.id===awayEvent.playerId));
  assert.throws(()=>resolveWoodworkRebound(away,awayShooter,2,0,'post'),/Attacking team/);
+});
+
+test('cross contests resolve completed delivery, interception and defensive clearance without RNG draws',()=>{
+ const completed=create(1401),carrier=completed.teams[0].players[8],receiver=completed.teams[0].players[9];
+ carrier.x=78;carrier.y=12;receiver.x=84;receiver.y=48;
+ for(const p of completed.teams[1].players){p.x=20;p.y=5;}
+ const rngState=completed.random.state;
+ const delivery=resolveCrossContest(completed,carrier,receiver,0);
+ assert.equal(delivery.type,'cross');assert.equal(delivery.outcome,'completed');
+ assert.equal(delivery.team,0);assert.equal(completed.ball.team,0);assert.equal(completed.ball.playerId,delivery.playerId);
+ assert.equal(completed.random.state,rngState,'cross contest must not consume random draws');
+ const intercepted=create(1402),crossCarrier=intercepted.teams[0].players[8],target=intercepted.teams[0].players[9],defender=intercepted.teams[1].players[2];
+ crossCarrier.x=78;crossCarrier.y=12;target.x=64;target.y=48;defender.x=64;defender.y=48;defender.defending=100;defender.pace=100;
+ for(const p of intercepted.teams[0].players){if(p!==crossCarrier&&p!==target){p.x=20;p.y=5;}}
+ for(const p of intercepted.teams[1].players){if(p!==defender){p.x=95;p.y=5;}}
+ const interception=resolveCrossContest(intercepted,crossCarrier,target,0);
+ assert.equal(interception.type,'interception');assert.equal(interception.source,'cross');assert.equal(interception.team,1);
+ assert.equal(intercepted.ball.playerId,defender.id);
+ const cleared=create(1403),clearCarrier=cleared.teams[0].players[8],clearTarget=cleared.teams[0].players[9],clearDefender=cleared.teams[1].players[2];
+ clearCarrier.x=90;clearCarrier.y=12;clearTarget.x=80;clearTarget.y=48;clearDefender.x=80;clearDefender.y=48;clearDefender.defending=100;clearDefender.pace=100;
+ for(const p of cleared.teams[0].players){if(p!==clearCarrier&&p!==clearTarget){p.x=20;p.y=5;}}
+ for(const p of cleared.teams[1].players){if(p!==clearDefender){p.x=40;p.y=5;}}
+ const clearance=resolveCrossContest(cleared,clearCarrier,clearTarget,0);
+ assert.equal(clearance.type,'clearance');assert.equal(clearance.source,'cross');assert.equal(clearance.team,1);
+ assert.ok(cleared.teams[1].players.some(p=>p.active&&p.id===clearance.to));
+ assert.equal(cleared.ball.team,1);assert.equal(cleared.ball.playerId,clearance.to);
+ assert.throws(()=>resolveCrossContest(completed,carrier,receiver,2),/Attacking team/);
 });
 
 test('overhit passes resolve touchline, goal-kick and corner restarts in both directions',()=>{
