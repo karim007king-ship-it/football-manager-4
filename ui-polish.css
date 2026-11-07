@@ -79,3 +79,41 @@ body.match-live #ctl #bs{background:linear-gradient(145deg,#8b6b24,#584315)}
  #content>.hero{padding:14px 8px}
  #content .three .action-btn{font-size:11px}
 }
+
+/* Live match v2: clearer pitch geometry, player contrast and match telemetry */
+body.match-live #sb .pitch{
+ position:relative;isolation:isolate;overflow:hidden;
+ height:clamp(210px,39vh,290px)!important;min-height:210px;
+ border:2px solid #d9f0d866;border-radius:9px;
+ background:
+  radial-gradient(circle at 50% 50%,transparent 0 17%,#ffffffa8 17.2% 17.8%,transparent 18%),
+  linear-gradient(90deg,transparent 49.55%,#ffffffa8 49.7% 50.3%,transparent 50.45%),
+  repeating-linear-gradient(90deg,#17652f 0 10%,#1d7738 10% 20%)!important;
+ box-shadow:inset 0 0 22px #001b0c88,0 4px 14px #0005;
+}
+body.match-live #sb .pitch:before,body.match-live #sb .pitch:after{
+ top:23%!important;height:54%!important;width:15%!important;
+ border:2px solid #e4f5e5b8;background:#ffffff08;
+}
+body.match-live #sb .pitch .dl{position:absolute;inset:0;z-index:1;pointer-events:none}
+body.match-live #sb .pitch .pl{
+ width:clamp(11px,3vw,15px);height:clamp(11px,3vw,15px);
+ border:2px solid #f5f8f4;box-shadow:0 2px 5px #0009,0 0 0 2px #07120b88;
+}
+body.match-live #sb .pitch .pa{background:#2497f0}
+body.match-live #sb .pitch .pb{background:#e43c4d}
+body.match-live #sb .pitch .bl{
+ width:14px!important;height:14px!important;background:#fff;
+ border:2px solid #17212a;box-shadow:0 0 0 3px #ffffff55,0 2px 7px #000b;
+}
+body.match-live #sb .mom{height:8px;border:1px solid #ffffff22;background:#7b2731}
+body.match-live #sb .mom i{height:8px;background:linear-gradient(90deg,#e5ad36,#31c477)}
+body.match-live #sb .mt{font-weight:700;color:#e8c15d}
+body.match-live #console .ll{display:flex;align-items:flex-start;gap:7px;border-bottom:1px solid #ffffff12}
+body.match-live #console .log-goal{background:#8c6b1c22;border-radius:6px;padding:7px}
+body.match-live #console .log-info{color:#a9d6f3}
+body.match-live #ctl .cb{font-weight:700;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:380px){
+ body.match-live #sb .pitch{height:210px!important}
+ body.match-live #sb .pitch .pl{width:11px;height:11px}
+}
