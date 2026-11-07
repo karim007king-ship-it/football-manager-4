@@ -356,6 +356,28 @@ function chooseClearanceTarget(team,carrier,teamId){
   return{p,score:progress*.8+width*.12+Math.min(distance(p,carrier),30)*.08};
  }).sort((a,b)=>b.score-a.score)[0].p;
 }
+function resolveClearanceSecondBall(state,defendingTeam,attackingTeamId,outlet){
+ const landing={x:outlet.x,y:outlet.y},defendingTeamId=defendingTeam.id;
+ const opponents=active(state.teams[attackingTeamId]).filter(p=>!keeper(p.role));
+ const nearestOpponent=opponents.map(player=>({player,d:distance(player,landing)})).sort((a,b)=>a.d-b.d||String(a.player.id).localeCompare(String(b.player.id)))[0];
+ // A clearance only becomes a contested second ball when pressure is realistically nearby.
+ if(!nearestOpponent||nearestOpponent.d>14)return null;
+ const candidates=[];
+ for(const team of state.teams){for(const player of active(team)){
+  if(keeper(player.role))continue;
+  const d=distance(player,landing);
+  if(d>18)continue;
+  const skill=team.id===defendingTeamId?Number(player.defending??50)*.002:Number(player.passing??50)*.002;
+  candidates.push({teamId:team.id,player,score:d-Number(player.pace??50)*.01-skill});
+ }}
+ candidates.sort((a,b)=>a.score-b.score||a.teamId-b.teamId||String(a.player.id).localeCompare(String(b.player.id)));
+ const winner=candidates[0];
+ if(!winner)return null;
+ state.ball={x:landing.x,y:landing.y,team:winner.teamId,playerId:winner.player.id};
+ if(winner.teamId===attackingTeamId)state.transition=null;
+ else startCounterTransition(state,defendingTeamId);
+ return{contested:true,outcome:winner.teamId===defendingTeamId?'retained':'lost',team:winner.teamId,playerId:winner.player.id,x:landing.x,y:landing.y};
+}
 function startCounterTransition(state,teamId){state.transition={team:teamId,expiresAtAction:(state.actionCount||0)+3};}
 function counterTransitionActive(state,teamId){return !!state.transition&&state.transition.team===teamId&&(state.actionCount||0)<=state.transition.expiresAtAction;}
 function resolveDefensiveRecovery(state,defendingTeam,defender,attackingTeamId,random){
@@ -370,6 +392,8 @@ function resolveDefensiveRecovery(state,defendingTeam,defender,attackingTeamId,r
  if(target){
   state.ball={x:target.x,y:target.y,team:teamId,playerId:target.id};
   event={type:'clearance',minute:state.minute+1,team:teamId,playerId:defender.id,from:defender.id,to:target.id,x:target.x,y:target.y};
+  const secondBall=resolveClearanceSecondBall(state,defendingTeam,attackingTeamId,target);
+  if(secondBall)event.secondBall=secondBall;
  }else{
   state.ball={x:defender.x,y:defender.y,team:teamId,playerId:defender.id};
   event={type:'interception',minute:state.minute+1,team:teamId,playerId:defender.id,x:defender.x,y:defender.y};
@@ -648,7 +672,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveCrossContest,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveCrossContest,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveClearanceSecondBall,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
