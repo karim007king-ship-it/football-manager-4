@@ -102,3 +102,33 @@ test('attacking and defensive shape updates mirror for the away side', () => {
   assert.ok(winger.y < 50,
     'mirrored left winger should maintain its wide channel');
 });
+
+
+test('right winger and right fullback preserve the opposite flank overlap pattern', () => {
+  const state = makeState();
+  const home = state.teams[0];
+  const rightBack = home.players[2];
+  rightBack.role = 'RB';
+  rightBack.baseY = 82;
+  rightBack.y = 82;
+  rightBack.baseX = 30;
+  rightBack.x = 30;
+
+  const carrier = home.players.find(p => p.role === 'CM');
+  carrier.x = 66;
+  carrier.y = 80;
+  state.ball = { x: carrier.x, y: carrier.y, team: 0, playerId: carrier.id };
+
+  const winger = home.players.find(p => p.role === 'RW');
+  const wingerBefore = { x: winger.x, y: winger.y };
+  const fullbackBefore = { x: rightBack.x, y: rightBack.y };
+
+  updateShape(state, 0, carrier, false);
+
+  assert.ok(winger.y > 78,
+    'right winger should retain the wide attacking channel');
+  assert.ok(winger.x > wingerBefore.x,
+    'right winger should advance when possession is high');
+  assert.ok(rightBack.x > fullbackBefore.x,
+    'right fullback should overlap on the opposite flank');
+});
