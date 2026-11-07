@@ -52,12 +52,12 @@ function effectiveMentality(s,teamId){
  if(difference>0&&minute>=78)return 'defensive';
  return base;
 }
-function updateShape(s,teamId,carrier){
+function updateShape(s,teamId,carrier,counterActive=false){
  const ballX=s.ball.x,ballY=s.ball.y;
  for(const t of s.teams){
   const has=t.id===teamId,dir=t.id===0?1:-1,mentality=effectiveMentality(s,t.id);
   const defenders=active(t),manpower=manpowerProfile(t,mentality);
-  const basePush=mentality==='attacking'?1.35:mentality==='defensive'?.62:mentality==='counter'?1.15:1;
+  const basePush=counterActive?1.58:mentality==='attacking'?1.35:mentality==='defensive'?.62:mentality==='counter'?1.15:1;
   // A side with fewer players protects its central lanes and commits fewer
   // runners forward; a high press also becomes less coordinated when short.
   const pushScale=basePush*(has?manpower.forwardScale:1);
@@ -71,7 +71,7 @@ function updateShape(s,teamId,carrier){
    const isFullback=/^(LB|RB|LWB|RWB)$/.test(r);
    const isForward=/^(LW|RW|ST|CF|FW|FWD)$/.test(r);
    const ballProgress=(ballX-50)*dir;
-   const forwardPush=has?(l>.68?10:l>.43?5.5:1.2)*pushScale:-1.2;
+   const forwardPush=has?(l>.68?10:l>.43?5.5:1.2)*pushScale*(counterActive&&l>.43?1.22:1):-1.2;
    let tx=p.baseX+dir*forwardPush+(ballX-50)*.075*dir*(has?1:1.35);
    let ty=50+(p.baseY-50)*manpower.widthScale+(ballY-50)*(has?.13:.19);
    if(manpower.activeCount<11&&!keeper(r)&&!has)tx-=dir*(11-manpower.activeCount)*.65;
@@ -181,7 +181,7 @@ function classifyPassPattern(carrier,target,team,teamId,laneClearance){
  if(Math.abs(target.y-carrier.y)>=34&&laneClearance>=7&&progress>=-5)return'switch';
  return'normal';
 }
-function choosePassTarget(team,defenders,carrier,teamId){
+function choosePassTarget(team,defenders,carrier,teamId,counterActive=false){
  const dir=teamId===0?1:-1;
  const candidates=active(team).filter(p=>p.id!==carrier.id).map(p=>{
   const progress=(p.x-carrier.x)*dir,nearestDef=nearest(defenders,p);
@@ -190,13 +190,13 @@ function choosePassTarget(team,defenders,carrier,teamId){
   const lateral=Math.abs(p.y-carrier.y);
   const forwardScale=manpowerProfile(team).forwardScale;
   const forwardBonus=progress>0?3*forwardScale:0;
-  const score=progress*.78*forwardScale+Math.min(space,24)*.42+Math.min(laneClearance,18)*.62+p.passing*.025-lateral*.22+forwardBonus;
+  const score=progress*.78*forwardScale+Math.min(space,24)*.42+Math.min(laneClearance,18)*.62+p.passing*.025-lateral*.22+forwardBonus+(counterActive?Math.max(-2,progress)*.24:0);
   const passType=classifyPassPattern(carrier,p,team,teamId,laneClearance);
   const patternBonus=passType==='through_ball'?4:passType==='cross'?3.2:passType==='cutback'?4.5:passType==='switch'?2.2:0;
   return{p,progress,space,laneClearance,score:score+patternBonus,passType};
  });
  if(!candidates.length)return null;
- const safeForward=candidates.filter(c=>c.progress>1.5&&c.space>4&&c.laneClearance>2.5);
+ const safeForward=candidates.filter(c=>c.progress>(counterActive?3:1.5)&&c.space>4&&c.laneClearance>2.5);
  return (safeForward.length?safeForward:candidates).sort((a,b)=>b.score-a.score)[0];
 }
 function findShotBlocker(shooter,goalX,defenders){
@@ -226,6 +226,8 @@ function chooseClearanceTarget(team,carrier,teamId){
   return{p,score:progress*.8+width*.12+Math.min(distance(p,carrier),30)*.08};
  }).sort((a,b)=>b.score-a.score)[0].p;
 }
+function startCounterTransition(state,teamId){state.transition={team:teamId,expiresAtAction:(state.actionCount||0)+3};}
+function counterTransitionActive(state,teamId){return !!state.transition&&state.transition.team===teamId&&(state.actionCount||0)<=state.transition.expiresAtAction;}
 function resolveDefensiveRecovery(state,defendingTeam,defender,attackingTeamId,random){
  const teamId=defendingTeam.id;
  const roll=typeof random==='function'?random:()=>.999;
@@ -233,6 +235,7 @@ function resolveDefensiveRecovery(state,defendingTeam,defender,attackingTeamId,r
  const clearanceChance=clamp(.24+(defender.defending*.003),.24,.52);
  const target=canClear&&roll()<clearanceChance
   ?chooseClearanceTarget(defendingTeam,defender,teamId):null;
+ startCounterTransition(state,teamId);
  let event;
  if(target){
   state.ball={x:target.x,y:target.y,team:teamId,playerId:target.id};
@@ -244,15 +247,18 @@ function resolveDefensiveRecovery(state,defendingTeam,defender,attackingTeamId,r
  return event;
 }
 function stepAction(s){
+ s.actionCount=(s.actionCount||0)+1;
  const tid=s.ball.team,oid=1-tid,t=s.teams[tid],opp=s.teams[oid];
  const carrier=t.players.find(p=>p.active&&p.id===s.ball.playerId)||nearest(active(t),s.ball);
  if(!carrier)throw Error('The team in possession has no active players');
  const rnd=s.random||(s.random=makeRandom(1)),goalX=tid===0?100:0,def=active(opp);
+ const counterActive=counterTransitionActive(s,tid);
+ if(s.transition&&s.actionCount>s.transition.expiresAtAction)s.transition=null;
  let press=nearest(def,carrier),pd=press?distance(press,carrier):40;
  const goalDist=Math.abs(goalX-carrier.x);
  s.possession[tid]+=1/3;
  carrier.stamina=clamp(carrier.stamina-.012,0,100);
- updateShape(s,tid,carrier);
+ updateShape(s,tid,carrier,counterActive);
  // Re-evaluate pressure after defenders have moved into their pressing positions.
  press=nearest(def,carrier);pd=press?distance(press,carrier):40;
  // Calibrated against the three-actions-per-minute clock and legacy OVR mapping.
@@ -276,23 +282,25 @@ function stepAction(s){
    :60;
   const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0)-(keeperSkill-60)*.0015-(keeperResponse-60)*.0015,.03,.5);
   const goal=!blocked&&on&&rnd()<quality;
-  if(goal)s.score[tid]++;
+  if(goal){s.score[tid]++;s.transition=null;}
   const saved=!blocked&&on&&!goal;
+  if(blocked||saved)startCounterTransition(s,oid);
   event={type:blocked?'block':goal?'goal':saved?'save':'shot',minute:s.minute+1,
    team:blocked||saved?oid:tid,playerId:blocked?blocker.id:saved?(goalkeeper?.id??carrier.id):carrier.id,
    shooterId:carrier.id,goalkeeperId:blocked?null:goalkeeper?.id??null,
-   attackingTeam:tid,onTarget:on,x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
+   attackingTeam:tid,onTarget:on,counterattack:counterActive||undefined,x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
    :goalkeeper;
   if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
  }else{
-  const best=choosePassTarget(t,def,carrier,tid);
+  const best=choosePassTarget(t,def,carrier,tid,counterActive);
   const closeTackle=press&&pd<4.5&&rnd()<.11+(press.defending*fitness(press))/900;
   if(closeTackle){
    s.tackles[oid]++;
    s.ball={x:press.x,y:press.y,team:oid,playerId:press.id};
-   event={type:'tackle',minute:s.minute+1,team:oid,playerId:press.id,x:press.x,y:press.y};
+   startCounterTransition(s,oid);
+   event={type:'tackle',minute:s.minute+1,team:oid,playerId:press.id,x:press.x,y:press.y,counterattack:true};
   }else{
    const pass=best&&rnd()<(pd<4.5?.35:pd<8.5?.72:best.progress>0?.58:.28);
    if(pass){
@@ -306,7 +314,7 @@ function stepAction(s){
     }else if(rnd()<chance){
      s.completedPasses[tid]++;
      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
-     event={type:'pass',passType:best.passType||'normal',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};
+     event={type:'pass',passType:best.passType||'normal',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,counterattack:counterActive||undefined,x:best.p.x,y:best.p.y};
     }else{
      const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;
      if(win){
@@ -316,10 +324,10 @@ function stepAction(s){
    }else{
     const dir=tid===0?1:-1;
     const lateral=press&&Math.abs(press.y-carrier.y)<8?(carrier.y<50?-.65:.65):(50-carrier.y)*.012;
-    carrier.x=clamp(carrier.x+dir*(.7+(carrier.pace*fitness(carrier))/95),2,98);
+    carrier.x=clamp(carrier.x+dir*(.7+(carrier.pace*fitness(carrier))/95)*(counterActive?1.18:1),2,98);
     carrier.y=clamp(carrier.y+lateral,3,97);
     s.ball={x:carrier.x,y:carrier.y,team:tid,playerId:carrier.id};
-    event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,x:carrier.x,y:carrier.y};
+    event={type:'carry',minute:s.minute+1,team:tid,playerId:carrier.id,counterattack:counterActive||undefined,x:carrier.x,y:carrier.y};
    }
   }
  }
@@ -351,7 +359,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
