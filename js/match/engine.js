@@ -407,13 +407,16 @@ function stepAction(s){
  const attackManpower=manpowerProfile(t,effectiveMentality(s,tid));
  // Fewer active attackers means fewer coordinated runs and lower shot volume.
  // Keep the penalty modest so a red card changes the match without deciding it alone.
- const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
+ // A small proximity-weighted incentive favors genuine close-range chances
+ // without allowing attempts outside the final third or raising long-shot volume.
+ const closeRangeBonus=.004*clamp((25-goalDist)/10,0,1);
+ const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200+closeRangeBonus)*(1-(11-attackManpower.activeCount)*.045);
  const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
  const crossFollowUp=!!crossShotOpportunity;
  const followUpBoost=(reboundFollowUp?.16:0)+(crossFollowUp?.10:0);
  const shotChance=clamp(baseShotChance+followUpBoost,.02,followUpBoost? .30:.16);
  let event=null,boundaryShot=null,reboundShot=null,woodworkShot=null,passBoundary=null;
- if(goalDist<=(crossFollowUp?30:26.5)&&Math.abs(50-carrier.y)<=(crossFollowUp?35:31)&&rnd()<shotChance){
+ if(goalDist<=(crossFollowUp?30:25)&&Math.abs(50-carrier.y)<=(crossFollowUp?35:31)&&rnd()<shotChance){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
   const blockChance=blocker?clamp(.16+(blocker.defending*.0035)+(pd<9?.08:0),.12,.58):0;
