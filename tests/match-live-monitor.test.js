@@ -12,6 +12,26 @@ function team(name,offset=0){
 function live(home=true){
  return {xi:team('المستخدم'),O:{xi:team('المنافس',100)},home,tac:'balanced',en:{1:61},min:0,gu:0,go:0,bx:50,by:50,ps:0,sh:[0,0],oR:0,opp:{name:'المنافس'}};
 }
+test('monitor records supported legacy incidents once without changing match simulation state',()=>{
+ const m=live(),monitor=Monitor.create({match:m,seed:940}),state=monitor.shadow.state;
+ const before={minute:state.minute,score:state.score.slice(),possession:state.possession.slice(),shots:state.shots.slice(),random:state.random};
+ const types=['yellow_card','second_yellow','red_card','penalty','corner','free_kick','injury'];
+ types.forEach((type,i)=>{
+  assert.equal(Monitor.recordLegacyEvent(monitor,{eventId:'legacy-test-'+i,type,teamId:i%2,minute:12,playerId:'p-'+i,playerName:'لاعب '+i}),true);
+  assert.equal(Monitor.recordLegacyEvent(monitor,{eventId:'legacy-test-'+i,type,teamId:i%2,minute:12,playerId:'p-'+i,playerName:'لاعب '+i}),false);
+ });
+ assert.equal(state.events.length,types.length);
+ assert.deepEqual(state.events.map(e=>e.type),types);
+ assert.ok(state.events.every(e=>e.source==='legacy'&&e.minute===12));
+ assert.equal(state.minute,before.minute);
+ assert.deepEqual(state.score,before.score);
+ assert.deepEqual(state.possession,before.possession);
+ assert.deepEqual(state.shots,before.shots);
+ assert.equal(state.random,before.random);
+ assert.throws(()=>Monitor.recordLegacyEvent(monitor,{eventId:'bad',type:'unknown',teamId:0}),/LEGACY_EVENT/);
+ assert.throws(()=>Monitor.recordLegacyEvent(monitor,{eventId:'missing-team',type:'corner',teamId:4}),/LEGACY_EVENT/);
+ assert.throws(()=>Monitor.recordLegacyEvent(monitor,{type:'corner',teamId:0}),/LEGACY_EVENT/);
+});
 test('monitor advances alongside the legacy clock without mutating legacy state',()=>{
  const m=live(),before=JSON.stringify(m),monitor=Monitor.create({match:m,seed:91});
  const snap=Monitor.advance(monitor,m,12);
@@ -190,6 +210,13 @@ test('live game page loads monitor dependencies before its controller and parses
  new vm.Script('const KEY=\'fm_web_pro_v2\';'+html.slice(bodyStart,end));
  assert.match(html,/initShadowMonitor\(\)/);
  assert.match(html,/advanceShadowMonitor\(\)/);
+ assert.match(html,/recordShadowLegacyEvent\('yellow_card'/);
+ assert.match(html,/recordShadowLegacyEvent\('second_yellow'/);
+ assert.match(html,/recordShadowLegacyEvent\('red_card'/);
+ assert.match(html,/recordShadowLegacyEvent\('penalty'/);
+ assert.match(html,/recordShadowLegacyEvent\('corner'/);
+ assert.match(html,/recordShadowLegacyEvent\('free_kick'/);
+ assert.match(html,/recordShadowLegacyEvent\('injury'/);
  assert.match(html,/shadowMonitorHtml\(\)/);
  assert.match(html,/function opponentOnPitch\(\)/);
  assert.match(html,/M\.oSentOff\.push\(String\(p\.id\)\)/);
