@@ -739,6 +739,46 @@ test('cross contests resolve completed delivery, interception and defensive clea
  assert.throws(()=>resolveCrossContest(completed,carrier,receiver,2),/Attacking team/);
 });
 
+
+test('cross-originated clearances resolve pressured second balls in both attack directions',()=>{
+ const run=(attackingTeam)=>{
+  const state=create(attackingTeam===0?1601:1602);
+  const defendingTeam=1-attackingTeam;
+  const carrier=state.teams[attackingTeam].players[8];
+  const receiver=state.teams[attackingTeam].players[9];
+  const defender=state.teams[defendingTeam].players[2];
+  const outlet=state.teams[defendingTeam].players[3];
+  const pressing=state.teams[attackingTeam].players[10];
+  const landingX=attackingTeam===0?80:20;
+  const outletX=attackingTeam===0?55:45;
+  carrier.x=attackingTeam===0?90:10;carrier.y=12;
+  receiver.x=landingX;receiver.y=48;
+  receiver.pace=25;receiver.passing=25;receiver.shooting=25;
+  defender.x=landingX;defender.y=48;defender.pace=100;defender.defending=100;
+  outlet.x=outletX;outlet.y=32;outlet.pace=30;outlet.defending=30;
+  pressing.x=outletX;pressing.y=32;pressing.pace=100;pressing.passing=100;
+  for(const p of state.teams[attackingTeam].players){
+   if(p!==carrier&&p!==receiver&&p!==pressing){p.x=attackingTeam===0?20:80;p.y=5;}
+  }
+  for(const p of state.teams[defendingTeam].players){
+   if(p!==defender&&p!==outlet){p.x=attackingTeam===0?95:5;p.y=5;}
+  }
+  const event=resolveCrossContest(state,carrier,receiver,attackingTeam);
+  assert.equal(event.type,'clearance');
+  assert.equal(event.team,defendingTeam);
+  assert.equal(event.to,outlet.id);
+  assert.equal(event.secondBall.contested,true);
+  assert.equal(event.secondBall.outcome,'lost');
+  assert.equal(event.secondBall.team,attackingTeam);
+  assert.equal(event.secondBall.playerId,pressing.id);
+  assert.equal(state.ball.team,attackingTeam);
+  assert.equal(state.ball.playerId,pressing.id);
+  assert.equal(state.transition,null,'the attacking recovery cancels the defending counter transition');
+ };
+ run(0);
+ run(1);
+});
+
 test('completed crosses create a one-action mirrored shooting opportunity inside the box',()=>{
  const home=create(1501),homeCarrier=home.teams[0].players[8],homeReceiver=home.teams[0].players[9];
  homeCarrier.x=78;homeCarrier.y=12;homeReceiver.x=84;homeReceiver.y=50;
