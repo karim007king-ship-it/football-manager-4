@@ -17,7 +17,7 @@ function match(seed){
 }
 
 test('seed sweep: full-match statistics remain internally consistent',()=>{
- const totals={shots:0,onTarget:0,goals:0,passes:0,completed:0,tackles:0,events:0,penetrations:0,shotEvents:0,saves:0,blocks:0,woodwork:0};
+ const totals={shots:0,onTarget:0,goals:0,passes:0,completed:0,tackles:0,events:0,penetrations:0,shotEvents:0,saves:0,blocks:0,woodwork:0,quality:0,shotCount:0,distance:0,pressure:0,keeperSkill:0,keeperResponse:0,keeperCount:0,bands:{close:{shots:0,onTarget:0,goals:0,quality:0},medium:{shots:0,onTarget:0,goals:0,quality:0},long:{shots:0,onTarget:0,goals:0,quality:0}}};
  const possession=[0,0];
  for(let seed=1;seed<=100;seed++){
   const s=match(seed),initial=s.teams.map(t=>t.players.map(p=>({id:p.id,x:p.x,y:p.y})));
@@ -48,6 +48,12 @@ test('seed sweep: full-match statistics remain internally consistent',()=>{
   totals.saves+=s.events.filter(e=>e.type==='save').length;
   totals.blocks+=s.events.filter(e=>e.type==='block').length;
   totals.woodwork+=s.events.filter(e=>e.type==='woodwork').length;
+  for(const e of s.events.filter(e=>['shot','goal','save','block','woodwork'].includes(e.type)&&Number.isFinite(e.shotQuality))){
+   totals.quality+=e.shotQuality;totals.shotCount++;totals.distance+=e.goalDistance;totals.pressure+=e.pressureDistance;
+   totals.keeperSkill+=e.keeperSkill;totals.keeperResponse+=e.keeperResponse;totals.keeperCount++;
+   const band=e.goalDistance<12?'close':e.goalDistance<22?'medium':'long',b=totals.bands[band];
+   b.shots++;if(e.onTarget)b.onTarget++;if(e.type==='goal')b.goals++;b.quality+=e.shotQuality;
+  }
   const maxProgress=Math.max(
    ...s.events.filter(e=>e.type==='carry'||e.type==='pass').map(e=>e.team===0?e.x:100-e.x),
    0
@@ -72,7 +78,7 @@ test('seed sweep: full-match statistics remain internally consistent',()=>{
  const avgShots=totals.shots/100,avgPasses=totals.passes/100;
  const passRate=totals.passes?totals.completed/totals.passes*100:0;
  const avgTackles=totals.tackles/100,avgGoals=totals.goals/100;
- console.log('FM4 100-seed shot-chain diagnostics:',JSON.stringify({averageShots:+avgShots.toFixed(3),averageOnTarget:+(totals.onTarget/100).toFixed(3),onTargetRate:+(totals.onTarget/Math.max(1,totals.shots)*100).toFixed(2),averageGoals:+avgGoals.toFixed(3),goalPerShot:+(totals.goals/Math.max(1,totals.shots)*100).toFixed(2),goalPerOnTarget:+(totals.goals/Math.max(1,totals.onTarget)*100).toFixed(2),shotEvents:totals.shotEvents,saves:totals.saves,blocks:totals.blocks,woodwork:totals.woodwork}));
+ console.log('FM4 100-seed shot-chain diagnostics:',JSON.stringify({averageShots:+avgShots.toFixed(3),averageOnTarget:+(totals.onTarget/100).toFixed(3),onTargetRate:+(totals.onTarget/Math.max(1,totals.shots)*100).toFixed(2),averageGoals:+avgGoals.toFixed(3),goalPerShot:+(totals.goals/Math.max(1,totals.shots)*100).toFixed(2),goalPerOnTarget:+(totals.goals/Math.max(1,totals.onTarget)*100).toFixed(2),shotEvents:totals.shotEvents,saves:totals.saves,blocks:totals.blocks,woodwork:totals.woodwork,meanQuality:+(totals.quality/Math.max(1,totals.shotCount)).toFixed(4),meanGoalDistance:+(totals.distance/Math.max(1,totals.shotCount)).toFixed(2),meanPressureDistance:+(totals.pressure/Math.max(1,totals.shotCount)).toFixed(2),meanKeeperSkill:+(totals.keeperSkill/Math.max(1,totals.keeperCount)).toFixed(2),meanKeeperResponse:+(totals.keeperResponse/Math.max(1,totals.keeperCount)).toFixed(2),byDistance:Object.fromEntries(Object.entries(totals.bands).map(([k,v])=>[k,{shots:v.shots,onTarget:v.onTarget,goals:v.goals,meanQuality:+(v.quality/Math.max(1,v.shots)).toFixed(4)}]))}));
  assert.ok(avgShots>=7&&avgShots<=22,'shot volume should remain in a plausible range; average='+avgShots.toFixed(2));
  assert.ok(avgPasses>=60&&avgPasses<=220,'passing volume should remain in a plausible range');
  assert.ok(passRate>=55&&passRate<=85,'pass completion should remain plausible');
