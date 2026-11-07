@@ -319,3 +319,18 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - These results confirm CI tests and APK build only. No real-device install or match-play test has been performed. Shadow Mode and legacy result/save authority remain unchanged.
 
 **Next:** implement and test live cross trajectories and their outcomes (completed crosses, interceptions, clearances, overhit crosses, and cross-originated shots) without introducing extra random draws that shift calibration. Then audit pass/cross decision quality, second-ball behavior and team shape under both attacking directions before starting the full match-screen redesign.
+
+
+## 12. Clearance second-ball and shadow-monitor verification — 2026-11-08
+
+- Added strict pressure-cutoff tests around the 14-unit contest boundary, including the exact boundary and just-outside case.
+- Added coverage proving inactive players and goalkeepers are excluded from the clearance second-ball outfielder contest.
+- Added mirrored resolution tests so either defending side can win the second ball without an attacking-direction assumption.
+- The shadow live monitor now renders the nested second-ball outcome and winning player's name when available. The serialization/restore regression test verifies that the restored monitor still displays the opponent-recovery outcome.
+- Latest verified commit: `ee0fce73cac154f7e5bcdb8acc58dd5231b2ebf8`.
+- Latest FM4 checks runs `42425533637` and `42425529497` passed. The test log reports 143 tests passed, 0 failed.
+- Matching Android APK run `42425529491` passed; Gradle reported `BUILD SUCCESSFUL`. This is a successful package build, not evidence of installation or runtime behavior on the target HONOR device.
+- The 100-seed diagnostic cohort reported average 7.58 shots, 4.55 shots on target, 1.22 goals, 125.38 passes, 59.6% pass completion and 17.4 tackles per match. Possession averaged 50.6% / 49.4%. Shot quality remained distance-sensitive (close 0.3563, medium 0.2534, long 0.2126).
+- No gameplay thresholds were changed in this verification sequence. The new engine remains shadow-only; legacy career results and saves remain authoritative. PR #1 remains unmerged.
+
+**Next:** perform a broader deterministic second-ball cohort audit (both teams, both directions, varied pace/defending/passing attributes, contested versus uncontested clearances), and reconcile event metadata, possession and immediate transition behavior. Then inspect cross-contest and aerial-player data contracts before introducing any aerial-duel attributes. Do not begin the full match-screen redesign until this engine audit has a clean acceptance report.
