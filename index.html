@@ -479,7 +479,14 @@ const say=m=>ask(m);
 
 function mkPlayer(cid,pos,base,young){let o=cl(base+R(-5,4),40,92);
   let nm,t=0;do{nm=pick(FN)+" "+pick(LN)}while(t++<40&&G&&G.players&&G.players.some(x=>x.name==nm));
-  return{id:Math.random().toString(36).slice(2,10),clubId:cid,name:nm,pos,age:young?R(18,20):R(18,34),ovr:o,morale:70,inj:0}}
+  const keeperStats=pos==='GK'?{
+    gkReflexes:cl(o+R(-8,9),25,95),
+    gkHandling:cl(o+R(-9,8),25,95),
+    gkPositioning:cl(o+R(-7,8),25,95),
+    gkOneOnOne:cl(o+R(-10,9),25,95),
+    gkDistribution:cl(o+R(-8,10),25,95)
+  }:{};
+  return{id:Math.random().toString(36).slice(2,10),clubId:cid,name:nm,pos,age:young?R(18,20):R(18,34),ovr:o,morale:70,inj:0,...keeperStats}}
 function mkFixIds(a){a=a.slice();let r=[];for(let i=0;i<7;i++){let p=[];for(let j=0;j<4;j++)p.push([a[j],a[7-j]]);r.push(p);a=[a[0],a[7],...a.slice(1,7)]}return r.concat(r.map(x=>x.map(([h,v])=>[v,h])))}
 function mkFix(){let id=dv=>G.clubs.filter(c=>c.dv==dv).map(c=>c.id).sort(()=>Math.random()-.5),f1=mkFixIds(id(1)),f2=mkFixIds(id(2));return f1.map((r,i)=>r.concat(f2[i]))}
 function addDiv2(){G.clubs.forEach(c=>{c.dv=1});CL2.forEach((c,i)=>G.clubs.push({id:9+i,name:c[0],ovr:c[1],dv:2,pts:0,p:0,w:0,d:0,l:0,gf:0,ga:0}));
