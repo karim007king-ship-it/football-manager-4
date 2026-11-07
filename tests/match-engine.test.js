@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveRestart,classifyBoundaryRestart,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -399,6 +399,38 @@ test('boundary classifier ignores in-play and ambiguous exact-corner segments',(
  assert.throws(()=>classifyBoundaryRestart({x:20,y:20},{x:NaN,y:20},0),/finite numeric/);
 });
 
+
+test('ball boundary transition atomically awards the correct restart and possession',()=>{
+ const s=create(620);
+ const beforeEvents=s.events.length;
+ const result=resolveBallBoundary(s,{x:45,y:20},{x:48,y:-4},0);
+ assert.equal(result.restartType,'throw_in');
+ assert.equal(result.teamId,1);
+ assert.equal(result.event.type,'restart');
+ assert.equal(result.event.restartType,'throw_in');
+ assert.equal(s.ball.team,1);
+ assert.equal(s.ball.playerId,result.event.playerId);
+ assert.equal(s.events.length,beforeEvents+1,'one boundary decision must create exactly one restart event');
+ assert.equal(resolveBallBoundary(s,{x:45,y:20},{x:48,y:24},1),null,'an in-play segment must not change possession');
+ assert.equal(s.ball.team,1);
+ assert.equal(s.events.length,beforeEvents+1);
+});
+
+test('ball boundary transition mirrors goal-line restart ownership for both directions',()=>{
+ for(const c of [
+  {from:{x:90,y:40},to:{x:105,y:42},last:1,type:'corner',team:0},
+  {from:{x:90,y:40},to:{x:105,y:42},last:0,type:'goal_kick',team:1},
+  {from:{x:10,y:60},to:{x:-5,y:58},last:0,type:'corner',team:1},
+  {from:{x:10,y:60},to:{x:-5,y:58},last:1,type:'goal_kick',team:0}
+ ]){
+  const s=create(621);
+  const result=resolveBallBoundary(s,c.from,c.to,c.last);
+  assert.equal(result.restartType,c.type);
+  assert.equal(result.teamId,c.team);
+  assert.equal(s.ball.team,c.team);
+  assert.equal(s.ball.playerId,result.event.playerId);
+ }
+});
 
 test('boundary decisions feed the restart resolver without changing awarded possession',()=>{
  const cases=[
