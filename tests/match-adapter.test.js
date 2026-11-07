@@ -31,6 +31,23 @@ test('uses legacy morale, injury and match energy without mutating source player
  assert.equal(out.players[1].stamina,54);
  assert.equal(JSON.stringify(t.players),before);
 });
+test('maps dedicated goalkeeper attributes into the match engine',()=>{
+ const t=legacyTeam('حراس');
+ Object.assign(t.players[0],{gkReflexes:90,gkHandling:70,gkPositioning:80,gkOneOnOne:60,gkDistribution:50});
+ const keeper=toEngineTeam(t).players[0];
+ assert.equal(keeper.gkReflexes,90);
+ assert.equal(keeper.gkHandling,70);
+ assert.equal(keeper.gkPositioning,80);
+ assert.equal(keeper.gkOneOnOne,60);
+ assert.equal(keeper.gkDistribution,50);
+ assert.equal(keeper.goalkeeping,74);
+});
+test('legacy goalkeepers without detailed attributes retain an OVR-based fallback',()=>{
+ const keeper=toEngineTeam(legacyTeam('قديم')).players[0];
+ assert.equal(keeper.goalkeeping,65);
+ assert.equal(keeper.gkReflexes,65);
+ assert.equal(keeper.gkDistribution,65);
+});
 test('maps composite OVR to a restrained finishing estimate',()=>{
  const player={id:77,name:'مهاجم',pos:'FWD',ovr:70,morale:70,inj:0};
  const mapped=toEngineTeam({name:'النادي',players:[player,{id:78,pos:'GK',ovr:70},{id:79,pos:'DEF',ovr:70},{id:80,pos:'DEF',ovr:70},{id:81,pos:'DEF',ovr:70},{id:82,pos:'MID',ovr:70},{id:83,pos:'MID',ovr:70}]});
