@@ -175,6 +175,37 @@ function shotDeflectionOutcome(blocked,blockRoll,blockChance,defenderSkill){
  const chance=clamp(.05+Number(defenderSkill||0)*.001,.05,.15);
  return (Number(blockRoll)/Math.max(.000001,Number(blockChance)))<chance;
 }
+// Resolve a goalkeeper parry as a loose second ball inside the penalty area.
+// The landing point follows the shot's lateral angle and travels back into the pitch;
+// the nearest active outfield player wins the first contest, with pace as a small tie-break.
+function resolveKeeperParryRebound(s,goalkeeper,shooter,attackingTeam){
+ if(attackingTeam!==0&&attackingTeam!==1)throw Error('Attacking team must be 0 or 1');
+ if(!goalkeeper||!shooter||![goalkeeper.x,goalkeeper.y,shooter.x,shooter.y].every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error('Keeper and shooter positions must be finite');
+ const defendingTeam=1-attackingTeam,dir=attackingTeam===0?1:-1;
+ const landing={
+  x:clamp(goalkeeper.x-dir*7,2,98),
+  y:clamp(goalkeeper.y+(goalkeeper.y-shooter.y)*.35,12,88)
+ };
+ const candidates=[];
+ for(const team of s.teams){
+  for(const player of active(team)){
+   if(keeper(player.role))continue;
+   const d=distance(player,landing);
+   const score=d-Number(player.pace??50)*.012;
+   candidates.push({teamId:team.id,player,score,d});
+  }
+ }
+ candidates.sort((a,b)=>a.score-b.score||a.teamId-b.teamId||String(a.player.id).localeCompare(String(b.player.id)));
+ const winner=candidates[0];
+ if(!winner)throw Error('No active outfield player can contest the rebound');
+ s.ball={x:landing.x,y:landing.y,team:winner.teamId,playerId:winner.player.id};
+ if(winner.teamId===defendingTeam)startCounterTransition(s,defendingTeam);
+ else s.transition=null;
+ const event={type:'rebound',minute:s.minute+1,team:winner.teamId,playerId:winner.player.id,
+  goalkeeperId:goalkeeper.id,shooterId:shooter.id,attackingTeam,contested:true,x:landing.x,y:landing.y};
+ addEvent(s,event);
+ return event;
+}
 // Find an active outfield defender positioned in the actual passing corridor.
 function passLaneInterceptionChance(defender,gap,passType='normal'){
  const skill=Number(defender?.defending??50);
@@ -295,7 +326,7 @@ function stepAction(s){
  // Fewer active attackers means fewer coordinated runs and lower shot volume.
  // Keep the penalty modest so a red card changes the match without deciding it alone.
  const shotChance=clamp((.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045),.02,.16);
- let event=null,boundaryShot=null;
+ let event=null,boundaryShot=null,reboundShot=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
@@ -333,12 +364,11 @@ function stepAction(s){
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
    :saved?goalkeeper:null;
   if(restart&&!parried&&!deflectedOut)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
-  if(parried||deflectedOut){
-   const contact=parried?goalkeeper:blocker;
-   const spillY=parried
-    ?(50+(50-carrier.y)*.15<Number(goalkeeper?.y??50)?8:92)
-    :(Number(blocker?.y??50)<50?8:92);
-   boundaryShot={deflection:true,contact,attackingTeam:tid,goalX,spillY};
+  if(parried){
+   reboundShot={goalkeeper,shooter:carrier,attackingTeam:tid};
+  }else if(deflectedOut){
+   const spillY=Number(blocker?.y??50)<50?8:92;
+   boundaryShot={deflection:true,contact:blocker,attackingTeam:tid,goalX,spillY};
   }else if(!blocked&&!goal&&missAimY!==null){
    const dir=tid===0?1:-1,beyondX=goalX+dir;
    const ratio=(beyondX-carrier.x)/(goalX-carrier.x);
@@ -384,7 +414,8 @@ function stepAction(s){
   }
  }
  if(event)addEvent(s,event);
- // Preserve event order: the shot is logged first, then its boundary restart.
+ // The shot is logged before its secondary outcome: rebound or boundary restart.
+ if(reboundShot)resolveKeeperParryRebound(s,reboundShot.goalkeeper,reboundShot.shooter,reboundShot.attackingTeam);
  if(boundaryShot?.deflection){
   resolveShotDeflectionBoundary(s,boundaryShot.contact,boundaryShot.attackingTeam,boundaryShot.goalX,boundaryShot.spillY);
  }else if(boundaryShot)resolveBallBoundary(s,boundaryShot.from,boundaryShot.to,boundaryShot.lastTouchTeam);
@@ -495,7 +526,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveKeeperParryRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
