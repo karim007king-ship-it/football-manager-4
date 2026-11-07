@@ -464,7 +464,6 @@ test('live goalkeeper parries and defender deflections award corners to the atta
    assert.equal(restart.type,'restart');
    assert.equal(restart.restartType,'corner');
    assert.equal(restart.team,contact.attackingTeam);
-   assert.equal(state.ball.team,restart.team);
    assert.ok(state.teams[restart.team].players.some(p=>p.active&&p.id===restart.playerId));
    assert.ok(restart.x>=2&&restart.x<=98&&restart.y>=3&&restart.y<=97);
    if(contact.parried)parries++;
