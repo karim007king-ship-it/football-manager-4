@@ -299,7 +299,7 @@ function endCup(){let U=G.uid,c=G.cup,opp=M.opp,h=M.home,w=M.gu>M.go||(M.gu==M.g
   let ld=M.xi.some(x=>trt(x)=='leader');
   G.players.forEach(p=>{if(p.clubId==U){p.morale=cl(p.morale+(w?4:-4+(ld?2:0))-(trt(p)=='hot'&&!p.inj&&!M.xi.includes(p)?2:0),30,100);if(!p.inj&&Math.random()<.015*(trt(p)=='fragile'?2.2:1)){p.inj=R(1,4);log(`🚑 إصابة ${p.name} (${p.inj} أسابيع)`,'log-bad')}}});
   pressAfter(w?'win':'loss',M.gu,M.go,opp,true);cupAdvance({w,l});G.date+=3*864e5;if(c.done)log(c.msg,'log-goal');
-  sb();save();clearMatchSession();document.body.classList.remove('match-live');busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
+  sb();save();clearMatchSession();busy=false;M=null;shadowMonitor=null;document.body.classList.remove('match-live');hdr();$('ctl').style.display='none';
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;setTimeout(lockerEvent,700)}
 const ST=p=>p.st||(p.st={g:0,a:0,ap:0,rs:0,mo:0});
 function aiGoals(cid,n){let ps=G.players.filter(p=>p.clubId==cid&&p.pos!='GK'),l=[];
@@ -1092,7 +1092,7 @@ function endMatch(){
   pressAfter(res,gu,go_,opp);trainWeek();sdMatch(home,res);G.date+=7*864e5;G.round++;cupCheck();offerCheck();
   if(G.round%2==0)refreshMarket();
   let done=G.round>=14;if(done)endSeason();
-  save();clearMatchSession();document.body.classList.remove('match-live');busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
+  save();clearMatchSession();busy=false;M=null;shadowMonitor=null;document.body.classList.remove('match-live');hdr();$('ctl').style.display='none';
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;if(!done)setTimeout(lockerEvent,700)}
 
 function endSeason(){
