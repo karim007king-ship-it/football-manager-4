@@ -52,6 +52,21 @@ function effectiveMentality(s,teamId){
  if(difference>0&&minute>=78)return 'defensive';
  return base;
 }
+// Select a striker's run lane behind the defensive line without chasing
+// beyond a realistic support distance from the ball carrier.
+function strikerRunTarget(player,carrier,teamId,defenders){
+ const dir=teamId===0?1:-1;
+ const progress=carrier.x*dir;
+ if(progress<48)return{x:player.x,y:player.y,active:false};
+ const backLine=defenders.filter(p=>p.active&&!keeper(p.role));
+ if(!backLine.length)return{x:player.x,y:player.y,active:false};
+ const lineX=teamId===0?Math.max(...backLine.map(p=>p.x)):Math.min(...backLine.map(p=>p.x));
+ const lanes=[36,50,64];
+ const lane=lanes.map(y=>({y,space:backLine.reduce((best,d)=>Math.min(best,Math.hypot(d.x-(lineX-dir*2),d.y-y)),40)}))
+  .sort((a,b)=>b.space-a.space)[0];
+ const targetProgress=clamp(lineX*dir+2.5,progress+2,Math.min(98,progress+18));
+ return{x:clamp(targetProgress*dir,2,98),y:lane.y,active:true};
+}
 function updateShape(s,teamId,carrier,counterActive=false){
  const ballX=s.ball.x,ballY=s.ball.y;
  for(const t of s.teams){
@@ -87,10 +102,11 @@ function updateShape(s,teamId,carrier,counterActive=false){
     ty+= (50-p.baseY)*.1;
     if(has&&(/^(AM|CAM)$/.test(r)||l>.55))tx+=dir*(ballProgress>5?3:1);
    }else if(/^(ST|CF)$/.test(r)&&has){
-    // Striker offers a forward passing lane but does not teleport beyond the ball.
-    // Keep the striker ahead of the ball in the team's own attacking direction.
-    // The previous mirrored expression incorrectly pushed the away striker backward.
-    tx=dir>0?Math.max(ballX+2,tx):Math.min(ballX-2,tx);
+    // When possession reaches midfield, the striker attacks the most open
+    // channel just beyond the defensive line, mirrored for both directions.
+    const run=strikerRunTarget(p,carrier,t.id,active(s.teams[1-t.id]));
+    if(run.active){tx=run.x;ty=run.y;}
+    else tx=dir>0?Math.max(ballX+2,tx):Math.min(ballX-2,tx);
     tx=clamp(tx,t.id===0?ballX-2:2,t.id===0?98:ballX+2);
    }
 
@@ -359,7 +375,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
