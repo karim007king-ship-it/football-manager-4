@@ -289,6 +289,40 @@ test('clearance second balls are contested only under nearby pressure and can be
  assert.equal(safeEvent.secondBall,undefined,'an uncontested clearance must keep its original outlet');
  assert.equal(safe.ball.playerId,safeOutlet.id);
 });
+test('clearance second-ball pressure cutoff is strict and ignores inactive players and goalkeepers',()=>{
+ const makeState=(opponentDistance)=>{
+  const outlet={id:'outlet',role:'CM',active:true,x:50,y:50,pace:50,passing:60,defending:60};
+  const keeper={id:'keeper',role:'GK',active:true,x:50,y:50,pace:99,passing:99,defending:99};
+  const inactive={id:'inactive',role:'ST',active:false,x:50,y:50,pace:99,passing:99,defending:99};
+  const press={id:'press',role:'ST',active:true,x:50+opponentDistance,y:50,pace:50,passing:60,defending:60};
+  return{state:{teams:[{id:0,players:[outlet,keeper]},{id:1,players:[press,inactive]}],ball:{x:0,y:0,team:0,playerId:outlet.id},actionCount:3,transition:null},outlet};
+ };
+ const atLimit=makeState(14);
+ const contested=resolveClearanceSecondBall(atLimit.state,atLimit.state.teams[0],1,atLimit.outlet);
+ assert.equal(contested.contested,true,'pressure at exactly 14 units is still in range');
+ assert.equal(atLimit.state.ball.playerId,'outlet','the active outfield outlet wins the equal-distance contest');
+ const outside=makeState(14.001);
+ assert.equal(resolveClearanceSecondBall(outside.state,outside.state.teams[0],1,outside.outlet),null);
+ assert.equal(outside.state.ball.playerId,'outlet','pressure outside the cutoff must not alter clearance ownership');
+});
+test('clearance second-ball resolution is mirrored for either defending side',()=>{
+ for(const defendingId of [0,1]){
+  const attackingId=1-defendingId;
+  const outlet={id:'outlet-'+defendingId,role:'CM',active:true,x:50,y:50,pace:70,passing:70,defending:70};
+  const press={id:'press-'+defendingId,role:'ST',active:true,x:54,y:50,pace:65,passing:65,defending:65};
+  const keeper={id:'keeper-'+defendingId,role:'GK',active:true,x:50,y:50,pace:100,passing:100,defending:100};
+  const state={teams:[{id:0,players:[]},{id:1,players:[]}],ball:{x:10,y:10,team:defendingId,playerId:outlet.id},actionCount:8,transition:null};
+  state.teams[defendingId].players.push(outlet,keeper);
+  state.teams[attackingId].players.push(press);
+  const event=resolveClearanceSecondBall(state,state.teams[defendingId],attackingId,outlet);
+  assert.equal(event.contested,true);
+  assert.equal(event.team,defendingId);
+  assert.equal(event.outcome,'retained');
+  assert.equal(state.ball.team,defendingId);
+  assert.equal(state.ball.playerId,outlet.id);
+  assert.equal(state.transition.team,defendingId);
+ }
+});
 test('defensive recovery keeps an ordinary interception when clearance is not rolled',()=>{
  const state=create(74),defending=state.teams[1];
  const defender=defending.players.find(p=>p.role==='DF');
