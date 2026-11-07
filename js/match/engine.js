@@ -148,6 +148,11 @@ function pointSegmentDistance(point,a,b){
  return Math.hypot(point.x-(a.x+u*dx),point.y-(a.y+u*dy));
 }
 // Find an active outfield defender positioned in the actual passing corridor.
+function passLaneInterceptionChance(defender,gap,passType='normal'){
+ const skill=Number(defender?.defending??50);
+ const patternRisk=passType==='through_ball'?.018:passType==='cross'?.012:passType==='cutback'?.02:passType==='switch'?-.005:0;
+ return clamp(.02+skill*.0012-Number(gap||0)*.012+patternRisk,.02,.16);
+}
 function findPassInterceptor(carrier,target,defenders){
  const dx=target.x-carrier.x,dy=target.y-carrier.y,len2=dx*dx+dy*dy;
  if(!len2)return null;
@@ -295,7 +300,7 @@ function stepAction(s){
     const risk=best.passType==='through_ball'?.09:best.passType==='cross'?.07:best.passType==='cutback'?.045:best.passType==='switch'?.035:0;
     const chance=clamp(.66+(carrier.passing*sharpness)/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0)-risk,.30,.97);
     const laneDefender=findPassInterceptor(carrier,best.p,def);
-    const laneRisk=laneDefender?clamp(.02+(Number(laneDefender.player.defending??50)*.0012)-laneDefender.gap*.012,.02,.13):0;
+    const laneRisk=laneDefender?passLaneInterceptionChance(laneDefender.player,laneDefender.gap,best.passType):0;
     if(laneDefender&&rnd()<laneRisk){
      event=resolveDefensiveRecovery(s,opp,laneDefender.player,tid,rnd);
     }else if(rnd()<chance){
@@ -346,7 +351,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
