@@ -644,6 +644,42 @@ test('cross contests resolve completed delivery, interception and defensive clea
  assert.throws(()=>resolveCrossContest(completed,carrier,receiver,2),/Attacking team/);
 });
 
+test('completed crosses create a one-action mirrored shooting opportunity inside the box',()=>{
+ const home=create(1501),homeCarrier=home.teams[0].players[8],homeReceiver=home.teams[0].players[9];
+ homeCarrier.x=78;homeCarrier.y=12;homeReceiver.x=84;homeReceiver.y=50;
+ for(const p of home.teams[1].players){p.x=20;p.y=5;}
+ const homeCross=resolveCrossContest(home,homeCarrier,homeReceiver,0);
+ assert.equal(homeCross.outcome,'completed');assert.equal(homeCross.inBox,true);
+ assert.deepEqual(home.crossShotOpportunity,{team:0,playerId:homeReceiver.id,expiresAtAction:1});
+ home.events.push(homeCross);
+ const zeroHome=()=>0;zeroHome.state=7;home.random=zeroHome;
+ stepMatch(home);
+ const homeFollowUp=home.events.find(e=>e.type==='goal'||e.type==='shot'||e.type==='save'||e.type==='block'||e.type==='woodwork');
+ assert.ok(homeFollowUp,'the controlled in-box follow-up should produce a shot event');
+ assert.equal(homeFollowUp.crossFollowUp,true);
+ assert.equal(home.crossShotOpportunity,null);
+
+ const away=create(1502),awayCarrier=away.teams[1].players[8],awayReceiver=away.teams[1].players[9];
+ awayCarrier.x=22;awayCarrier.y=12;awayReceiver.x=16;awayReceiver.y=50;
+ for(const p of away.teams[0].players){p.x=80;p.y=5;}
+ const awayCross=resolveCrossContest(away,awayCarrier,awayReceiver,1);
+ assert.equal(awayCross.inBox,true);
+ assert.equal(away.crossShotOpportunity.team,1);
+ const zeroAway=()=>0;zeroAway.state=9;away.random=zeroAway;
+ away.events.push(awayCross);
+ stepMatch(away);
+ const awayFollowUp=away.events.find(e=>e.type==='goal'||e.type==='shot'||e.type==='save'||e.type==='block'||e.type==='woodwork');
+ assert.ok(awayFollowUp,'the mirrored in-box follow-up should produce a shot event');
+ assert.equal(awayFollowUp.crossFollowUp,true);
+
+ const wide=create(1503),wideCarrier=wide.teams[0].players[8],wideReceiver=wide.teams[0].players[9];
+ wideCarrier.x=72;wideCarrier.y=12;wideReceiver.x=75;wideReceiver.y=50;
+ for(const p of wide.teams[1].players){p.x=20;p.y=5;}
+ const wideCross=resolveCrossContest(wide,wideCarrier,wideReceiver,0);
+ assert.equal(wideCross.inBox,false);
+ assert.equal(wide.crossShotOpportunity,undefined);
+});
+
 test('overhit passes resolve touchline, goal-kick and corner restarts in both directions',()=>{
  const homeThrow=create(1301);
  const throwResult=resolvePassBoundary(homeThrow,{x:60,y:88},{x:75,y:99},0,.2);
