@@ -121,6 +121,18 @@ function pointSegmentDistance(point,a,b){
  return Math.hypot(point.x-(a.x+u*dx),point.y-(a.y+u*dy));
 }
 // Score receiver space and the entire pass corridor, not only the receiver's endpoint.
+function classifyPassPattern(carrier,target,team,teamId,laneClearance){
+ const dir=teamId===0?1:-1;
+ const progress=(target.x-carrier.x)*dir;
+ const carrierProgress=carrier.x*dir+(teamId===0?0:100);
+ const wide=carrier.y<22||carrier.y>78;
+ const central=target.y>=25&&target.y<=75;
+ if(wide&&carrierProgress>=88&&central&&progress<0)return'cutback';
+ if(wide&&carrierProgress>=68&&central&&progress>=-3)return'cross';
+ if(progress>=7&&laneClearance>=4&&distance(carrier,target)>=7)return'through_ball';
+ if(Math.abs(target.y-carrier.y)>=34&&laneClearance>=7&&progress>=-5)return'switch';
+ return'normal';
+}
 function choosePassTarget(team,defenders,carrier,teamId){
  const dir=teamId===0?1:-1;
  const candidates=active(team).filter(p=>p.id!==carrier.id).map(p=>{
@@ -131,7 +143,7 @@ function choosePassTarget(team,defenders,carrier,teamId){
   const forwardScale=manpowerProfile(team).forwardScale;
   const forwardBonus=progress>0?3*forwardScale:0;
   const score=progress*.78*forwardScale+Math.min(space,24)*.42+Math.min(laneClearance,18)*.62+p.passing*.025-lateral*.22+forwardBonus;
-  return{p,progress,space,laneClearance,score};
+  const passType=classifyPassPattern(carrier,p,team,teamId,laneClearance);\n  const patternBonus=passType==='through_ball'?4:passType==='cross'?3.2:passType==='cutback'?4.5:passType==='switch'?2.2:0;\n  return{p,progress,space,laneClearance,score:score+patternBonus,passType};
  });
  if(!candidates.length)return null;
  const safeForward=candidates.filter(c=>c.progress>1.5&&c.space>4&&c.laneClearance>2.5);
@@ -191,11 +203,11 @@ function stepAction(s){
    const pass=best&&rnd()<(pd<4.5?.35:pd<8.5?.72:best.progress>0?.58:.28);
    if(pass){
     s.passes[tid]++;
-    const chance=clamp(.66+(carrier.passing*sharpness)/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0),.35,.97);
+    const risk=best.passType==='through_ball'?.09:best.passType==='cross'?.07:best.passType==='cutback'?.045:best.passType==='switch'?.035:0;\n    const chance=clamp(.66+(carrier.passing*sharpness)/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0)-risk,.30,.97);
     if(rnd()<chance){
      s.completedPasses[tid]++;
      s.ball={x:best.p.x,y:best.p.y,team:tid,playerId:best.p.id};
-     event={type:'pass',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};
+     event={type:'pass',passType:best.passType||'normal',minute:s.minute+1,team:tid,from:carrier.id,to:best.p.id,x:best.p.x,y:best.p.y};
     }else{
      const win=nearest(def,{x:(carrier.x+best.p.x)/2,y:(carrier.y+best.p.y)/2})||press;
      if(win){
