@@ -76,7 +76,7 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const maxTarget=Math.max(minTarget,Math.min(98,progress+18));
  // On an advanced wide delivery, the striker attacks the far-post corridor
  // just behind the defensive line; central attacks retain the normal run.
- const targetProgress=clamp(lineProgress+2.5,minTarget,maxTarget);
+ const targetProgress=clamp(lineProgress+2,minTarget,maxTarget);
  return{x:clamp(teamId===0?targetProgress:100-targetProgress,2,98),y:lane.y,active:true,crossingLane};
 }
 function updateShape(s,teamId,carrier,counterActive=false){
