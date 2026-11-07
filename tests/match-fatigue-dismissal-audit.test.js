@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,simulateMatch}=require('../js/match/engine');
+const {createMatch,simulateMatch,manpowerProfile}=require('../js/match/engine');
 
 const ROLES=['GK','CB','CB','CB','CB','DM','CM','AM','LW','ST','RW'];
 function squad(name,side,{stamina=100,sentOffId=null}={}){
