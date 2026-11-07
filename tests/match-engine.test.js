@@ -110,10 +110,28 @@ test('save events credit the defending goalkeeper and retain the attacking shoot
  assert.equal(foundState.teams[found.team].players.find(p=>p.id===found.playerId).role,'GK');
 });
 
-test('goalkeeper skill is represented in the engine player state',()=>{
- const s=create();
+test('goalkeeper skill breakdown is retained in the engine player state',()=>{
+ const h=team('Home',0),a=team('Away',1);
+ Object.assign(h.players[0],{gkReflexes:91,gkHandling:82,gkPositioning:73,gkOneOnOne:64,gkDistribution:55});
+ const s=createMatch({teams:[h,a],seed:23});
  const homeKeeper=s.teams[0].players.find(p=>p.role==='GK');
  const awayKeeper=s.teams[1].players.find(p=>p.role==='GK');
- assert.equal(homeKeeper.goalkeeping,60);
+ assert.equal(homeKeeper.goalkeeping,77);
+ assert.equal(homeKeeper.gkReflexes,91);
+ assert.equal(homeKeeper.gkHandling,82);
+ assert.equal(homeKeeper.gkPositioning,73);
+ assert.equal(homeKeeper.gkOneOnOne,64);
+ assert.equal(homeKeeper.gkDistribution,55);
  assert.equal(awayKeeper.goalkeeping,60);
+ assert.equal(awayKeeper.gkReflexes,60);
+});
+test('legacy engine inputs without a goalkeeper breakdown remain compatible',()=>{
+ const s=create();
+ const goalkeeper=s.teams[0].players.find(p=>p.role==='GK');
+ assert.equal(goalkeeper.goalkeeping,60);
+ assert.equal(goalkeeper.gkReflexes,60);
+ assert.equal(goalkeeper.gkHandling,60);
+ assert.equal(goalkeeper.gkPositioning,60);
+ assert.equal(goalkeeper.gkOneOnOne,60);
+ assert.equal(goalkeeper.gkDistribution,60);
 });
