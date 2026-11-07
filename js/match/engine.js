@@ -209,6 +209,30 @@ function resolveKeeperParryRebound(s,goalkeeper,shooter,attackingTeam){
  addEvent(s,event);
  return event;
 }
+// Resolve a post/crossbar impact into an in-play second ball, mirrored by attack direction.
+function resolveWoodworkRebound(s,shooter,attackingTeam,goalX,woodworkType='post'){
+ if(attackingTeam!==0&&attackingTeam!==1)throw Error('Attacking team must be 0 or 1');
+ if(!shooter||![shooter.x,shooter.y,goalX].every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error('Woodwork trajectory must be finite');
+ if(woodworkType!=='post'&&woodworkType!=='crossbar')throw Error('Unsupported woodwork type');
+ const dir=attackingTeam===0?1:-1;
+ const contactY=woodworkType==='crossbar'?50:(shooter.y<50?44:56);
+ const landing={x:clamp(goalX-dir*5,2,98),y:clamp(woodworkType==='crossbar'?50+(shooter.y-50)*.25:50+(contactY-50)*.55,42,58)};
+ const candidates=[];
+ for(const team of s.teams){for(const player of active(team)){
+  if(keeper(player.role))continue;
+  const d=distance(player,landing),score=d-Number(player.pace??50)*.012;
+  candidates.push({teamId:team.id,player,score});
+ }}
+ candidates.sort((a,b)=>a.score-b.score||a.teamId-b.teamId||String(a.player.id).localeCompare(String(b.player.id)));
+ const winner=candidates[0];
+ if(!winner)throw Error('No active outfield player can contest the woodwork rebound');
+ s.ball={x:landing.x,y:landing.y,team:winner.teamId,playerId:winner.player.id};
+ if(winner.teamId===1-attackingTeam)startCounterTransition(s,winner.teamId);else s.transition=null;
+ s.reboundOpportunity={team:winner.teamId,attackingTeam,expiresAtAction:(s.actionCount||0)+1};
+ const event={type:'rebound',source:'woodwork',woodworkType,minute:s.minute+1,team:winner.teamId,playerId:winner.player.id,attackingTeam,contested:true,x:landing.x,y:landing.y};
+ addEvent(s,event);
+ return event;
+}
 // Find an active outfield defender positioned in the actual passing corridor.
 function passLaneInterceptionChance(defender,gap,passType='normal'){
  const skill=Number(defender?.defending??50);
@@ -340,7 +364,7 @@ function stepAction(s){
  const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
  const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
  const shotChance=clamp(baseShotChance+(reboundFollowUp ? .16 : 0),.02,reboundFollowUp ? .34 : .16);
- let event=null,boundaryShot=null,reboundShot=null;
+ let event=null,boundaryShot=null,reboundShot=null,woodworkShot=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
@@ -365,21 +389,28 @@ function stepAction(s){
   const saved=!blocked&&on&&!goal;
   // Reuse the existing shot/block rolls for secondary outcomes. This keeps
   // the seeded random stream stable for every action that follows the shot.
+  const saveResidual=(goalRoll-quality)/Math.max(.000001,1-quality);
   const parryChance=clamp(.06+(100-Number(goalkeeper?.gkHandling??keeperSkill))*.0015,.06,.18);
-  const parried=saved&&((goalRoll-quality)/Math.max(.000001,1-quality))<parryChance;
+  const woodworkChance=clamp(.018+(25-goalDist)*.0007,.018,.035);
+  const parried=saved&&saveResidual<parryChance;
+  const woodwork=saved&&!parried&&saveResidual<parryChance+woodworkChance;
+  const woodworkType=Math.abs(carrier.y-50)<=4?'crossbar':'post';
   const deflectedOut=shotDeflectionOutcome(blocked,blockRoll,blockChance,blocker?.defending);
+  if(woodwork)s.shotsOnTarget[tid]=Math.max(0,s.shotsOnTarget[tid]-1);
   if(blocked||saved)startCounterTransition(s,oid);
-  event={type:blocked?'block':goal?'goal':saved?'save':'shot',minute:s.minute+1,
-   team:blocked||saved?oid:tid,playerId:blocked?blocker.id:saved?(goalkeeper?.id??carrier.id):carrier.id,
-   shooterId:carrier.id,goalkeeperId:blocked?null:goalkeeper?.id??null,
-   attackingTeam:tid,onTarget:on,parried,deflectedOut,reboundFollowUp,counterattack:counterActive,
+  event={type:blocked?'block':goal?'goal':woodwork?'woodwork':saved?'save':'shot',minute:s.minute+1,
+   team:blocked||saved&&!woodwork?oid:tid,playerId:blocked?blocker.id:saved&&!woodwork?(goalkeeper?.id??carrier.id):carrier.id,
+   shooterId:carrier.id,goalkeeperId:blocked||woodwork?null:goalkeeper?.id??null,
+   attackingTeam:tid,onTarget:on&&!woodwork,parried,woodwork,woodworkType:woodwork?woodworkType:null,deflectedOut,reboundFollowUp,counterattack:counterActive,
    x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
-   :saved?goalkeeper:null;
-  if(restart&&!parried&&!deflectedOut)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
+   :saved&&!woodwork?goalkeeper:null;
+  if(restart&&!parried&&!deflectedOut&&!woodwork)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
   if(parried){
    reboundShot={goalkeeper,shooter:carrier,attackingTeam:tid};
+  }else if(woodwork){
+   woodworkShot={shooter:carrier,attackingTeam:tid,goalX,woodworkType};
   }else if(deflectedOut){
    const spillY=Number(blocker?.y??50)<50?8:92;
    boundaryShot={deflection:true,contact:blocker,attackingTeam:tid,goalX,spillY};
@@ -430,6 +461,7 @@ function stepAction(s){
  if(event)addEvent(s,event);
  // The shot is logged before its secondary outcome: rebound or boundary restart.
  if(reboundShot)resolveKeeperParryRebound(s,reboundShot.goalkeeper,reboundShot.shooter,reboundShot.attackingTeam);
+ if(woodworkShot)resolveWoodworkRebound(s,woodworkShot.shooter,woodworkShot.attackingTeam,woodworkShot.goalX,woodworkShot.woodworkType);
  if(boundaryShot?.deflection){
   resolveShotDeflectionBoundary(s,boundaryShot.contact,boundaryShot.attackingTeam,boundaryShot.goalX,boundaryShot.spillY);
  }else if(boundaryShot)resolveBallBoundary(s,boundaryShot.from,boundaryShot.to,boundaryShot.lastTouchTeam);
@@ -540,7 +572,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveKeeperParryRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
