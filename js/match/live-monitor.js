@@ -5,6 +5,7 @@
 const bridgeApi=()=>typeof module!=='undefined'&&module.exports?require('./live-bridge'):window.FM4LiveBridge;
 const adapterApi=()=>typeof module!=='undefined'&&module.exports?require('./adapter'):window.FM4MatchAdapter;
 const subApi=()=>typeof module!=='undefined'&&module.exports?require('./substitutions'):window.FM4Substitutions;
+ const engineApi=()=>typeof module!=='undefined'&&module.exports?require('./engine'):window.FM4MatchEngine;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function stageError(stage,error){
  const message=String(error&&error.message||error||'Unknown error');
@@ -104,6 +105,31 @@ function advance(monitor,match,minutes=1){
   return result;
  }catch(error){throw stageError(error&&error.stage?'ADVANCE>'+error.stage:'ADVANCE',error);}
 }
+
+function serialize(monitor){
+ try{
+  if(!monitor?.shadow?.state)throw new Error('An active shadow monitor is required');
+  const state=monitor.shadow.state;
+  if(typeof state.random!=='function'||!Number.isInteger(state.random.state))throw new Error('Shadow random state is not serializable');
+  return {
+   schemaVersion:1,steps:Number(monitor.steps)||0,lastError:monitor.lastError||null,
+   legacyEventIds:Array.from(monitor.legacyEventIds||[]),
+   shadow:{userTeamId:monitor.shadow.userTeamId,legacyMinute:monitor.shadow.legacyMinute,
+    legacyScore:Array.isArray(monitor.shadow.legacyScore)?monitor.shadow.legacyScore.slice():null,
+    source:monitor.shadow.source,
+    state:{...state,random:undefined,randomState:state.random.state}}
+  };
+ }catch(error){throw stageError('SERIALIZE',error);}
+}
+function restore(snapshot){
+ try{
+  if(!snapshot||snapshot.schemaVersion!==1||!snapshot.shadow||!snapshot.shadow.state)throw new Error('Unsupported or incomplete shadow snapshot');
+  const raw=snapshot.shadow,state={...raw.state},user=Number(raw.userTeamId),rng=Number(state.randomState);
+  if((user!==0&&user!==1)||!Array.isArray(state.teams)||state.teams.length!==2||!Array.isArray(state.score)||!Array.isArray(state.events)||!state.ball||!Number.isInteger(rng)||rng<0||rng>0xffffffff)throw new Error('Invalid shadow snapshot data');
+  delete state.randomState;state.random=engineApi().restoreRandom(rng);
+  return {shadow:{...raw,state},steps:Math.max(0,Math.floor(Number(snapshot.steps)||0)),lastError:snapshot.lastError||null,legacyEventIds:new Set(Array.isArray(snapshot.legacyEventIds)?snapshot.legacyEventIds.map(String):[])};
+ }catch(error){throw stageError('RESTORE',error);}
+}
 const LEGACY_EVENT_TYPES=new Set(['yellow_card','second_yellow','red_card','penalty','corner','free_kick','injury']);
 function recordLegacyEvent(monitor,event){
  try{
@@ -154,7 +180,7 @@ function render(monitor,match){
  </section>`;
  }catch(error){throw stageError('RENDER',error);}
 }
-const FM4ShadowMonitor={create,sync,advance,render,recordLegacyEvent};
+const FM4ShadowMonitor={create,sync,advance,render,recordLegacyEvent,serialize,restore};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4ShadowMonitor;
 if(typeof window!=='undefined')window.FM4ShadowMonitor=FM4ShadowMonitor;
 
