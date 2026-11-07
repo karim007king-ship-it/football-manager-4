@@ -335,11 +335,10 @@ function stepAction(s){
   if(restart&&!parried&&!deflectedOut)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
   if(parried||deflectedOut){
    const contact=parried?goalkeeper:blocker;
-   const dir=tid===0?1:-1,beyondX=goalX+dir;
    const spillY=parried
     ?(50+(50-carrier.y)*.15<Number(goalkeeper?.y??50)?8:92)
     :(Number(blocker?.y??50)<50?8:92);
-   boundaryShot={from:{x:contact.x,y:contact.y},to:{x:beyondX,y:spillY},lastTouchTeam:oid};
+   boundaryShot={deflection:true,contact,attackingTeam:tid,goalX,spillY};
   }else if(!blocked&&!goal&&missAimY!==null){
    const dir=tid===0?1:-1,beyondX=goalX+dir;
    const ratio=(beyondX-carrier.x)/(goalX-carrier.x);
@@ -386,7 +385,9 @@ function stepAction(s){
  }
  if(event)addEvent(s,event);
  // Preserve event order: the shot is logged first, then its boundary restart.
- if(boundaryShot)resolveBallBoundary(s,boundaryShot.from,boundaryShot.to,boundaryShot.lastTouchTeam);
+ if(boundaryShot?.deflection){
+  resolveShotDeflectionBoundary(s,boundaryShot.contact,boundaryShot.attackingTeam,boundaryShot.goalX,boundaryShot.spillY);
+ }else if(boundaryShot)resolveBallBoundary(s,boundaryShot.from,boundaryShot.to,boundaryShot.lastTouchTeam);
 }
 function drainTeamStamina(s){
  for(const team of s.teams){
@@ -425,6 +426,14 @@ function classifyBoundaryRestart(from,to,lastTouchTeam){
   return{restartType:'goal_kick',teamId:defendingTeam,spot:{x:defendingTeam===0?5:95,y:clamp(y,38,62)}};
  }
  return{restartType:'corner',teamId:attackingTeam,spot:{x:attackingTeam===0?97:3,y:exit.side==='right'? (y<50?3:97):(y<50?3:97)}};
+}
+// Resolve a defender's glancing shot contact into a goal-line corner.
+// The defending team touched last; this helper models only the supplied segment.
+function resolveShotDeflectionBoundary(s,contact,attackingTeam,goalX,spillY){
+ if(attackingTeam!==0&&attackingTeam!==1)throw Error('Attacking team must be 0 or 1');
+ if(!contact||![contact.x,contact.y,goalX,spillY].every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error('Deflection contact and trajectory must be finite');
+ const dir=attackingTeam===0?1:-1;
+ return resolveBallBoundary(s,{x:contact.x,y:contact.y},{x:goalX+dir,y:spillY},1-attackingTeam);
 }
 // Resolve a dead-ball restart into an explicit, deterministic ball owner.
 // The caller supplies the awarded team and restart location after the referee/
@@ -486,7 +495,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
