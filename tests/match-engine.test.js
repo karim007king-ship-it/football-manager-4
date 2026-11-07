@@ -17,7 +17,8 @@ test('classifies through balls, crosses, cutbacks and switches from pitch contex
  assert.equal(classifyPassPattern({x:50,y:15},{x:48,y:60},team,0,9),'switch');
  assert.equal(classifyPassPattern({x:40,y:40},{x:43,y:42},team,0,9),'normal');
 });
-\ntest('creates valid two-team match state',()=>{const s=create();assert.equal(s.minute,0);assert.deepEqual(s.score,[0,0]);assert.equal(s.teams.length,2);assert.equal(s.ball.team,0);});
+
+test('creates valid two-team match state',()=>{const s=create();assert.equal(s.minute,0);assert.deepEqual(s.score,[0,0]);assert.equal(s.teams.length,2);assert.equal(s.ball.team,0);});
 
 test('same seed and same lineups reproduce identical match output',()=>{
  const first=simulateMatch(create(991),90),second=simulateMatch(create(991),90);
