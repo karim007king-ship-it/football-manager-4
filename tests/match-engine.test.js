@@ -95,3 +95,25 @@ test('adaptive mentality does not change before late-match thresholds',()=>{
  const s=create();s.minute=60;s.score=[0,1];
  assert.equal(effectiveMentality(s,0),'balanced');
 });
+
+test('save events credit the defending goalkeeper and retain the attacking shooter',()=>{
+ let found=null,foundState=null;
+ for(let seed=1;seed<=80&&!found;seed++){
+  const state=simulateMatch(create(seed),90);
+  const event=state.events.find(e=>e.type==='save');
+  if(event){found=event;foundState=state;}
+ }
+ assert.ok(found,'at least one on-target shot should be saved in the seed cohort');
+ assert.equal(found.team,1-found.attackingTeam);
+ assert.equal(found.playerId,found.goalkeeperId);
+ assert.ok(found.shooterId,'saved shot must retain the attacking shooter ID');
+ assert.equal(foundState.teams[found.team].players.find(p=>p.id===found.playerId).role,'GK');
+});
+
+test('goalkeeper skill is represented in the engine player state',()=>{
+ const s=create();
+ const homeKeeper=s.teams[0].players.find(p=>p.role==='GK');
+ const awayKeeper=s.teams[1].players.find(p=>p.role==='GK');
+ assert.equal(homeKeeper.goalkeeping,60);
+ assert.equal(awayKeeper.goalkeeping,60);
+});
