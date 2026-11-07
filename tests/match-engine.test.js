@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -46,6 +46,17 @@ test('shot blocker detection finds defenders in the shooting corridor but ignore
  ];
  assert.equal(findShotBlocker(shooter,100,defenders).id,'wide');
  assert.equal(findShotBlocker(shooter,100,[defenders[1],defenders[2]]),null);
+});
+test('counterattack transition lasts three actions and expires deterministically',()=>{
+ const state={actionCount:10};
+ startCounterTransition(state,1);
+ assert.deepEqual(state.transition,{team:1,expiresAtAction:13});
+ assert.equal(counterTransitionActive(state,1),true);
+ assert.equal(counterTransitionActive(state,0),false);
+ state.actionCount=13;
+ assert.equal(counterTransitionActive(state,1),true);
+ state.actionCount=14;
+ assert.equal(counterTransitionActive(state,1),false);
 });
 test('defensive third is mirrored for home and away teams',()=>{
  assert.equal(isDefensiveThird({x:30},0),true);
