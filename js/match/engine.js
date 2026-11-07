@@ -276,7 +276,11 @@ function resolveCrossContest(s,carrier,receiver,attackingTeam){
  if(winner.teamId===attackingTeam){
   s.ball={x:landing.x,y:landing.y,team:attackingTeam,playerId:winner.player.id};
   s.transition=null;
-  return{type:'cross',outcome:'completed',minute:s.minute+1,team:attackingTeam,playerId:winner.player.id,from:carrier.id,to:winner.player.id,attackingTeam,x:landing.x,y:landing.y};
+  // A completed delivery into the attacking penalty area creates one
+  // immediate shooting opportunity for the receiver, not a persistent buff.
+  const inBox=attackingTeam===0?landing.x>=82&&landing.y>=18&&landing.y<=82:landing.x<=18&&landing.y>=18&&landing.y<=82;
+  if(inBox)s.crossShotOpportunity={team:attackingTeam,playerId:winner.player.id,expiresAtAction:(s.actionCount||0)+1};
+  return{type:'cross',outcome:'completed',minute:s.minute+1,team:attackingTeam,playerId:winner.player.id,from:carrier.id,to:winner.player.id,attackingTeam,inBox,x:landing.x,y:landing.y};
  }
  const outlet=isDefensiveThird(winner.player,defend.id)?chooseClearanceTarget(defend,winner.player,defend.id):null;
  startCounterTransition(s,defend.id);
@@ -375,6 +379,8 @@ function stepAction(s){
  if(s.transition&&s.actionCount>s.transition.expiresAtAction)s.transition=null;
  const reboundOpportunity=s.reboundOpportunity&&s.actionCount<=s.reboundOpportunity.expiresAtAction?s.reboundOpportunity:null;
  s.reboundOpportunity=null;
+ const crossShotOpportunity=s.crossShotOpportunity&&s.actionCount<=s.crossShotOpportunity.expiresAtAction&&s.crossShotOpportunity.team===tid&&s.crossShotOpportunity.playerId===s.ball.playerId?s.crossShotOpportunity:null;
+ s.crossShotOpportunity=null;
  let press=nearest(def,carrier),pd=press?distance(press,carrier):40;
  const goalDist=Math.abs(goalX-carrier.x);
  s.possession[tid]+=1/3;
@@ -396,9 +402,11 @@ function stepAction(s){
  // Keep the penalty modest so a red card changes the match without deciding it alone.
  const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
  const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
- const shotChance=clamp(baseShotChance+(reboundFollowUp ? .16 : 0),.02,reboundFollowUp ? .34 : .16);
+ const crossFollowUp=!!crossShotOpportunity;
+ const followUpBoost=(reboundFollowUp?.16:0)+(crossFollowUp?.10:0);
+ const shotChance=clamp(baseShotChance+followUpBoost,.02,followUpBoost? .30:.16);
  let event=null,boundaryShot=null,reboundShot=null,woodworkShot=null,passBoundary=null;
- if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
+ if(goalDist<=(crossFollowUp?30:25)&&Math.abs(50-carrier.y)<=(crossFollowUp?35:31)&&rnd()<shotChance){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
   const blockChance=blocker?clamp(.16+(blocker.defending*.0035)+(pd<9?.08:0),.12,.58):0;
@@ -434,7 +442,7 @@ function stepAction(s){
   event={type:blocked?'block':goal?'goal':woodwork?'woodwork':saved?'save':'shot',minute:s.minute+1,
    team:blocked||saved&&!woodwork?oid:tid,playerId:blocked?blocker.id:saved&&!woodwork?(goalkeeper?.id??carrier.id):carrier.id,
    shooterId:carrier.id,goalkeeperId:blocked||woodwork?null:goalkeeper?.id??null,
-   attackingTeam:tid,onTarget:on&&!woodwork,parried,woodwork,woodworkType:woodwork?woodworkType:null,deflectedOut,reboundFollowUp,counterattack:counterActive,
+   attackingTeam:tid,onTarget:on&&!woodwork,parried,woodwork,woodworkType:woodwork?woodworkType:null,deflectedOut,reboundFollowUp,crossFollowUp,counterattack:counterActive,
    x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
