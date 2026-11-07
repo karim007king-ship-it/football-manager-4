@@ -39,7 +39,7 @@ test('a serialized random state resumes the same match sequence after reload',()
 });
 test('same seed and inputs produce same match output',()=>{const a=simulateMatch(create(991),90),b=simulateMatch(create(991),90);assert.deepEqual(a.score,b.score);assert.deepEqual(a.events,b.events);assert.deepEqual(a.possession,b.possession);});
 test('rejects invalid team count and undersized squads',()=>{assert.throws(()=>createMatch({teams:[team('Only',0)]}),/Exactly two teams/);assert.throws(()=>createMatch({teams:[team('Home',0),{name:'Away',players:[]}] }),/at least 7 players/);});
-test('shots only occur in attacking third',()=>{const s=simulateMatch(create(),90);for(const e of s.events.filter(x=>['shot','save','goal'].includes(x.type))){const d=e.team===0?100-e.x:e.x;assert.ok(d<=25.001);}});
+test('shots only occur in attacking third',()=>{const s=simulateMatch(create(),90);for(const e of s.events.filter(x=>['shot','save','goal'].includes(x.type))){const attackingTeam=e.attackingTeam??e.team;const d=attackingTeam===0?100-e.x:e.x;assert.ok(d<=25.001);}});
 test('defending team sends a presser toward the ball carrier',()=>{
  const h=team('Home',0),a=team('Away',1);
  h.players.forEach((p,i)=>{p.x=65;p.y=12+i*7;});
