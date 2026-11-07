@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -170,4 +170,37 @@ test('legacy engine inputs without a goalkeeper breakdown remain compatible',()=
  assert.equal(goalkeeper.gkPositioning,60);
  assert.equal(goalkeeper.gkOneOnOne,60);
  assert.equal(goalkeeper.gkDistribution,60);
+});
+
+test('defensive recovery resolves a real clearance and transfers possession to its forward outlet',()=>{
+ const state=create(73),defending=state.teams[1];
+ const defender=defending.players.find(p=>p.role==='DF');
+ defender.x=80;defender.y=50;defender.defending=90;
+ const outlet=defending.players.find(p=>p.id!==defender.id&&p.role!=='GK');
+ outlet.x=55;outlet.y=32;
+ const event=resolveDefensiveRecovery(state,defending,defender,0,()=>0);
+ assert.equal(event.type,'clearance');
+ assert.equal(event.team,1);
+ assert.equal(event.playerId,defender.id);
+ assert.equal(event.to,outlet.id);
+ assert.equal(state.ball.team,1);
+ assert.equal(state.ball.playerId,outlet.id);
+});
+test('defensive recovery keeps an ordinary interception when clearance is not rolled',()=>{
+ const state=create(74),defending=state.teams[1];
+ const defender=defending.players.find(p=>p.role==='DF');
+ defender.x=80;defender.y=50;
+ const event=resolveDefensiveRecovery(state,defending,defender,0,()=>.999);
+ assert.equal(event.type,'interception');
+ assert.equal(event.playerId,defender.id);
+ assert.equal(state.ball.team,1);
+ assert.equal(state.ball.playerId,defender.id);
+});
+test('defensive recovery never attempts a clearance outside the defending third',()=>{
+ const state=create(75),defending=state.teams[1];
+ const defender=defending.players.find(p=>p.role==='DF');
+ defender.x=45;defender.y=50;
+ const event=resolveDefensiveRecovery(state,defending,defender,0,()=>0);
+ assert.equal(event.type,'interception');
+ assert.equal(state.ball.playerId,defender.id);
 });
