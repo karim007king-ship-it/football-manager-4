@@ -420,6 +420,7 @@ function restoreMatchSession(){
   shadowMonitor=restored.shadowSnapshot?window.FM4ShadowMonitor.restore(restored.shadowSnapshot):null;
   shadowMonitorError='';busy=true;snd.start();
   $('console').innerHTML='';$('console').style.display='block';
+  if(Array.isArray(M.sessionLog)){restoringMatchLog=true;M.sessionLog.forEach(x=>log(x.text,x.className));restoringMatchLog=false}
   $('ctl').style.display='block';$('sb').style.display='block';$('content').style.display='none';
   $('bp').innerText=M.paused?'▶ استئناف':'⏸ إيقاف';
   $('bs').innerText='⏩ x'+(M.speed||1);$('sl').innerText=M.subs;
@@ -665,7 +666,8 @@ function sell(id){let p=G.players.find(x=>x.id==id),sq=G.players.filter(x=>x.clu
   ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{G.budget+=pr;p.clubId=0;save();go('squad')})}
 function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem(MATCH_KEY)}catch(e){}G=null;M=null;shadowMonitor=null;busy=false;go('home')};f?d():ask('مسح كل التقدم وبدء لعبة جديدة؟',d)}
 
-function log(t,c){snd.hear(t);let d=document.createElement('div');d.className='ll '+(c||'');d.innerText=t;let k=$('console');k.appendChild(d);k.scrollTop=k.scrollHeight}
+let restoringMatchLog=false;
+function log(t,c){if(M&&!restoringMatchLog){if(!Array.isArray(M.sessionLog))M.sessionLog=[];M.sessionLog.push({text:String(t),className:c||''});if(M.sessionLog.length>150)M.sessionLog.shift()}snd.hear(t);let d=document.createElement('div');d.className='ll '+(c||'');d.innerText=t;let k=$('console');k.appendChild(d);k.scrollTop=k.scrollHeight}
 
 let MN=[];
 const tm=()=>`[${M.min>90&&!M.et?'90+'+(M.min-90):M.min}']`;
