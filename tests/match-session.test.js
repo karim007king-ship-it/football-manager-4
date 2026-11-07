@@ -10,7 +10,7 @@ function fixture(){
  const game={uid:1,season:3,round:5,players,clubs};
  const match={min:37,end:90,gu:1,go:0,home:true,cup:false,done:false,paused:false,hold:false,skip:false,so:null,
   xi:players.slice(0,11),opp:clubs[1],O:{a:65,d:62,pw:63,xi:players.slice(11,22)},bst:players[2],
-  out:new Set(['p3']),hurt:new Set(['p1']),q:[],t:123,subs:3,sh:[4,2],sc:['Player 2 [37]'],shadowSlots:{p0:0}};
+  out:new Set(['p3']),hurt:new Set(['p1']),q:[],t:123,subs:3,sh:[4,2],sc:['Player 2 [37]'],sessionLog:[{text:'⚽ هدف في الدقيقة 12',className:'log-goal'},{text:'🟨 بطاقة صفراء',className:'log-bad'}],shadowSlots:{p0:0}};
  return {game,match,players,clubs};
 }
 test('match session round trip restores player identity, sets and safe timer state',()=>{
@@ -24,6 +24,7 @@ test('match session round trip restores player identity, sets and safe timer sta
  assert.ok(m.out instanceof Set);assert.ok(m.out.has('p3'));
  assert.ok(m.hurt instanceof Set);assert.ok(m.hurt.has('p1'));
  assert.deepEqual(m.q,[]);assert.equal(m.t,null);assert.equal(m.hold,false);
+ assert.deepEqual(m.sessionLog,[{text:'⚽ هدف في الدقيقة 12',className:'log-goal'},{text:'🟨 بطاقة صفراء',className:'log-bad'}]);
  assert.deepEqual(restored.shadowSnapshot,{schemaVersion:1,marker:'shadow'});
 });
 test('match session refuses checkpoints with queued callbacks, modal choices or shootouts',()=>{
@@ -49,4 +50,6 @@ test('game startup resumes a validated active match and checkpoints only safe st
  assert.match(html,/M\.q\.length\|\|M\.hold\|\|M\.so/);
  assert.match(html,/window\.onload=\(\)=>\{load\(\);if\(G&&restoreMatchSession\(\)\)return/);
  assert.match(html,/clearMatchSession\(\);busy=false;M=null;shadowMonitor=null/);
+ assert.match(html,/function restoreMatchLog\(\)[\s\S]{0,500}M\.sessionLog\.forEach/);
+ assert.match(html,/M\.sessionLog\.push\(\{text:String\(t\),className:c\|\|''\}\)/);
 });
