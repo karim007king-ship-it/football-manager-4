@@ -24,6 +24,7 @@ test('shadow monitor snapshot restores events, deduplication and deterministic c
  const stored=JSON.parse(JSON.stringify(Monitor.serialize(first)));
  const restored=Monitor.restore(stored);
  assert.deepEqual(restored.shadow.state.events.find(e=>e.type==='clearance').secondBall,{contested:true,outcome:'lost',team:0,playerId:'press-9',x:55,y:32});
+ assert.match(Monitor.render(restored,m),/الخصم يستعيد الكرة الثانية/);
  assert.equal(restored.shadow.state.actionCount,first.shadow.state.actionCount);
  assert.deepEqual(restored.shadow.state.transition,first.shadow.state.transition);
  assert.equal(Monitor.recordLegacyEvent(restored,event),false);
