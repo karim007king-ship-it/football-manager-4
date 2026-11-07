@@ -309,16 +309,30 @@ function stepAction(s){
   const goal=!blocked&&on&&rnd()<quality;
   if(goal){s.score[tid]++;s.transition=null;}
   const saved=!blocked&&on&&!goal;
+  // A minority of saves are parried rather than held; model the parry as a
+  // real segment beyond the defending goal line so the last-touch rule awards
+  // a corner. Stronger handling reduces the chance of spilling the ball.
+  const parried=saved&&rnd()<clamp(.06+(100-Number(goalkeeper?.gkHandling??keeperSkill))*.0015,.06,.18);
+  // A blocked attempt can also glance off a defender and run behind the goal.
+  const deflectedOut=blocked&&rnd()<clamp(.05+Number(blocker?.defending||0)*.001,.05,.15);
   if(blocked||saved)startCounterTransition(s,oid);
   event={type:blocked?'block':goal?'goal':saved?'save':'shot',minute:s.minute+1,
    team:blocked||saved?oid:tid,playerId:blocked?blocker.id:saved?(goalkeeper?.id??carrier.id):carrier.id,
    shooterId:carrier.id,goalkeeperId:blocked?null:goalkeeper?.id??null,
-   attackingTeam:tid,onTarget:on,counterattack:counterActive,x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
+   attackingTeam:tid,onTarget:on,parried,deflectedOut,counterattack:counterActive,
+   x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
    :saved?goalkeeper:null;
-  if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
-  else if(!blocked&&!goal&&missAimY!==null){
+  if(restart&&!parried&&!deflectedOut)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
+  if(parried||deflectedOut){
+   const contact=parried?goalkeeper:blocker;
+   const dir=tid===0?1:-1,beyondX=goalX+dir;
+   const spillY=parried
+    ?(50+(50-carrier.y)*.15<Number(goalkeeper?.y??50)?8:92)
+    :(Number(blocker?.y??50)<50?8:92);
+   boundaryShot={from:{x:contact.x,y:contact.y},to:{x:beyondX,y:spillY},lastTouchTeam:oid};
+  }else if(!blocked&&!goal&&missAimY!==null){
    const dir=tid===0?1:-1,beyondX=goalX+dir;
    const ratio=(beyondX-carrier.x)/(goalX-carrier.x);
    const beyondY=carrier.y+(missAimY-carrier.y)*ratio;
