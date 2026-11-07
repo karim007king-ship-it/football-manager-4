@@ -938,7 +938,7 @@ function red(us){
   if(us){let c=M.xi.filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);recordShadowLegacyEvent('red_card',true,p);M.xi.splice(M.xi.indexOf(p),1);log(`${tm()} 🟥 طرد ${p.name}! تلعب بـ ${M.xi.length} لاعبين`,'log-bad')}
   else if(M.oR<2){let c=opponentOnPitch().filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);recordShadowLegacyEvent('red_card',false,p);M.oSentOff.push(String(p.id));M.oR=M.oSentOff.length;log(`${tm()} 🟥 طرد ${p.name} من ${M.opp.name}!`,'log-goal')}}
 function injure(){let c=M.xi.filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);p.inj=R(2,5);
-  log(`${tm()} 🚑 إصابة ${p.name}!`,'log-bad');let b=bench(p.pos);
+  recordShadowLegacyEvent('injury',true,p);log(`${tm()} 🚑 إصابة ${p.name}!`,'log-bad');let b=bench(p.pos);
   if(M.subs>0&&b.length){if(M.skip)doSub(p,b[0]);else menu('🚑 '+p.name+' مصاب — اختر البديل',b.map(x=>({l:lbl(x),fn:()=>doSub(p,x)})),false)}
   else{M.xi.splice(M.xi.indexOf(p),1);log('لا بدلاء: تكمل بنقص عددي','log-bad')}}
 function doSub(o,i){let k=M.xi.indexOf(o);if(k<0)return;M.xi[k]=i;M.slot[i.id]=M.slot[o.id];if(M.shadowSlots)M.shadowSlots[i.id]=M.shadowSlots[o.id];M.en[i.id]=100;M.out.add(o.id);delete M.ins[o.id];M.subs--;syncShadowMonitor();
