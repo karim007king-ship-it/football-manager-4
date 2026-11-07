@@ -26,3 +26,13 @@ test('live-match layout activates only after validation and is removed on exit',
   assert.match(html, /classList\.remove\('match-live'\)/);
   assert.match(html, /restoreMatchSession[\s\S]{0,900}classList\.add\('match-live'\)/);
 });
+
+test('goalkeeper attributes are generated, displayed and improved through training', () => {
+  const html = read('index.html');
+  for (const attribute of ['gkReflexes', 'gkHandling', 'gkPositioning', 'gkOneOnOne', 'gkDistribution']) {
+    assert.match(html, new RegExp(attribute));
+  }
+  assert.match(html, /const keeperStats=pos==='GK'\?\{/);
+  assert.match(html, /p\.pos==='GK'\?'<br/);
+  assert.match(html, /if\(p\.pos==='GK'\)\['gkReflexes','gkHandling','gkPositioning','gkOneOnOne','gkDistribution'\]/);
+});
