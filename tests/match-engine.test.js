@@ -116,7 +116,7 @@ test('goalkeeper skill breakdown is retained in the engine player state',()=>{
  const s=createMatch({teams:[h,a],seed:23});
  const homeKeeper=s.teams[0].players.find(p=>p.role==='GK');
  const awayKeeper=s.teams[1].players.find(p=>p.role==='GK');
- assert.equal(homeKeeper.goalkeeping,76);
+ assert.ok(Math.abs(homeKeeper.goalkeeping-76.24)<0.001,'weighted goalkeeper rating should retain its calculated precision');
  assert.equal(homeKeeper.gkReflexes,91);
  assert.equal(homeKeeper.gkHandling,82);
  assert.equal(homeKeeper.gkPositioning,73);
