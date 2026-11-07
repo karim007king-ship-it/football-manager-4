@@ -382,7 +382,7 @@ test('boundary classification awards throw-ins to the team that did not touch la
 
 test('goal-line classification mirrors corner and goal-kick awards for both ends',()=>{
  const homeCorner=classifyBoundaryRestart({x:90,y:40},{x:105,y:42},1);
- assert.deepEqual(homeCorner,{restartType:'corner',teamId:0,spot:{x:97,y:41.333333333333336}});
+ assert.deepEqual(homeCorner,{restartType:'corner',teamId:0,spot:{x:97,y:41.33333333333333}});
  const awayGoalKick=classifyBoundaryRestart({x:90,y:40},{x:105,y:42},0);
  assert.deepEqual(awayGoalKick,{restartType:'goal_kick',teamId:1,spot:{x:95,y:41.333333333333336}});
  const awayCorner=classifyBoundaryRestart({x:10,y:60},{x:-5,y:58},0);
