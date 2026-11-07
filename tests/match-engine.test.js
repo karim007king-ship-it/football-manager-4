@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -172,6 +172,19 @@ test('legacy engine inputs without a goalkeeper breakdown remain compatible',()=
  assert.equal(goalkeeper.gkDistribution,60);
 });
 
+test('defensive line retreats and compacts symmetrically as danger rises',()=>{
+ const home={baseX:28,baseY:20},away={baseX:72,baseY:20};
+ const homeSafe=defensiveLineTarget(home,{x:50,y:50},0,'balanced');
+ const homeDanger=defensiveLineTarget(home,{x:10,y:80},0,'balanced');
+ const awaySafe=defensiveLineTarget(away,{x:50,y:50},1,'balanced');
+ const awayDanger=defensiveLineTarget(away,{x:90,y:80},1,'balanced');
+ assert.ok(homeDanger.x<homeSafe.x,'home line retreats toward its own goal');
+ assert.ok(awayDanger.x>awaySafe.x,'away line retreats toward its own goal');
+ assert.ok(homeDanger.y>home.baseY,'far-side home defender narrows toward center');
+ assert.ok(awayDanger.y>away.baseY,'mirrored away defender narrows toward center');
+ const defensive=defensiveLineTarget(home,{x:10,y:50},0,'defensive');
+ assert.ok(defensive.x<homeDanger.x,'defensive mentality protects deeper space');
+});
 test('coordinated defensive cover and central screen mirror correctly for both teams',()=>{
  const carrier={x:68,y:32};
  const upper={baseY:20},lower={baseY:80};
