@@ -168,6 +168,13 @@ function pointSegmentDistance(point,a,b){
  const u=clamp(((point.x-a.x)*dx+(point.y-a.y)*dy)/len2,0,1);
  return Math.hypot(point.x-(a.x+u*dx),point.y-(a.y+u*dy));
 }
+// A blocked shot can glance off a defender and cross the goal line.
+// Reuse the conditional block roll so this adds no random draws.
+function shotDeflectionOutcome(blocked,blockRoll,blockChance,defenderSkill){
+ if(!blocked)return false;
+ const chance=clamp(.05+Number(defenderSkill||0)*.001,.05,.15);
+ return (Number(blockRoll)/Math.max(.000001,Number(blockChance)))<chance;
+}
 // Find an active outfield defender positioned in the actual passing corridor.
 function passLaneInterceptionChance(defender,gap,passType='normal'){
  const skill=Number(defender?.defending??50);
@@ -315,8 +322,7 @@ function stepAction(s){
   // the seeded random stream stable for every action that follows the shot.
   const parryChance=clamp(.06+(100-Number(goalkeeper?.gkHandling??keeperSkill))*.0015,.06,.18);
   const parried=saved&&((goalRoll-quality)/Math.max(.000001,1-quality))<parryChance;
-  const deflectionChance=clamp(.05+Number(blocker?.defending||0)*.001,.05,.15);
-  const deflectedOut=blocked&&(blockRoll/Math.max(.000001,blockChance))<deflectionChance;
+  const deflectedOut=shotDeflectionOutcome(blocked,blockRoll,blockChance,blocker?.defending);
   if(blocked||saved)startCounterTransition(s,oid);
   event={type:blocked?'block':goal?'goal':saved?'save':'shot',minute:s.minute+1,
    team:blocked||saved?oid:tid,playerId:blocked?blocker.id:saved?(goalkeeper?.id??carrier.id):carrier.id,
@@ -480,7 +486,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
