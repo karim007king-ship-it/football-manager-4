@@ -306,3 +306,16 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - This is automated CI evidence only. No real-device install or match-play test has been performed. The new engine remains shadow-only; legacy match results and saves remain authoritative.
 
 **Next:** model crossbar/post rebounds as explicit in-play second-ball trajectories, then integrate crosses and passes that leave the pitch through the same boundary/restart resolver. Keep trajectory generation deterministic and test both attacking directions before broader balance tuning.
+
+
+## 11. Woodwork and overhit-pass boundary integration — 2026-11-07
+
+- Added explicit post and crossbar rebound resolution. The rebound stays in play, selects an active outfield player using distance, pace and deterministic tie-breakers, updates ball ownership and creates a one-action second-ball opportunity.
+- Added controlled mirrored tests for home crossbar and away post geometry, ownership, event metadata and invalid input. Commit `70d918a03ce39184b389068140fd2064b4be493f` passed FM4 checks runs `42395354229` and `42395350301`, plus Android APK run `42395350302`.
+- Added overhit-pass boundary resolution for cross, switch, through-ball and normal passes. An overhit trajectory is extended beyond its intended receiver and passed through the same first-boundary classifier and atomic restart resolver used by shots. The pass event is recorded before any restart event.
+- Added mirrored tests for touchline throw-ins, goal kicks, corners, restart ownership and invalid zero-length trajectories.
+- The first implementation consumed an additional random draw on every successful pass and broke the established calibration stream. It was rejected. The corrected implementation derives the overhit decision from the current PRNG state without advancing it, preserving all subsequent random decisions.
+- Verified corrected commit: `758c9b0d8d5e23dd20f523b0f65c006ea11a838f`. FM4 checks runs `42397909023` and `42397903926` both passed; Android APK run `42397903941` passed.
+- These results confirm CI tests and APK build only. No real-device install or match-play test has been performed. Shadow Mode and legacy result/save authority remain unchanged.
+
+**Next:** implement and test live cross trajectories and their outcomes (completed crosses, interceptions, clearances, overhit crosses, and cross-originated shots) without introducing extra random draws that shift calibration. Then audit pass/cross decision quality, second-ball behavior and team shape under both attacking directions before starting the full match-screen redesign.
