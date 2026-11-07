@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,effectiveMentality}=require('../js/match/engine');
+const {createMatch,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -18,6 +18,25 @@ test('classifies through balls, crosses, cutbacks and switches from pitch contex
  assert.equal(classifyPassPattern({x:40,y:40},{x:43,y:42},team,0,9),'normal');
 });
 
+test('pass-lane interception responds to defender skill, proximity and pass pattern',()=>{
+ const average={defending:50},elite={defending:90};
+ const close=passLaneInterceptionChance(average,1,'normal');
+ const distant=passLaneInterceptionChance(average,4,'normal');
+ const skilled=passLaneInterceptionChance(elite,1,'normal');
+ const through=passLaneInterceptionChance(average,1,'through_ball');
+ const cross=passLaneInterceptionChance(average,1,'cross');
+ const cutback=passLaneInterceptionChance(average,1,'cutback');
+ const switchPass=passLaneInterceptionChance(average,1,'switch');
+ assert.ok(close>distant,'a closer defender should have a better interception chance');
+ assert.ok(skilled>close,'a stronger defender should intercept more often');
+ assert.ok(through>close,'through balls should expose a more interceptable corridor');
+ assert.ok(cross>close,'crosses should carry additional interception risk');
+ assert.ok(cutback>through,'cutbacks should be vulnerable in crowded central lanes');
+ assert.ok(switchPass<close,'switches should be less vulnerable to central lane interception');
+ for(const value of [close,distant,skilled,through,cross,cutback,switchPass]){
+  assert.ok(value>=.02&&value<=.16,'interception chance must remain bounded');
+ }
+});
 test('shot blocker detection finds defenders in the shooting corridor but ignores keepers and distant players',()=>{
  const shooter={x:82,y:50};
  const defenders=[
