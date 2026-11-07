@@ -56,17 +56,19 @@ function effectiveMentality(s,teamId){
 // beyond a realistic support distance from the ball carrier.
 function strikerRunTarget(player,carrier,teamId,defenders){
  const dir=teamId===0?1:-1;
- const progress=carrier.x*dir;
+ const progress=teamId===0?carrier.x:100-carrier.x;
  if(progress<48)return{x:player.x,y:player.y,active:false};
  const backLine=defenders.filter(p=>p.active&&!keeper(p.role)&&/^(CB|LB|RB|LWB|RWB|DF|DEF)/i.test(String(p.role||'')));
  const linePlayers=backLine.length?backLine:defenders.filter(p=>p.active&&!keeper(p.role));
  if(!linePlayers.length)return{x:player.x,y:player.y,active:false};
  const lineX=teamId===0?Math.max(...linePlayers.map(p=>p.x)):Math.min(...linePlayers.map(p=>p.x));
+ const lineProgress=teamId===0?lineX:100-lineX;
+ const targetX=lineX+dir*2;
  const lanes=[36,50,64];
- const lane=lanes.map(y=>({y,space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-(lineX-dir*2),d.y-y)),40)}))
+ const lane=lanes.map(y=>({y,space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-targetX,d.y-y)),40)}))
   .sort((a,b)=>b.space-a.space)[0];
- const targetProgress=clamp(lineX*dir+2.5,progress+2,Math.min(98,progress+18));
- return{x:clamp(targetProgress*dir,2,98),y:lane.y,active:true};
+ const targetProgress=clamp(lineProgress+2.5,progress+2,Math.min(98,progress+18));
+ return{x:clamp(teamId===0?targetProgress:100-targetProgress,2,98),y:lane.y,active:true};
 }
 function updateShape(s,teamId,carrier,counterActive=false){
  const ballX=s.ball.x,ballY=s.ball.y;
