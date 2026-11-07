@@ -104,6 +104,28 @@ function advance(monitor,match,minutes=1){
   return result;
  }catch(error){throw stageError(error&&error.stage?'ADVANCE>'+error.stage:'ADVANCE',error);}
 }
+const LEGACY_EVENT_TYPES=new Set(['yellow_card','second_yellow','red_card','penalty','corner','free_kick','injury']);
+function recordLegacyEvent(monitor,event){
+ try{
+  if(!monitor?.shadow?.state||!event||!LEGACY_EVENT_TYPES.has(event.type))throw new Error('A supported legacy event and active monitor are required');
+  const id=String(event.eventId??'');
+  if(!id)throw new Error('Legacy event ID is required for deduplication');
+  if(!monitor.legacyEventIds)monitor.legacyEventIds=new Set();
+  if(monitor.legacyEventIds.has(id))return false;
+  const state=monitor.shadow.state,team=Number(event.teamId);
+  if(team!==0&&team!==1)throw new Error('Legacy event team must be 0 or 1');
+  const minute=cl(Math.floor(Number(event.minute)||state.minute),0,120);
+  state.events.push({
+   type:event.type,minute,team,
+   playerId:event.playerId==null?null:String(event.playerId),
+   playerName:event.playerName==null?'':String(event.playerName),
+   source:'legacy',eventId:id
+  });
+  if(state.events.length>300)state.events.shift();
+  monitor.legacyEventIds.add(id);
+  return true;
+ }catch(error){throw stageError('LEGACY_EVENT',error);}
+}
 function render(monitor,match){
  try{
  if(!monitor?.shadow?.state)return '';
@@ -118,7 +140,7 @@ function render(monitor,match){
  const active=snap.activePlayers;
  const last=s.events.slice(-3).reverse().map(e=>{
   const t=s.teams[e.team]?.name||'الفريق',p=s.teams[e.team]?.players.find(x=>x.id===e.playerId);
-  const labels={carry:'تقدم بالكرة',pass:'تمريرة',interception:'اعتراض',tackle:'افتكاك',shot:'تسديدة',save:'تصدي',goal:'هدف'};
+  const labels={carry:'تقدم بالكرة',pass:'تمريرة',interception:'اعتراض',tackle:'افتكاك',shot:'تسديدة',save:'تصدي',goal:'هدف',yellow_card:'بطاقة صفراء',second_yellow:'إنذار ثانٍ وطرد',red_card:'بطاقة حمراء',penalty:'ركلة جزاء',corner:'ركنية',free_kick:'ضربة حرة',injury:'إصابة'};
   return '<div style="font-size:11px;color:#cbd5e1;margin-top:3px">'+esc(e.minute)+"' • "+esc(t)+' • '+esc(labels[e.type]||e.type)+(p?' — '+esc(p.name):'')+'</div>';
  }).join('');
  const scoreDiff=(cmp.score.engine[0]===cmp.score.legacy[0]&&cmp.score.engine[1]===cmp.score.legacy[1])?'متطابق':'مختلف';
@@ -132,7 +154,7 @@ function render(monitor,match){
  </section>`;
  }catch(error){throw stageError('RENDER',error);}
 }
-const FM4ShadowMonitor={create,sync,advance,render};
+const FM4ShadowMonitor={create,sync,advance,render,recordLegacyEvent};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4ShadowMonitor;
 if(typeof window!=='undefined')window.FM4ShadowMonitor=FM4ShadowMonitor;
 
