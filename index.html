@@ -207,8 +207,10 @@ td .bdg{margin-left:6px}.sbm .bdg{margin:0 4px}
 <script src="js/match/live-bridge.js"></script>
 <script src="js/match/substitutions.js"></script>
 <script src="js/match/live-monitor.js"></script>
+<script src="js/match/session-store.js"></script>
 <script>
 const KEY='fm_web_pro_v2';
+const MATCH_KEY=KEY+'_active_match';
 const CL=[["الترجي",72],["النجم الساحلي",70],["الإفريقي",69],["الصفاقسي",68],["المنستيري",66],["البنزرتي",65],["الملعب التونسي",63],["قابس",61]];
 const FN=["محمد","أمين","يوسف","حمزة","أنس","معز","سيف","خالد","إلياس","مالك","وسيم","بلال","ياسين","فراس","رياض","نادر","علي","عمر","زياد","هشام","طارق","ناصر","كريم","وليد","أيمن","رامي","صابر","شكري","لطفي","منير","حاتم","عادل"];
 const LN=["بن رمضان","الجزيري","المساكني","العبيدي","الشعلالي","بالعيد","الطبوبي","الخزري","السليتي","بن سعيد","الحمزاوي","العياري","التواتي","الغنوشي","الماجري","القلعي","الدريدي","الزواري","بوعزيزي","الورتاني","الكعبي","النفزي","العكرمي","الهمامي","الشابي","المرزوقي","الجلاصي","السعيدي","بن عمر","الطرابلسي"];
@@ -296,7 +298,7 @@ function endCup(){let U=G.uid,c=G.cup,opp=M.opp,h=M.home,w=M.gu>M.go||(M.gu==M.g
   let ld=M.xi.some(x=>trt(x)=='leader');
   G.players.forEach(p=>{if(p.clubId==U){p.morale=cl(p.morale+(w?4:-4+(ld?2:0))-(trt(p)=='hot'&&!p.inj&&!M.xi.includes(p)?2:0),30,100);if(!p.inj&&Math.random()<.015*(trt(p)=='fragile'?2.2:1)){p.inj=R(1,4);log(`🚑 إصابة ${p.name} (${p.inj} أسابيع)`,'log-bad')}}});
   pressAfter(w?'win':'loss',M.gu,M.go,opp,true);cupAdvance({w,l});G.date+=3*864e5;if(c.done)log(c.msg,'log-goal');
-  sb();save();busy=false;M=null;hdr();$('ctl').style.display='none';
+  sb();save();clearMatchSession();busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;setTimeout(lockerEvent,700)}
 const ST=p=>p.st||(p.st={g:0,a:0,ap:0,rs:0,mo:0});
 function aiGoals(cid,n){let ps=G.players.filter(p=>p.clubId==cid&&p.pos!='GK'),l=[];
@@ -398,6 +400,31 @@ function luSet(yid,xid){let lu=G.lu||(G.lu={p:[],b:[]}),ok=id=>G.players.some(p=
 function luAuto(){G.lu=null;save();go('lineup')}
 let G=null,busy=false,M=null;
 let shadowMonitor=null,shadowMonitorError='';
+function clearMatchSession(){try{localStorage.removeItem(MATCH_KEY)}catch(e){}}
+let matchSessionError='';
+function saveMatchSession(){
+ if(!M||M.done||M.q.length||M.hold||M.so)return false;
+ try{
+  const shadowSnapshot=shadowMonitor?window.FM4ShadowMonitor.serialize(shadowMonitor):null;
+  const snapshot=window.FM4MatchSession.serialize({match:M,game:G,shadowSnapshot});
+  localStorage.setItem(MATCH_KEY,JSON.stringify(snapshot));save();return true;
+ }catch(e){matchSessionError=shadowErrorText(e);return false}
+}
+function restoreMatchSession(){
+ try{
+  const raw=localStorage.getItem(MATCH_KEY);if(!raw)return false;
+  const snapshot=JSON.parse(raw),restored=window.FM4MatchSession.restore(snapshot,G);
+  M=restored.match;
+  shadowMonitor=restored.shadowSnapshot?window.FM4ShadowMonitor.restore(restored.shadowSnapshot):null;
+  shadowMonitorError='';busy=true;snd.start();
+  $('console').innerHTML='';$('console').style.display='block';
+  $('ctl').style.display='block';$('sb').style.display='block';$('content').style.display='none';
+  $('bp').innerText=M.paused?'▶ استئناف':'⏸ إيقاف';
+  $('bs').innerText='⏩ x'+(M.speed||1);$('sl').innerText=M.subs;
+  sb();log('🔄 تمت استعادة المباراة المحفوظة عند الدقيقة '+M.min,'log-info');
+  M.t=setInterval(tick,650/(M.speed||1));return true;
+ }catch(e){clearMatchSession();M=null;shadowMonitor=null;busy=false;return false}
+}
 function shadowErrorText(e){return String(e&&e.stack||e&&e.message||e||'Unknown error').slice(0,2200)}
 function shadowErrorHtml(){
  let detail=String(shadowMonitorError).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -634,7 +661,7 @@ function sell(id){let p=G.players.find(x=>x.id==id),sq=G.players.filter(x=>x.clu
   if(p.pos=='GK'&&sq.filter(x=>x.pos=='GK').length<=1)return say('❌ تحتاج حارسين على الأقل.');
   let pr=Math.round(val(p)*.85);
   ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{G.budget+=pr;p.clubId=0;save();go('squad')})}
-function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY)}catch(e){}G=null;go('home')};f?d():ask('مسح كل التقدم وبدء لعبة جديدة؟',d)}
+function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem(MATCH_KEY)}catch(e){}G=null;M=null;shadowMonitor=null;busy=false;go('home')};f?d():ask('مسح كل التقدم وبدء لعبة جديدة؟',d)}
 
 function log(t,c){snd.hear(t);let d=document.createElement('div');d.className='ll '+(c||'');d.innerText=t;let k=$('console');k.appendChild(d);k.scrollTop=k.scrollHeight}
 
@@ -647,7 +674,7 @@ function menu(title,items,cancel){if(M&&M.skip){if(!cancel&&items.length)(items.
   $('mtxt').innerHTML='<b>'+title+'</b>'+items.map((x,i)=>`<button class="cb" style="width:100%;margin-top:6px" onclick="menuPick(${i})">${x.l}</button>`).join('');
   $('modal').style.display='flex';$('myes').style.display='none';$('mno').style.display=cancel?'block':'none';$('mno').onclick=closeM}
 function closeM(){$('modal').style.display='none';MN=[];if(M)M.hold=false}
-function menuPick(i){let f=MN[i].fn;closeM();f()}
+function menuPick(i){let f=MN[i].fn;closeM();f();saveMatchSession()}
 
 function startMatch(cup){
   if(busy)return;if(!cup&&G.cup&&G.cup.due)return say('عليك لعب مباراة الكأس أولاً 🏆');
@@ -660,7 +687,7 @@ function startMatch(cup){
   $('console').innerHTML='';$('console').style.display='block';$('ctl').style.display='block';$('sb').style.display='block';$('content').style.display='none';
   $('bp').innerText='⏸ إيقاف';$('bs').innerText='⏩ x1';$('sl').innerText=5;
   log(`--- ${cup?'🏆 مباراة الكأس: '+CN[G.cup.s]:'انطلاق المباراة'} | ${home?'على أرضك':'خارج الأرض'} ضد ${opp.name} | ${wx=='rain'?'🌧️ ممطر':'☀️ صحو'} ---`,'log-info');
-  if(M.att)log(`👥 الحضور: ${M.att.toLocaleString('en')} من ${SDC[SD().cap].toLocaleString('en')} — ${M.fl>.85?'أجواء نارية 🔥':M.fl>.6?'أجواء جيدة':'مدرجات هادئة'}`,'log-info');if(M.hurt.size)log(`⚠️ يلعب ${M.hurt.size} مصابين بأداء منخفض (لا يوجد بدلاء أصحاء بالمركز)`,'log-bad');{let _p=PRS();if(_p.boost){M.tb.a+=_p.boost;M.tb.d+=_p.boost*.6;log('📣 تصريحاتك رفعت حماس اللاعبين','log-goal');_p.boost=0}}sb();M.t=setInterval(tick,650);if(M.derby)derbyTalk()}
+  if(M.att)log(`👥 الحضور: ${M.att.toLocaleString('en')} من ${SDC[SD().cap].toLocaleString('en')} — ${M.fl>.85?'أجواء نارية 🔥':M.fl>.6?'أجواء جيدة':'مدرجات هادئة'}`,'log-info');if(M.hurt.size)log(`⚠️ يلعب ${M.hurt.size} مصابين بأداء منخفض (لا يوجد بدلاء أصحاء بالمركز)`,'log-bad');{let _p=PRS();if(_p.boost){M.tb.a+=_p.boost;M.tb.d+=_p.boost*.6;log('📣 تصريحاتك رفعت حماس اللاعبين','log-goal');_p.boost=0}}sb();M.t=setInterval(tick,650);saveMatchSession();if(M.derby)derbyTalk()}
 
 function opponentOnPitch(){const sent=new Set((M.oSentOff||[]).map(String));return M.O.xi.filter(p=>!sent.has(String(p.id)))}
 function sbPaint(h){let b=$('sb');if(!b.querySelector('#pt')){b.innerHTML='<button id="snb" class="snb" onclick="snd.tog()">🔊</button><div id="sbt"></div><div id="pt"></div>';snd.upd()}snd.mood();
@@ -685,7 +712,7 @@ function liveS(){let sum=0,mor=0;
 
 function tick(){
   if(M.done||M.paused||M.hold)return;if(M.so){M.so.ph==0?soKick():soOpp();return}
-  if(M.q.length){let x=M.q.shift();if(x.t)log(x.t,x.c);if(x.f)x.f();sb();return}
+  if(M.q.length){let x=M.q.shift();if(x.t)log(x.t,x.c);if(x.f)x.f();sb();saveMatchSession();return}
   M.min++;advanceShadowMonitor();let m=M.min,L=liveS(),oa=M.O.a-3.5*M.oR-.03*m,od=M.O.d-3.5*M.oR-.03*m,d=M.go-M.gu;
   if(m>70&&d){oa+=d<0?3:-2;od+=d<0?-2:3}
   M.xi.forEach(p=>M.en[p.id]=Math.max(20,M.en[p.id]-(p.age>31?.5:.38)*(trt(p)=='pro'?.85:1)*[.8,1,1.3][M.pr]*[.88,1,1.15][M.tp]*(M.ins[p.id]=='free'?1.25:M.ins[p.id]=='mark'?1.3:1)));
@@ -704,7 +731,7 @@ function tick(){
   if(m==45){log(`— الاستراحة: ${M.gu}-${M.go} —`,'log-info');
     if(!M.skip){M.paused=true;$('bp').innerText='▶ استئناف';log(`📊 استحواذ ${Math.round(M.ps/M.min)}% | تسديدات ${M.sh[0]}-${M.sh[1]}`,'log-info');log('⏸ بدّل أو غيّر التكتيك ثم اضغط استئناف','log-info');halfTalk()}}
   if(m==90&&M.end==90){M.end=90+R(1,4);log(`⏱️ وقت بدل ضائع: ${M.end-90} دقائق`,'log-info')}
-  sb();
+  sb();saveMatchSession();
   if(m>=M.end&&!M.q.length){
     if(M.cup&&M.gu==M.go){
       if(!M.et){M.et=1;M.min=90;M.end=120;log('⏱️ تعادل! شوطان إضافيان...','log-info');return}
@@ -949,8 +976,8 @@ function subMenu(){if(!M||M.done||M.hold)return;if(M.subs<=0)return log('است�
     menu('من يدخل بدلاً من '+p.name+'؟',b.map(x=>({l:lbl(x)+(x.pos!=p.pos?' ⚠️ خارج مركزه':''),fn:()=>doSub(p,x)})),true)}})),true)}
 function tacMenu(){if(!M||M.done||M.hold)return;
   menu('الأسلوب',Object.keys(TAC).map(k=>({l:(M.tac==k?'✔ ':'')+TAC[k],fn:()=>{M.tac=k;log(`${tm()} 🎯 غيّرت الأسلوب إلى ${TAC[k]}`,'log-info');sb()}})),true)}
-function togPause(){if(!M||M.hold||M.done)return;M.paused=!M.paused;$('bp').innerText=M.paused?'▶ استئناف':'⏸ إيقاف'}
-function speed(){if(!M||M.done)return;M.speed=M.speed==1?2:M.speed==2?4:1;clearInterval(M.t);M.t=setInterval(tick,650/M.speed);$('bs').innerText='⏩ x'+M.speed}
+function togPause(){if(!M||M.hold||M.done)return;M.paused=!M.paused;$('bp').innerText=M.paused?'▶ استئناف':'⏸ إيقاف';saveMatchSession()}
+function speed(){if(!M||M.done)return;M.speed=M.speed==1?2:M.speed==2?4:1;clearInterval(M.t);M.t=setInterval(tick,650/M.speed);$('bs').innerText='⏩ x'+M.speed;saveMatchSession()}
 function skipMatch(){if(!M)return;let op=(M.hold&&MNd&&MN.length&&$('modal').style.display=='flex')?(MN.find(x=>x.dflt)||MN[0]):null;M.skip=true;M.paused=false;M.hold=false;$('modal').style.display='none';MN=[];if(M.so){M.so.ph==0?soKick():soOpp();return}if(op&&op.fn)op.fn();let n=0;while(M&&!M.done&&n++<6000){M.hold=false;M.paused=false;tick()}}
 
 
@@ -1063,7 +1090,7 @@ function endMatch(){
   pressAfter(res,gu,go_,opp);trainWeek();sdMatch(home,res);G.date+=7*864e5;G.round++;cupCheck();offerCheck();
   if(G.round%2==0)refreshMarket();
   let done=G.round>=14;if(done)endSeason();
-  save();busy=false;M=null;hdr();$('ctl').style.display='none';
+  save();clearMatchSession();busy=false;M=null;shadowMonitor=null;hdr();$('ctl').style.display='none';
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;if(!done)setTimeout(lockerEvent,700)}
 
 function endSeason(){
@@ -1083,7 +1110,7 @@ function endSeason(){
   setTimeout(()=>showStory(sd,()=>ask(msg)),400)}
 
 function ovc(v){return v>=80?'o1':v>=70?'o2':v>=60?'o3':'o4'}
-window.onload=()=>{load();G?go('home'):choose()};
+window.onload=()=>{load();if(G&&restoreMatchSession())return;G?go('home'):choose()};
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.indexOf('http')==0)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
 </body>
