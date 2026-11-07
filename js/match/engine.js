@@ -70,7 +70,7 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const lane=lanes.map(y=>({
   y,
   space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-targetX,d.y-y)),40),
-  preference:crossingLane?(y===preferredY?5:y===50?1:0):0
+  preference:crossingLane?(y===preferredY?15:y===50?1:0):0
  })).sort((a,b)=>(b.space+b.preference)-(a.space+a.preference)||Math.abs(a.y-50)-Math.abs(b.y-50))[0];
  const minTarget=Math.min(98,progress+2);
  const maxTarget=Math.max(minTarget,Math.min(98,progress+18));
@@ -413,7 +413,7 @@ function stepAction(s){
  const followUpBoost=(reboundFollowUp?.16:0)+(crossFollowUp?.10:0);
  const shotChance=clamp(baseShotChance+followUpBoost,.02,followUpBoost? .30:.16);
  let event=null,boundaryShot=null,reboundShot=null,woodworkShot=null,passBoundary=null;
- if(goalDist<=(crossFollowUp?30:25)&&Math.abs(50-carrier.y)<=(crossFollowUp?35:31)&&rnd()<shotChance){
+ if(goalDist<=(crossFollowUp?30:26.5)&&Math.abs(50-carrier.y)<=(crossFollowUp?35:31)&&rnd()<shotChance){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
   const blockChance=blocker?clamp(.16+(blocker.defending*.0035)+(pd<9?.08:0),.12,.58):0;
