@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b141d"><title>معاينة محرك المباراة | FM4</title>
+<style>
+:root{color-scheme:dark;--bg:#0b141d;--card:#152431;--line:#ffffff20;--gold:#f2b632;--green:#2fb36d;--blue:#42a5f5;--red:#e53935;--muted:#9db0bd}
+*{box-sizing:border-box}body{margin:0;padding:12px 12px 28px;background:radial-gradient(120% 55% at 50% 0,#18354a,var(--bg) 70%);color:#f4f7f8;font-family:Tahoma,Arial,sans-serif}
+.wrap{max-width:760px;margin:auto}.top,.panel{background:linear-gradient(160deg,#192d3c,#111e29);border:1px solid var(--line);border-radius:16px;padding:13px;margin-bottom:11px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}.top h1{font-size:17px;color:var(--gold);margin:0}.tag{font-size:11px;color:var(--muted)}
+.score{display:flex;align-items:center;justify-content:center;gap:18px;text-align:center;margin:14px 0 8px}.team{flex:1;font-weight:bold}.team small{display:block;color:var(--muted);font-weight:normal;font-size:11px}.goals{font-size:30px;font-weight:900;color:var(--gold);direction:ltr;white-space:nowrap}
+.clock{text-align:center;color:var(--gold);font-size:17px;font-weight:bold}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}.stat{background:#0b1721;border:1px solid var(--line);border-radius:10px;padding:8px 3px;text-align:center}.stat b{display:block;font-size:17px}.stat small{font-size:10px;color:var(--muted)}
+.pitch{position:relative;overflow:hidden;width:100%;aspect-ratio:1.58;border:2px solid #e6f1e6b0;border-radius:12px;background:repeating-linear-gradient(90deg,#17652b 0 10%,#1d7833 10% 20%);box-shadow:inset 0 0 35px #001006aa}
+.pitch:before{content:"";position:absolute;inset:0 50%;border-left:1px solid #ffffff90}.circle{position:absolute;width:18%;aspect-ratio:1;border:1px solid #ffffff90;border-radius:50%;left:41%;top:41%}
+.boxL,.boxR{position:absolute;top:25%;height:50%;width:14%;border:1px solid #ffffff90}.boxL{left:0;border-left:0}.boxR{right:0;border-right:0}
+.goalL,.goalR{position:absolute;top:39%;height:22%;width:3%;border:1px solid #ffffffa0}.goalL{left:0;border-left:0}.goalR{right:0;border-right:0}
+.player{position:absolute;width:clamp(9px,2.3vw,14px);height:clamp(9px,2.3vw,14px);border-radius:50%;border:1px solid #fff;transform:translate(-50%,-50%);z-index:2;box-shadow:0 2px 4px #000b;transition:left .35s linear,top .35s linear}
+.home{background:#42a5f5}.away{background:#e53935}.ball{position:absolute;width:10px;height:10px;background:#fff;border:2px solid #17202a;border-radius:50%;z-index:5;transform:translate(-50%,-50%);box-shadow:0 0 0 3px #ffffff55;transition:left .22s linear,top .22s linear}
+.legend{display:flex;justify-content:center;gap:16px;color:var(--muted);font-size:11px;margin-top:8px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:5px}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.controls button,.tactics button{border:1px solid var(--line);border-radius:10px;padding:11px 5px;color:#fff;background:#203548;font-weight:bold;font-size:12px}.controls button.primary{background:#1f8e57}.controls button:disabled{opacity:.4}
+.tactics{display:flex;gap:7px;margin-top:8px}.tactics button{flex:1}.tactics button.active{border-color:var(--gold);color:var(--gold);background:#59471b55}
+.events{max-height:245px;overflow:auto}.event{padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px;line-height:1.6}.event:last-child{border:0}.minute{color:var(--gold);font-weight:bold;direction:ltr;display:inline-block;margin-left:7px}.goal{color:#ffd45e;font-weight:bold}.info{color:var(--muted);font-size:11px;line-height:1.7}
+h2{font-size:15px;color:var(--gold);margin:0 0 10px}.notice{background:#102a22;border:1px solid #2fb36d55;border-radius:10px;padding:9px;font-size:12px;line-height:1.7;margin-bottom:10px}
+@media(max-width:430px){body{padding:8px}.top,.panel{padding:10px}.stats{grid-template-columns:repeat(4,1fr)}.controls{grid-template-columns:repeat(2,1fr)}.score{gap:7px}.goals{font-size:26px}.team{font-size:12px}}
+</style></head>
+<body><main class="wrap">
+<div class="top"><h1>⚽ معاينة محرك المباراة الجديد</h1><span class="tag">FM4 · وضع تجريبي معزول</span></div>
+<section class="panel">
+ <div class="score"><div class="team" id="homeName">الفريق الأزرق<small>صاحب الأرض</small></div><div class="goals"><span id="homeScore">0</span> - <span id="awayScore">0</span></div><div class="team" id="awayName">الفريق الأحمر<small>الضيف</small></div></div>
+ <div class="clock" id="clock">00:00</div>
+ <div class="stats">
+  <div class="stat"><b id="posHome">50%</b><small>استحواذ الأزرق</small></div>
+  <div class="stat"><b id="shotsHome">0</b><small>تسديدات الأزرق</small></div>
+  <div class="stat"><b id="shotsAway">0</b><small>تسديدات الأحمر</small></div>
+  <div class="stat"><b id="passes">0</b><small>تمريرات مكتملة</small></div>
+ </div>
+</section>
+<section class="panel">
+ <div class="pitch" id="pitch"><div class="circle"></div><div class="boxL"></div><div class="boxR"></div><div class="goalL"></div><div class="goalR"></div></div>
+ <div class="legend"><span><i class="dot" style="background:#42a5f5"></i>الأزرق</span><span><i class="dot" style="background:#e53935"></i>الأحمر</span><span><i class="dot" style="background:#fff"></i>الكرة</span></div>
+</section>
+<section class="panel">
+ <h2>إدارة سير المباراة</h2>
+ <div class="controls">
+  <button class="primary" id="pause">⏸ إيقاف</button><button id="step">⏭ دقيقة واحدة</button><button id="speed">⏩ السرعة ×1</button><button id="reset">↻ إعادة المباراة</button>
+ </div>
+ <div class="tactics"><button data-tac="balanced" class="active">متوازن</button><button data-tac="attacking">هجومي</button><button data-tac="defensive">دفاعي</button><button data-tac="pressing">ضغط</button></div>
+ <p class="info">تغيّر العقلية يؤثر في تمركز الفريق وضغطه. أوقف الوقت قبل تعديل التكتيك إذا أردت فحص أثره بهدوء.</p>
+</section>
+<section class="panel">
+ <h2>🔄 تبديلات الفريقين</h2>
+ <div class="controls">
+  <select id="subTeam" aria-label="الفريق"><option value="0">الفريق الأزرق</option><option value="1">الفريق الأحمر</option></select>
+  <select id="subOut" aria-label="اللاعب الخارج"></select>
+  <select id="subIn" aria-label="اللاعب الداخل"></select>
+  <button class="primary" id="subApply">تأكيد التبديل</button>
+ </div>
+ <p class="info" id="subCount">التبديلات: 0 / 5 لكل فريق. يجب إيقاف المباراة قبل التبديل.</p>
+</section>
+<section class="panel"><h2>📣 أحداث المباراة</h2><div class="events" id="events"><div class="event">تبدأ المباراة عند الضغط على تشغيل.</div></div></section>
+<div class="notice">هذه معاينة منفصلة بتشكيلتين تجريبيتين. لا تعدّل حفظ مسيرتك ولا تستبدل محرك المباراة القديم. الهدف منها اختبار الحركة والوقت والأحداث قبل ربطها بتشكيلتك الفعلية.</div>
+</main>
+<script src="js/match/engine.js"></script><script src="js/match/adapter.js"></script><script src="js/match/substitutions.js"></script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), names=['الحارس','مدافع أيسر','قلب دفاع 1','قلب دفاع 2','مدافع أيمن','وسط أيسر','وسط 1','وسط 2','وسط أيمن','مهاجم 1','مهاجم 2'];
+const positions=['GK','DEF','DEF','DEF','DEF','MID','MID','MID','MID','FWD','FWD'];
+const make=(base,offset)=>positions.map((pos,i)=>({id:base+i,name:names[i],pos,ovr:66+((i*7+offset)%17),morale:70+(i%4)*4,inj:0,active:true})).concat([{pos:'GK',name:'حارس احتياطي'},{pos:'DEF',name:'مدافع احتياطي'},{pos:'MID',name:'وسط احتياطي'},{pos:'FWD',name:'مهاجم احتياطي 1'},{pos:'FWD',name:'مهاجم احتياطي 2'}].map((p,i)=>({id:base+11+i,name:p.name,pos:p.pos,ovr:64+((i*5+offset)%14),morale:72,inj:0,active:false})));
+const initialHome=make(100,3),initialAway=make(200,9);
+let state=null,timer=null,paused=true,speed=1,ended=false,halfPauseDone=false;
+const label=e=>{const team=e.team===0?'الأزرق':'الأحمر',player=state.teams[e.team].players.find(p=>p.id===String(e.playerId));const name=player?.name||'لاعب';switch(e.type){
+case'goal':return{txt:'⚽ هدف! '+name+' يسجل للفريق '+team,goal:true};
+case'save':return{txt:'🧤 الحارس يتصدى لتسديدة '+name+' للفريق '+team};
+case'shot':return{txt:'🎯 تسديدة من '+name+' للفريق '+team+' خارج المرمى'};
+case'pass':return{txt:'↗ تمريرة ناجحة من '+(state.teams[e.team].players.find(p=>p.id===String(e.from))?.name||'لاعب')+' إلى '+(state.teams[e.team].players.find(p=>p.id===String(e.to))?.name||'زميله')};
+case'interception':return{txt:'✋ اعتراض للكرة بواسطة '+name+' ('+team+')'};
+case'tackle':return{txt:'🛡️ افتكاك ناجح بواسطة '+name+' ('+team+')'};
+default:return{txt:'🏃 '+name+' يتقدم بالكرة ('+team+')'};
+}};
+function addEvent(e){const item=label(e),node=document.createElement('div');node.className='event'+(item.goal?' goal':'');const m=String(e.minute).padStart(2,'0');node.innerHTML='<span class="minute">'+m+'′</span>'+item.txt;$('events').prepend(node);while($('events').children.length>70)$('events').lastChild.remove();}
+function refreshSubs(){
+ const side=Number($('subTeam').value),team=state.teams[side],active=team.players.filter(p=>p.active),bench=team.players.filter(p=>!p.active);
+ const fill=(id,list,empty)=>{const el=$(id),old=el.value;el.innerHTML='';if(!list.length){const op=document.createElement('option');op.value='';op.textContent=empty;el.appendChild(op);return;}list.forEach(p=>{const op=document.createElement('option');op.value=p.id;op.textContent=p.name+' · '+p.role;el.appendChild(op)});if(list.some(p=>p.id===old))el.value=old;};
+ fill('subOut',active,'لا يوجد لاعبون');fill('subIn',bench,'لا يوجد بدلاء');
+ const used=state.substitutions?.[side]||0;$('subCount').textContent='الفريق '+(side===0?'الأزرق':'الأحمر')+' — التبديلات: '+used+' / 5. '+(paused?'المباراة متوقفة؛ يمكنك إجراء التبديل.':'أوقف المباراة أولاً.');
+ $('subApply').disabled=!paused||ended||used>=5||!active.length||!bench.length;
+}
+function makeState(){const teams=[FM4MatchAdapter.toEngineTeam({name:'الفريق الأزرق',players:initialHome,side:0,mentality:'balanced'}),FM4MatchAdapter.toEngineTeam({name:'الفريق الأحمر',players:initialAway,side:1,mentality:'balanced'})];state=FM4MatchEngine.createMatch({teams,seed:20261106});state.substitutions=[0,0];state.substitutionLog=[];paused=true;ended=false;halfPauseDone=false;speed=1;$('events').innerHTML='<div class="event">🟢 انطلقت المعاينة. اضغط تشغيل لتقدم الدقائق تلقائياً.</div>';$('homeName').firstChild.textContent='الفريق الأزرق';$('awayName').firstChild.textContent='الفريق الأحمر';$('pause').textContent='▶ تشغيل';$('speed').textContent='⏩ السرعة ×1';document.querySelectorAll('[data-tac]').forEach(b=>b.classList.toggle('active',b.dataset.tac==='balanced'));draw();refreshSubs();}
+function draw(){if(!state)return;$('homeScore').textContent=state.score[0];$('awayScore').textContent=state.score[1];$('clock').textContent=String(Math.floor(state.minute)).padStart(2,'0')+':00';const total=state.possession[0]+state.possession[1];$('posHome').textContent=(total?Math.round(state.possession[0]/total*100):50)+'%';$('shotsHome').textContent=state.shots[0];$('shotsAway').textContent=state.shots[1];$('passes').textContent=state.completedPasses[0]+state.completedPasses[1];const pitch=$('pitch');pitch.querySelectorAll('.player,.ball').forEach(n=>n.remove());state.teams.forEach((t,ti)=>t.players.forEach(p=>{if(!p.active)return;const el=document.createElement('i');el.className='player '+(ti===0?'home':'away');el.style.left=p.x+'%';el.style.top=p.y+'%';el.title=p.name;pitch.appendChild(el)}));const ball=document.createElement('i');ball.className='ball';ball.style.left=state.ball.x+'%';ball.style.top=state.ball.y+'%';pitch.appendChild(ball);$('step').disabled=ended;$('pause').disabled=ended;}
+function tick(){if(paused||ended)return;const before=state.events.length;FM4MatchEngine.stepMatch(state);state.events.slice(before).forEach(addEvent);if(state.minute===45&&!halfPauseDone){halfPauseDone=true;paused=true;$('pause').textContent='▶ استئناف الشوط الثاني';const n=document.createElement('div');n.className='event goal';n.textContent='⏸ نهاية الشوط الأول — راجع النتيجة والإحصائيات ثم استأنف';$('events').prepend(n)}if(state.minute>=90){ended=true;paused=true;const n=document.createElement('div');n.className='event goal';n.textContent='🏁 انتهت المباراة: '+state.score[0]+' - '+state.score[1];$('events').prepend(n)}draw();if(paused||ended)stop();}
+function start(){if(timer||ended)return;paused=false;refreshSubs();$('pause').textContent='⏸ إيقاف';timer=setInterval(tick,850/speed);}
+function stop(){if(timer){clearInterval(timer);timer=null;}if(!ended)$('pause').textContent='▶ تشغيل';refreshSubs();}
+$('pause').addEventListener('click',()=>{if(ended)return;if(paused){start()}else{paused=true;stop();$('pause').textContent='▶ استئناف'}});
+$('step').addEventListener('click',()=>{if(!paused||ended)return;const before=state.events.length;FM4MatchEngine.stepMatch(state);state.events.slice(before).forEach(addEvent);if(state.minute===45&&!halfPauseDone){halfPauseDone=true;const n=document.createElement('div');n.className='event';n.textContent='⏸ نهاية الشوط الأول';$('events').prepend(n)}if(state.minute>=90){ended=true;const n=document.createElement('div');n.className='event goal';n.textContent='🏁 انتهت المباراة';$('events').prepend(n)}draw()});
+$('speed').addEventListener('click',()=>{speed=speed===1?2:speed===2?4:1;$('speed').textContent='⏩ السرعة ×'+speed;if(timer){stop();start()}});
+$('reset').addEventListener('click',()=>{stop();makeState()});
+$('subTeam').addEventListener('change',refreshSubs);
+$('subApply').addEventListener('click',()=>{
+ if(!paused||ended)return;
+ const side=Number($('subTeam').value),outId=$('subOut').value,inId=$('subIn').value;
+ try{
+  const rec=FM4Substitutions.substitutePlayer(state,side,outId,inId);
+  const out=state.teams[side].players.find(p=>p.id===rec.outgoingId),incoming=state.teams[side].players.find(p=>p.id===rec.incomingId);
+  const node=document.createElement('div');node.className='event';node.textContent='🔄 تبديل '+(side===0?'الأزرق':'الأحمر')+': خروج '+out.name+' ودخول '+incoming.name+' ('+state.minute+'′)';$('events').prepend(node);
+  draw();refreshSubs();
+ }catch(err){const node=document.createElement('div');node.className='event';node.textContent='⚠️ تعذر التبديل: '+err.message;$('events').prepend(node);}
+});
+document.querySelectorAll('[data-tac]').forEach(b=>b.addEventListener('click',()=>{if(!state||ended)return;const tac=b.dataset.tac;state.teams[0].mentality=tac;document.querySelectorAll('[data-tac]').forEach(x=>x.classList.toggle('active',x===b));const n=document.createElement('div');n.className='event';n.textContent='🎯 عقلية الفريق الأزرق: '+b.textContent;$('events').prepend(n)}));
+makeState();
+})();
+</script></body></html>
