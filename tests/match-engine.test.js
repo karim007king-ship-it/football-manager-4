@@ -177,6 +177,7 @@ test('defensive recovery resolves a real clearance and transfers possession to i
  const defender=defending.players.find(p=>p.role==='DF');
  defender.x=80;defender.y=50;defender.defending=90;
  const outlet=defending.players.find(p=>p.id!==defender.id&&p.role!=='GK');
+ defending.players.filter(p=>p.id!==defender.id&&p.id!==outlet.id).forEach(p=>{p.x=95;p.y=50;});
  outlet.x=55;outlet.y=32;
  const event=resolveDefensiveRecovery(state,defending,defender,0,()=>0);
  assert.equal(event.type,'clearance');
