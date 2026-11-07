@@ -15,7 +15,14 @@ function createMatch({teams,seed=1}={}){
   return {id:tid,name:String(src.name||(tid?'Away':'Home')),mentality:src.mentality||'balanced',adaptiveTactics:src.adaptiveTactics!==false,players:src.players.map((p,i)=>{
    const role=p.role||(i===0?'GK':i<5?'DF':i<9?'MF':'FW'),lx=line(role);
    const x=clamp(Number(p.x??(tid===0?lx*100:100-lx*100)),2,98),y=clamp(Number(p.y??(8+(i%9)*10.5)),2,98);
-   return {id:String(p.id??i),name:String(p.name||'Player'),role,slotIndex:Number(p.slotIndex??i),pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),goalkeeping:clamp(Number(p.goalkeeping??(keeper(role)?60:35)),1,100),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
+   const isKeeper=keeper(role),fallbackGk=Number(p.goalkeeping??60);
+   const gkReflexes=clamp(Number(p.gkReflexes??fallbackGk),1,100);
+   const gkHandling=clamp(Number(p.gkHandling??fallbackGk),1,100);
+   const gkPositioning=clamp(Number(p.gkPositioning??fallbackGk),1,100);
+   const gkOneOnOne=clamp(Number(p.gkOneOnOne??fallbackGk),1,100);
+   const gkDistribution=clamp(Number(p.gkDistribution??fallbackGk),1,100);
+   const gkComposite=gkReflexes*.28+gkHandling*.20+gkPositioning*.22+gkOneOnOne*.20+gkDistribution*.10;
+   return {id:String(p.id??i),name:String(p.name||'Player'),role,slotIndex:Number(p.slotIndex??i),pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),goalkeeping:clamp(Number(p.goalkeeping??(isKeeper?gkComposite:35)),1,100),...(isKeeper?{gkReflexes,gkHandling,gkPositioning,gkOneOnOne,gkDistribution}:{}),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
   })};
  });
  const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
@@ -155,7 +162,10 @@ function stepAction(s){
   if(on)s.shotsOnTarget[tid]++;
   const goalkeeper=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
   const keeperSkill=goalkeeper?Number(goalkeeper.goalkeeping??60):60;
-  const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0)-(keeperSkill-60)*.0025,.03,.5);
+  const keeperResponse=goalkeeper
+   ?(Number(goalkeeper.gkReflexes??keeperSkill)*.5+Number(goalkeeper.gkPositioning??keeperSkill)*.25+Number(goalDist<12?goalkeeper.gkOneOnOne??keeperSkill:goalkeeper.gkHandling??keeperSkill)*.25)
+   :60;
+  const quality=clamp(.09+(carrier.shooting*sharpness)/400+(25-goalDist)/95-Math.abs(50-carrier.y)/220-(pd<5?.12:0)-(keeperSkill-60)*.0015-(keeperResponse-60)*.0015,.03,.5);
   const goal=on&&rnd()<quality;
   if(goal)s.score[tid]++;
   const saved=on&&!goal;
