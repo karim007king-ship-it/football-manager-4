@@ -234,7 +234,7 @@ function trainWeek(){let t=TR(),I=INT[t.lv],ups=[];G.budget-=I.c;
     if(t.lv==2&&!p.inj&&Math.random()<.01){p.inj=R(1,3);log(`🚑 ${p.name} أُصيب في التدريب المكثف (${p.inj} أسابيع)`,'log-bad')}
     if(t.lv==2)p.morale=cl(p.morale-1,30,100);else if(t.lv==0)p.morale=cl(p.morale+1,30,100);
     if(p.inj)return;p.xp=(p.xp||0)+gain(p);
-    while(p.xp>=100){if(p.ovr<pot(p)){p.xp-=100;p.ovr++;ups.push(p.name+' ← '+p.ovr)}else{p.xp=0}}});
+    while(p.xp>=100){if(p.ovr<pot(p)){p.xp-=100;const previousOvr=p.ovr;p.ovr++;if(p.pos==='GK')['gkReflexes','gkHandling','gkPositioning','gkOneOnOne','gkDistribution'].forEach(k=>p[k]=cl((p[k]??previousOvr)+1,25,95));ups.push(p.name+' ← '+p.ovr)}else{p.xp=0}}});
   log(`🏋️ التدريب (${I.n})${I.c?' -'+money(I.c):''}${ups.length?' | 📈 تطور: '+ups.join('، '):''}`,'log-goal')}
 function trSet(k,v){TR()[k]=v;save();go('train')}
 function trInd(id){let T=TR();if(T.ind.includes(id))T.ind=T.ind.filter(x=>x!=id);else if(T.ind.length>=3)return say('الحد الأقصى 3 لاعبين للتدريب الفردي.');else T.ind.push(id);save();go('train')}
