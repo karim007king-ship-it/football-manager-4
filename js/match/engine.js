@@ -118,7 +118,7 @@ function updateShape(s,teamId,carrier){
 // far-side spacing, while preserving mirrored coordinates for both teams.
 function defensiveLineTarget(player,carrier,teamId,mentality='balanced'){
  const dir=teamId===0?1:-1;
- const threat=clamp((50-carrier.x*dir-(teamId===0?0:-100))/50,0,1);
+ const threat=clamp(teamId===0?(50-carrier.x)/50:(carrier.x-50)/50,0,1);
  const retreat=threat*(mentality==='defensive'?5.5:3.6);
  const compactness=.10+threat*.12;
  return{
