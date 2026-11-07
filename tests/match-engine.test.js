@@ -280,6 +280,7 @@ test('clearance second balls are contested only under nearby pressure and can be
  assert.equal(lost.transition,null);
 
  const safe=create(733),safeDefending=safe.teams[1],safeDefender=safeDefending.players.find(p=>p.role==='DF');
+ safe.teams[0].players.forEach(p=>{p.x=8;p.y=50;});
  safeDefender.x=80;safeDefender.y=50;safeDefender.defending=90;
  const safeOutlet=safeDefending.players.find(p=>p.id!==safeDefender.id&&p.role!=='GK');
  safeDefending.players.filter(p=>p.id!==safeDefender.id&&p.id!==safeOutlet.id).forEach(p=>{p.x=95;p.y=50;});
