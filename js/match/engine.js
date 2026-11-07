@@ -288,13 +288,17 @@ function stepAction(s){
  // Fewer active attackers means fewer coordinated runs and lower shot volume.
  // Keep the penalty modest so a red card changes the match without deciding it alone.
  const shotChance=clamp((.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045),.02,.16);
- let event=null;
+ let event=null,boundaryShot=null;
  if(goalDist<=25&&Math.abs(50-carrier.y)<=31&&rnd()<shotChance){
   s.shots[tid]++;
   const blocker=findShotBlocker(carrier,goalX,opp.players);
   const blockChance=blocker?clamp(.16+(blocker.defending*.0035)+(pd<9?.08:0),.12,.58):0;
   const blocked=!!blocker&&rnd()<blockChance;
   const on=!blocked&&rnd()<clamp(.28+(carrier.shooting*sharpness)/180,.28,.8);
+  // Off-target shots receive a real goal-line trajectory. The aim point is
+  // deliberately outside the goal mouth but remains inside the pitch, so an
+  // untouched miss correctly awards a goal kick rather than teleporting to GK.
+  const missAimY=!on?(rnd()<.5?38+rnd()*5:57+rnd()*5):null;
   if(on)s.shotsOnTarget[tid]++;
   const goalkeeper=opp.players.find(p=>p.active&&keeper(p.role))||nearest(active(opp),{x:oid===0?5:95,y:50});
   const keeperSkill=goalkeeper?Number(goalkeeper.goalkeeping??60):60;
@@ -312,8 +316,14 @@ function stepAction(s){
    attackingTeam:tid,onTarget:on,counterattack:counterActive,x:blocked?blocker.x:carrier.x,y:blocked?blocker.y:carrier.y};
   const restart=blocked?blocker:goal
    ?(nearest(active(opp).filter(p=>!keeper(p.role)),{x:50,y:50})||goalkeeper)
-   :goalkeeper;
+   :saved?goalkeeper:null;
   if(restart)s.ball={x:restart.x,y:restart.y,team:oid,playerId:restart.id};
+  else if(!blocked&&!goal&&missAimY!==null){
+   const dir=tid===0?1:-1,beyondX=goalX+dir;
+   const ratio=(beyondX-carrier.x)/(goalX-carrier.x);
+   const beyondY=carrier.y+(missAimY-carrier.y)*ratio;
+   boundaryShot={from:{x:carrier.x,y:carrier.y},to:{x:beyondX,y:beyondY},lastTouchTeam:tid};
+  }
  }else{
   const best=choosePassTarget(t,def,carrier,tid,counterActive);
   const closeTackle=press&&pd<4.5&&rnd()<.11+(press.defending*fitness(press))/900;
@@ -353,6 +363,8 @@ function stepAction(s){
   }
  }
  if(event)addEvent(s,event);
+ // Preserve event order: the shot is logged first, then its boundary restart.
+ if(boundaryShot)resolveBallBoundary(s,boundaryShot.from,boundaryShot.to,boundaryShot.lastTouchTeam);
 }
 function drainTeamStamina(s){
  for(const team of s.teams){
@@ -367,7 +379,7 @@ function drainTeamStamina(s){
 }
 // Classify the first pitch boundary crossed by a ball segment.
 // Home attacks right (x=100); away attacks left (x=0). This is deliberately
-// pure: the live action loop must call it when ball trajectories are introduced.
+// pure: live shot misses now pass their modeled segment through this classifier.
 function classifyBoundaryRestart(from,to,lastTouchTeam){
  if(!from||!to||![from.x,from.y,to.x,to.y].every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error('Boundary points must contain finite numeric coordinates');
  if(lastTouchTeam!==0&&lastTouchTeam!==1)throw Error('Last-touch team must be 0 or 1');
