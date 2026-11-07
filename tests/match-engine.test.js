@@ -512,6 +512,42 @@ test('goalkeeper parry rebounds stay in the box and award the loose ball to the 
  assert.ok(away.teams[awayEvent.team].players.some(p=>p.active&&!/^GK$/i.test(p.role)&&p.id===awayEvent.playerId));
 });
 
+test('attacking rebound winner gets a boosted immediate follow-up shot opportunity',()=>{
+ let followUps=0;
+ for(let seed=1;seed<=24;seed++){
+  const state=create(seed),attacker=state.teams[0].players[9];
+  attacker.x=91;attacker.y=50;
+  state.ball={x:attacker.x,y:attacker.y,team:0,playerId:attacker.id};
+  state.reboundOpportunity={team:0,attackingTeam:0,expiresAtAction:1};
+  state.random=()=>0;
+  stepMatch(state);
+  const followUp=state.events.find(event=>event.reboundFollowUp===true);
+  if(followUp){
+   assert.ok(['shot','goal','save','block'].includes(followUp.type));
+   assert.equal(followUp.attackingTeam,0);
+   followUps++;
+   break;
+  }
+ }
+ assert.ok(followUps>0,'an attacking rebound winner must be able to take an immediate follow-up shot');
+});
+
+test('defensive rebound winner immediately resolves through clearance or interception',()=>{
+ const state=create(919),defender=state.teams[1].players[1];
+ defender.x=94;defender.y=50;
+ state.ball={x:defender.x,y:defender.y,team:1,playerId:defender.id};
+ state.reboundOpportunity={team:1,attackingTeam:0,expiresAtAction:1};
+ state.random=()=>0;
+ stepMatch(state);
+ const recovery=state.events[0];
+ assert.ok(recovery,'the defending rebound winner must resolve the ball immediately');
+ assert.ok(['clearance','interception'].includes(recovery.type));
+ assert.equal(recovery.team,1);
+ assert.ok(state.teams[1].players.some(p=>p.active&&p.id===recovery.playerId));
+ assert.equal(state.ball.team,1);
+ assert.ok(state.teams[state.ball.team].players.some(p=>p.active&&p.id===state.ball.playerId));
+});
+
 test('controlled defender shot deflections award mirrored corners to the attacking team',()=>{
  const home=create(701),homeContact={x:99,y:50};
  const homeResult=resolveShotDeflectionBoundary(home,homeContact,0,100,8);
