@@ -70,7 +70,7 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const lane=lanes.map(y=>({
   y,
   space:linePlayers.reduce((best,d)=>Math.min(best,Math.hypot(d.x-targetX,d.y-y)),40),
-  preference:crossingLane?(y===preferredY?15:y===50?1:0):0
+  preference:crossingLane?(y===preferredY?1:y===50?.25:0):0
  })).sort((a,b)=>(b.space+b.preference)-(a.space+a.preference)||Math.abs(a.y-50)-Math.abs(b.y-50))[0];
  const minTarget=Math.min(98,progress+2);
  const maxTarget=Math.max(minTarget,Math.min(98,progress+18));
@@ -407,10 +407,7 @@ function stepAction(s){
  const attackManpower=manpowerProfile(t,effectiveMentality(s,tid));
  // Fewer active attackers means fewer coordinated runs and lower shot volume.
  // Keep the penalty modest so a red card changes the match without deciding it alone.
- // A small proximity-weighted incentive favors genuine close-range chances
- // without allowing attempts outside the final third or raising long-shot volume.
- const closeRangeBonus=.004*clamp((25-goalDist)/10,0,1);
- const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200+closeRangeBonus)*(1-(11-attackManpower.activeCount)*.045);
+ const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
  const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
  const crossFollowUp=!!crossShotOpportunity;
  const followUpBoost=(reboundFollowUp?.16:0)+(crossFollowUp?.10:0);
