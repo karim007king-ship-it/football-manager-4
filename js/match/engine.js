@@ -5,8 +5,8 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const keeper=r=>/^(GK|G|GOALKEEPER)$/i.test(String(r||''));
 const line=r=>{r=String(r||'').toUpperCase();if(/^(GK|G|GOALKEEPER)$/.test(r))return .07;if(/^(CB|LB|RB|LWB|RWB|DF|DEF)/.test(r))return .27;if(/^(DM|CDM|CM|LM|RM|AM|CAM|MF|MID)/.test(r))return .51;if(/^(LW|RW|ST|CF|FW|FWD)/.test(r))return .75;return .5;};
-function makeRandom(seed){let s=(Number(seed)>>>0)||1;const next=()=>{s=(1664525*s+1013904223)>>>0;next.state=s;return s/4294967296;};next.state=s;return next;}
- function restoreRandom(state){return makeRandom(Number(state)>>>0);}
+function makeRandom(seed,allowZero=false){const n=Number(seed)>>>0;let s=allowZero?n:(n||1);const next=()=>{s=(1664525*s+1013904223)>>>0;next.state=s;return s/4294967296;};next.state=s;return next;}
+function restoreRandom(state){return makeRandom(Number(state)>>>0,true);}
 function createMatch({teams,seed=1}={}){
  if(!Array.isArray(teams)||teams.length!==2)throw Error('Exactly two teams are required');
  const normalized=teams.map((src,tid)=>{
