@@ -415,6 +415,15 @@ function syncShadowMonitor(){
  if(!shadowMonitor||!M)return;
  try{window.FM4ShadowMonitor.sync(shadowMonitor,M)}catch(e){shadowMonitorError=shadowErrorText(e)}
 }
+function recordShadowLegacyEvent(type,us,player){
+ if(!shadowMonitor||!M)return;
+ try{
+  const teamId=us?shadowMonitor.shadow.userTeamId:1-shadowMonitor.shadow.userTeamId;
+  M.shadowLegacyEventSeq=(M.shadowLegacyEventSeq||0)+1;
+  const eventId='legacy-'+M.shadowLegacyEventSeq;
+  window.FM4ShadowMonitor.recordLegacyEvent(shadowMonitor,{eventId,type,teamId,minute:M.min,playerId:player?.id??null,playerName:player?.name??''});
+ }catch(e){shadowMonitorError=shadowErrorText(e)}
+}
 function advanceShadowMonitor(){
  if(!shadowMonitor||!M)return;
  try{window.FM4ShadowMonitor.advance(shadowMonitor,M,1)}catch(e){shadowMonitorError=shadowErrorText(e)}
@@ -707,9 +716,12 @@ const rdir=()=>{let r=Math.random();return r<.4?0:r<.6?1:2};
 const kick=(sd,kd)=>Math.random()<(sd==kd?.25:.92);
 function Q(t,c,f){M.q.push({t,c,f})}
 function yellow(){let us=Math.random()<.5,p=us?pick(M.xi.filter(x=>x.pos!='GK').flatMap(x=>trt(x)=='hot'?[x,x,x]:[x])):null,opponent=us?null:scorer(opponentOnPitch()),n=us?(p&&p.name):opponent;if(!n)return;
+  const sent=us?p:opponentOnPitch().find(x=>x.name===n);
   let k=(us?'u':'o')+n;M.yc[k]=(M.yc[k]||0)+1;
-  if(M.yc[k]>=2){if(us&&p){M.xi.splice(M.xi.indexOf(p),1);delete M.ins[p.id];return log(`${tm()} 🟨🟥 إنذار ثانٍ وطرد ${n}! تلعب بـ ${M.xi.length} لاعبين`,'log-bad')}
-    if(!us&&M.oR<2){const sent=opponentOnPitch().find(x=>x.name===n&&x.pos!=='GK');if(sent){M.oSentOff.push(String(sent.id));M.oR=M.oSentOff.length;return log(`${tm()} 🟨🟥 إنذار ثانٍ وطرد ${n} من ${M.opp.name}!`,'log-goal')}}}
+  if(M.yc[k]>=2){recordShadowLegacyEvent('second_yellow',us,sent);recordShadowLegacyEvent('red_card',us,sent);
+    if(us&&p){M.xi.splice(M.xi.indexOf(p),1);delete M.ins[p.id];return log(`${tm()} 🟨🟥 إنذار ثانٍ وطرد ${n}! تلعب بـ ${M.xi.length} لاعبين`,'log-bad')}
+    if(!us&&M.oR<2&&sent){M.oSentOff.push(String(sent.id));M.oR=M.oSentOff.length;return log(`${tm()} 🟨🟥 إنذار ثانٍ وطرد ${n} من ${M.opp.name}!`,'log-goal')}}
+  else recordShadowLegacyEvent('yellow_card',us,sent);
   log(`${tm()} 🟨 إنذار للاعب ${n}`,'')}
 const tk=p=>cl((p.ovr-70)/100+(p.morale-70)/400+(trt(p)=='cool'?.07:0),-.15,.25),sc=p=>p.ovr+(p.morale-70)/5+(M.en[p.id]-70)/10;
 const snd={ctx:null,mg:null,nb:null,amb:null,ag:null,on:(()=>{try{return localStorage.getItem('fm_snd')!=='0'}catch(e){return true}})(),
@@ -789,13 +801,13 @@ function showStory(s,cb){let o=document.createElement('div');o.className='stov';
 function storyList(){let a=(G.story||[]).slice(-6).reverse();if(!a.length)return say('لا توجد قصص بعد — تُكتب قصة كل موسم عند نهايته');menu('📖 قصص المواسم',a.map(s=>({l:`${s.ico} الموسم ${s.s} — المركز ${s.rk}`,fn:()=>showStory(s)})),true)}
 function pickTaker(t,cb){let c=M.xi.filter(p=>p.pos!='GK').sort((a,b)=>sc(b)-sc(a)).slice(0,4);if(!c.length)return;menu(t,c.map(p=>({l:`${p.name}${PTR[trt(p)]?' '+PTR[trt(p)].e:''} — تقييم ${p.ovr} | معنويات ${Math.round(p.morale)} | لياقة ${Math.round(M.en[p.id])}%`,fn:()=>cb(p)})),false)}
 function pickTarget(tp){let c=M.xi.filter(p=>p.pos!='GK'&&p!==tp).sort((a,b)=>(b.ovr+(b.pos=='MID'?0:4))-(a.ovr+(a.pos=='MID'?0:4))).slice(0,3);if(!c.length)return cornerRes(0,tp);menu('🎯 من تستهدف بالكرة العالية؟',c.map(p=>({l:`${p.name} — ${p.pos} (${p.ovr})`,fn:()=>cornerRes(0,tp,p)})),false)}
-function corner(us){let L=liveS();Q(`${tm()} 🚩 ركنية لـ ${us?'فريقك':M.opp.name}`,'log-info');
+function corner(us){let L=liveS();recordShadowLegacyEvent('corner',us,null);Q(`${tm()} 🚩 ركنية لـ ${us?'فريقك':M.opp.name}`,'log-info');
   if(!us){if(Math.random()<.45)Q(null,'',()=>resolve(false,M.O.a,liveS().d,scorer(M.O.xi),.8));else Q(`${tm()} دفاعك يبعد الكرة`,'');return}
   Q(null,'',()=>{if(M.skip)return cornerRes(0);pickTaker('🚩 ركنية لفريقك — من ينفّذها؟',tp=>menu(`🚩 ${tp.name} عند الراية — كيف تنفذها؟`,[{l:'🎯 كرة عالية — اختر من تستهدف',fn:()=>pickTarget(tp)},{l:'⚡ ركنية قصيرة',fn:()=>cornerRes(1,tp)}],false))})}
 function cornerRes(k,tp,tg){let L=liveS(),f=tp?1+tk(tp):1,n=tg?tg.name:scorer(M.xi.filter(p=>p.pos!='GK'));
   if(k==0){Q(`${tm()} 🎯 ${tp?tp.name+' يرفعها نحو '+n:'كرة عالية في المنطقة'}...`,'');if(Math.random()<.5*f)Q(null,'',()=>resolve(true,L.a,M.O.d,n,.95));else Q(`${tm()} الدفاع يبعد الخطر برأسية`,'')}
   else{Q(`${tm()} ⚡ ركنية قصيرة${tp?' بمبادرة '+tp.name:''}...`,'');if(Math.random()<.7*f)Q(null,'',()=>resolve(true,L.a,M.O.d,n,.8));else Q(`${tm()} التمريرة القصيرة تضيع`,'')}}
-function freekick(us){let L=liveS();Q(`${tm()} ⚠️ ضربة حرة قرب المنطقة لـ ${us?'فريقك':M.opp.name}`,'log-info');
+function freekick(us){let L=liveS();recordShadowLegacyEvent('free_kick',us,null);Q(`${tm()} ⚠️ ضربة حرة قرب المنطقة لـ ${us?'فريقك':M.opp.name}`,'log-info');
   if(!us){if(Math.random()<.6)Q(null,'',()=>resolve(false,M.O.a,liveS().d,scorer(M.O.xi),.65));else Q(`${tm()} الحائط يصد الكرة 🧱`,'');return}
   Q(null,'',()=>{let go_=(k,tp)=>{let n=tp?tp.name:scorer(M.xi.filter(p=>p.pos!='GK')),f=tp?1+tk(tp):1,A=liveS().a;
     if(k==0){Q(`${tm()} ${n} يسدد الحرة مباشرة!`,'');if(Math.random()<.7*f)Q(null,'',()=>resolve(true,A,M.O.d,n,.7));else Q(`${tm()} الكرة ترتطم بالحائط`,'')}
@@ -902,7 +914,7 @@ function goal(us,n,x){snd.goal(us);flashG(us);goalAnim(us,n,x);M.bx=50;M.by=50;M
     log(`${tm()} ⚽⚽ هدف!!! ${n} ${x}(${M.gu}-${M.go})`,'log-goal')}
   else{M.go++;M.xi.forEach(p=>{if(p.pos=='GK')rt(p,-.4);else if(p.pos=='DEF')rt(p,-.15)});
     log(`${tm()} ⚽ هدف لـ ${M.opp.name} بتوقيع ${n} ${x}(${M.gu}-${M.go})`,'log-bad')}}
-function penalty(us){log(`${tm()} ⚠️ ركلة جزاء ${us?'لفريقك':'ضدك'}!`,'log-info');
+function penalty(us){recordShadowLegacyEvent('penalty',us,null);log(`${tm()} ⚠️ ركلة جزاء ${us?'لفريقك':'ضدك'}!`,'log-info');
   if(M.skip)return penRes(us,R(0,2));
   if(us)return pickTaker('⚽ ركلة جزاء لفريقك — من ينفّذها؟',p=>menu(`⚽ ${p.name} — اختر اتجاه التسديدة`,DIRS.map((d,i)=>({l:d,fn:()=>penPower(p,i)})),false));
   menu('🧤 ركلة جزاء ضدك — اختر اتجاه الحارس',DIRS.map((d,i)=>({l:d,fn:()=>penRes(false,i)})),false)}
@@ -923,8 +935,8 @@ function pkOverlay(us,n){let pk=M.pk;M.pk=null;if(M.skip||!pk)return;let o=docum
   e.innerHTML=`<div class="gl-goal"><div class="gl-gk"></div><div class="gl-ball${sv?'':' up'}"></div></div><div class="gl-ground"></div><div class="gl-txt"><b>${sv?(us?'تصدّى الحارس!':'تصدّيت!'):'فوق العارضة!'}</b><span></span><small>ركلة جزاء</small></div>`;
   e.querySelector('span').textContent=n+' • '+tm();document.body.appendChild(e);setTimeout(()=>e.classList.add('out'),2200);setTimeout(()=>e.remove(),2600)}
 function red(us){
-  if(us){let c=M.xi.filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);M.xi.splice(M.xi.indexOf(p),1);log(`${tm()} 🟥 طرد ${p.name}! تلعب بـ ${M.xi.length} لاعبين`,'log-bad')}
-  else if(M.oR<2){let c=opponentOnPitch().filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);M.oSentOff.push(String(p.id));M.oR=M.oSentOff.length;log(`${tm()} 🟥 طرد ${p.name} من ${M.opp.name}!`,'log-goal')}}
+  if(us){let c=M.xi.filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);recordShadowLegacyEvent('red_card',true,p);M.xi.splice(M.xi.indexOf(p),1);log(`${tm()} 🟥 طرد ${p.name}! تلعب بـ ${M.xi.length} لاعبين`,'log-bad')}
+  else if(M.oR<2){let c=opponentOnPitch().filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);recordShadowLegacyEvent('red_card',false,p);M.oSentOff.push(String(p.id));M.oR=M.oSentOff.length;log(`${tm()} 🟥 طرد ${p.name} من ${M.opp.name}!`,'log-goal')}}
 function injure(){let c=M.xi.filter(p=>p.pos!='GK');if(!c.length)return;let p=pick(c);p.inj=R(2,5);
   log(`${tm()} 🚑 إصابة ${p.name}!`,'log-bad');let b=bench(p.pos);
   if(M.subs>0&&b.length){if(M.skip)doSub(p,b[0]);else menu('🚑 '+p.name+' مصاب — اختر البديل',b.map(x=>({l:lbl(x),fn:()=>doSub(p,x)})),false)}
