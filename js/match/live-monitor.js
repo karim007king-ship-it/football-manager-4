@@ -114,7 +114,7 @@ function recordLegacyEvent(monitor,event){
   if(monitor.legacyEventIds.has(id))return false;
   const state=monitor.shadow.state,team=Number(event.teamId);
   if(team!==0&&team!==1)throw new Error('Legacy event team must be 0 or 1');
-  const minute=cl(Math.floor(Number(event.minute)||state.minute),0,120);
+  const minute=clamp(Math.floor(Number(event.minute)||state.minute),0,120);
   state.events.push({
    type:event.type,minute,team,
    playerId:event.playerId==null?null:String(event.playerId),
