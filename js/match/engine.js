@@ -428,6 +428,15 @@ function resolveRestart(s,restartType,teamId,spot={}){
  addEvent(s,event);
  return event;
 }
+// Apply a classified boundary exit and award the restart as one atomic transition.
+// Returns null for an in-play segment; callers must provide the actual ball path
+// and the team that last touched it. This helper does not invent trajectories.
+function resolveBallBoundary(s,from,to,lastTouchTeam){
+ const decision=classifyBoundaryRestart(from,to,lastTouchTeam);
+ if(!decision)return null;
+ const event=resolveRestart(s,decision.restartType,decision.teamId,decision.spot);
+ return{...decision,event};
+}
 function stepMatch(s){
  if(!s||!Array.isArray(s.teams)||s.teams.length!==2||!s.ball)throw Error('Invalid match state');
  // Three linked actions per displayed minute provide passing, pressing and
@@ -443,7 +452,7 @@ function stepMatch(s){
  return s;
 }
 function simulateMatch(s,minutes=90){const n=clamp(Math.floor(Number(minutes)||0),0,120);for(let i=0;i<n;i++)stepMatch(s);return s;}
-const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
+const FM4MatchEngine={createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,updateShape,strikerRunTarget,stepMatch,simulateMatch,restoreRandom,distance,roleLine:line,choosePassTarget,classifyPassPattern,findPassInterceptor,passLaneInterceptionChance,findShotBlocker,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,effectiveMentality,manpowerProfile,drainTeamStamina};
 if(typeof module!=='undefined'&&module.exports)module.exports=FM4MatchEngine;
 if(typeof window!=='undefined')window.FM4MatchEngine=FM4MatchEngine;
 
