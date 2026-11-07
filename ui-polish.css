@@ -1,0 +1,46 @@
+/* FM4 UI polish v1 — shared club screens + live match layout */
+:root{--ui-safe:env(safe-area-inset-bottom,0px)}
+body{padding-inline:max(8px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-right,0px))}
+#content{width:100%;max-width:760px;margin-inline:auto;line-height:1.55}
+.header{max-width:760px;margin-inline:auto}
+.nav-bar{z-index:20}
+.nav-btn{min-height:48px;justify-content:center;gap:2px}
+.nav-btn span{line-height:1.1}
+.action-btn,.mini,.cb,.nav-btn{touch-action:manipulation}
+.action-btn{min-height:46px;line-height:1.35}
+.mini{min-height:36px}
+.row{min-height:42px;line-height:1.5}
+.pcard{line-height:1.65}
+table{font-variant-numeric:tabular-nums}
+#modal{padding:14px}
+#mbox{width:min(100%,420px);max-height:min(82dvh,680px)}
+/* Live match: reclaim vertical space and make every control thumb-friendly */
+body.match-live{padding:6px 7px calc(10px + var(--ui-safe))}
+body.match-live .header{padding:8px 10px;margin-bottom:7px;border-radius:12px}
+body.match-live .header h1{font-size:15px}
+body.match-live .stats{font-size:10px;margin-top:5px}
+body.match-live .cbar{margin-top:5px}
+body.match-live #sb{margin-bottom:7px;padding:8px;scroll-margin-top:8px}
+body.match-live #sb .sbm{font-size:clamp(16px,4.5vw,21px);line-height:1.45;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px}
+body.match-live #sb .dim{font-size:11px;line-height:1.6}
+body.match-live #sb .pitch{height:clamp(170px,34vh,245px)!important;min-height:170px}
+body.match-live #console{height:clamp(145px,25vh,215px);max-height:215px;margin:0 0 7px;padding:8px;overscroll-behavior:contain;scrollbar-width:thin;line-height:1.5}
+body.match-live #console .ll{padding:5px 2px;margin-bottom:3px;line-height:1.55;font-size:12px}
+body.match-live #ctl{margin-bottom:8px}
+body.match-live #ctl .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:6px 0}
+body.match-live #ctl .cb{min-height:44px;padding:8px 3px;font-size:12px;line-height:1.35;border-radius:10px}
+body.match-live .nav-bar{display:none}
+body.match-live #content{display:none!important}
+body.match-live #snb{min-width:38px;min-height:34px}
+@media(min-width:600px){
+ body.match-live{max-width:760px;margin-inline:auto}
+ body.match-live #console{height:230px}
+ body.match-live #sb .pitch{height:245px!important}
+}
+@media(max-width:360px){
+ .nav-btn{font-size:10px}
+ .nav-btn span{font-size:18px}
+ body.match-live #ctl .cb{font-size:11px}
+ body.match-live .stats{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){#content{animation:none}}
