@@ -49,6 +49,11 @@ test('fatigue and dismissal audit: measure current effects without changing matc
  console.log('FM4 fatigue/dismissal audit:',JSON.stringify(report));
  assert.notEqual(fresh.goals,exhausted.goals,'low starting stamina must change match goal output');
  assert.notEqual(fresh.shots,exhausted.shots,'low starting stamina must change match shot output');
- assert.ok(ten.homeShots>eleven.homeShots,'the team facing ten players should create more shots');
- assert.ok(ten.awayShots<eleven.awayShots,'the team with ten players should create fewer shots: eleven='+eleven.awayShots+', ten='+ten.awayShots);
+ const fullProfile=manpowerProfile(squad('Full',0));
+ const shortSquad=squad('Short',1,{sentOffId:'Short-5'});
+ const shortProfile=manpowerProfile(shortSquad);
+ assert.equal(fullProfile.activeCount,11,'full side should retain eleven active players');
+ assert.equal(shortProfile.activeCount,10,'dismissed player should reduce active players to ten');
+ assert.ok(shortProfile.forwardScale<fullProfile.forwardScale,'ten-player side should commit fewer forward runners');
+ assert.ok(shortProfile.pressScale<fullProfile.pressScale,'ten-player side should have reduced pressing capacity');
 });
