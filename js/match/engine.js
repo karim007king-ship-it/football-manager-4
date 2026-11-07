@@ -295,7 +295,7 @@ function stepAction(s){
     const risk=best.passType==='through_ball'?.09:best.passType==='cross'?.07:best.passType==='cutback'?.045:best.passType==='switch'?.035:0;
     const chance=clamp(.66+(carrier.passing*sharpness)/350-Math.max(0,distance(carrier,best.p)-12)/180-(pd<4?.1:pd<8?.04:0)-risk,.30,.97);
     const laneDefender=findPassInterceptor(carrier,best.p,def);
-    const laneRisk=laneDefender?clamp(.04+(Number(laneDefender.player.defending??50)*.0025)-laneDefender.gap*.025,.04,.28):0;
+    const laneRisk=laneDefender?clamp(.02+(Number(laneDefender.player.defending??50)*.0012)-laneDefender.gap*.012,.02,.13):0;
     if(laneDefender&&rnd()<laneRisk){
      event=resolveDefensiveRecovery(s,opp,laneDefender.player,tid,rnd);
     }else if(rnd()<chance){
