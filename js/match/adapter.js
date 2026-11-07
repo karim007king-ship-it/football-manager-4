@@ -43,6 +43,7 @@ function estimateSkills(p,role){
  const defendBoost=/^(CB|LB|RB|LWB|RWB|DM|CDM)$/.test(role)?8:0;
  return{
   pace:round(o+paceBoost+mood-penalty),
+  goalkeeping:round(o+mood-penalty),
   passing:round(o+passBoost+mood-penalty),
   // OVR is a composite rating, not a pure finishing attribute. A softer
   // conversion prevents ordinary 65-75 OVR squads from becoming elite finishers.
