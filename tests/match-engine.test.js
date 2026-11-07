@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveKeeperParryRebound,resolveWoodworkRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolvePassBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -615,4 +615,33 @@ test('woodwork rebounds remain in play and mirror second-ball ownership at both 
  assert.equal(away.reboundOpportunity.attackingTeam,1);
  assert.ok(away.teams[awayEvent.team].players.some(p=>p.active&&!/^GK$/i.test(p.role)&&p.id===awayEvent.playerId));
  assert.throws(()=>resolveWoodworkRebound(away,awayShooter,2,0,'post'),/Attacking team/);
+});
+
+test('overhit passes resolve touchline, goal-kick and corner restarts in both directions',()=>{
+ const homeThrow=create(1301);
+ const throwResult=resolvePassBoundary(homeThrow,{x:60,y:88},{x:75,y:99},0,.2);
+ assert.equal(throwResult.restartType,'throw_in');
+ assert.equal(throwResult.teamId,1);
+ assert.equal(homeThrow.events.at(-1).type,'restart');
+ assert.equal(homeThrow.events.at(-1).restartType,'throw_in');
+ assert.equal(homeThrow.ball.team,1);
+ assert.equal(homeThrow.ball.y,97);
+ const awayThrow=create(1302);
+ const awayThrowResult=resolvePassBoundary(awayThrow,{x:40,y:12},{x:25,y:1},1,.2);
+ assert.equal(awayThrowResult.restartType,'throw_in');
+ assert.equal(awayThrowResult.teamId,0);
+ assert.equal(awayThrow.ball.team,0);
+ assert.equal(awayThrow.ball.y,3);
+ const homeGoalKick=create(1303);
+ const goalKick=resolvePassBoundary(homeGoalKick,{x:92,y:50},{x:101,y:50},0,.2);
+ assert.equal(goalKick.restartType,'goal_kick');
+ assert.equal(goalKick.teamId,1);
+ assert.equal(homeGoalKick.ball.team,1);
+ const awayCorner=create(1304);
+ const corner=resolvePassBoundary(awayCorner,{x:8,y:40},{x:-1,y:40},0,.2);
+ assert.equal(corner.restartType,'corner');
+ assert.equal(corner.teamId,1);
+ assert.equal(awayCorner.ball.team,1);
+ assert.ok(awayCorner.events.at(-1).playerId);
+ assert.throws(()=>resolvePassBoundary(homeGoalKick,{x:1,y:1},{x:1,y:1},0),/length/);
 });
