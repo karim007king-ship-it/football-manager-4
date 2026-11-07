@@ -67,7 +67,7 @@ test('realistic 65-75 OVR squads keep match volume and passing within tighter ca
  assert.ok(avgGoals>=1.5&&avgGoals<=3.8,'65-75 OVR average goals '+avgGoals.toFixed(2));
  assert.ok(avgShots>=12&&avgShots<=22,'65-75 OVR average shots '+avgShots.toFixed(2));
  assert.ok(passAccuracy>=64&&passAccuracy<=82,'pass accuracy '+passAccuracy.toFixed(1));
- assert.ok(Math.abs(homeGoals-awayGoals)/games<=.65,'balanced home/away goals');
+ assert.ok(Math.abs(homeGoals-awayGoals)/games<=.65,'balanced home/away goals; gap '+(Math.abs(homeGoals-awayGoals)/games).toFixed(2));
 });
 
 test('higher-rated teams gain a scoring edge regardless of home or away side',()=>{
