@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveKeeperParryRebound,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -459,26 +459,57 @@ test('shot deflection outcome uses the conditional block roll without extra rand
  assert.equal(shotDeflectionOutcome(true,.001,.4,1),true,'even a low-skill defender has a bounded minimum deflection chance');
 });
 
-test('live goalkeeper parries and defender deflections award corners to the attacking team',()=>{
+test('live goalkeeper parries create a valid in-box rebound while deflections out award corners',()=>{
  let parries=0,deflections=0;
  for(let seed=1;seed<=1200;seed++){
   const state=simulateMatch(create(seed),90);
   for(let i=0;i<state.events.length;i++){
    const contact=state.events[i];
    if(contact.parried!==true&&contact.deflectedOut!==true)continue;
-   const restart=state.events[i+1];
-   assert.ok(restart,'a parry or defensive deflection out must be followed by a restart');
-   assert.equal(restart.type,'restart');
-   assert.equal(restart.restartType,'corner');
-   assert.equal(restart.team,contact.attackingTeam);
-   assert.ok(state.teams[restart.team].players.some(p=>p.active&&p.id===restart.playerId));
-   assert.ok(restart.x>=2&&restart.x<=98&&restart.y>=3&&restart.y<=97);
-   if(contact.parried)parries++;
-   if(contact.deflectedOut)deflections++;
+   const outcome=state.events[i+1];
+   assert.ok(outcome,'a parry or defensive deflection must have an immediate secondary outcome');
+   if(contact.parried){
+    assert.equal(outcome.type,'rebound');
+    assert.ok([0,1].includes(outcome.team));
+    assert.ok(state.teams[outcome.team].players.some(p=>p.active&&p.id===outcome.playerId));
+    assert.ok(outcome.x>=2&&outcome.x<=98&&outcome.y>=12&&outcome.y<=88);
+    assert.equal(outcome.goalkeeperId,contact.goalkeeperId);
+    assert.equal(outcome.attackingTeam,contact.attackingTeam);
+    parries++;
+   }else{
+    assert.equal(outcome.type,'restart');
+    assert.equal(outcome.restartType,'corner');
+    assert.equal(outcome.team,contact.attackingTeam);
+    assert.ok(state.teams[outcome.team].players.some(p=>p.active&&p.id===outcome.playerId));
+    assert.ok(outcome.x>=2&&outcome.x<=98&&outcome.y>=3&&outcome.y<=97);
+    deflections++;
+   }
   }
  }
  assert.ok(parries>0,'the deterministic cohort must exercise goalkeeper parries');
  // Defender deflection is covered by a controlled, mirrored trajectory test below.
+});
+
+test('goalkeeper parry rebounds stay in the box and award the loose ball to the nearest outfield player',()=>{
+ const home=create(811),homeKeeper=home.teams[1].players[0],homeShooter=home.teams[0].players[9];
+ homeKeeper.x=95;homeKeeper.y=50;homeShooter.x=90;homeShooter.y=38;
+ const homeEvent=resolveKeeperParryRebound(home,homeKeeper,homeShooter,0);
+ assert.equal(homeEvent.type,'rebound');
+ assert.equal(homeEvent.x,88);
+ assert.equal(homeEvent.y,54.2);
+ assert.ok(homeEvent.x>=2&&homeEvent.x<=98&&homeEvent.y>=12&&homeEvent.y<=88);
+ assert.equal(home.ball.team,homeEvent.team);
+ assert.equal(home.ball.playerId,homeEvent.playerId);
+ assert.ok(home.teams[homeEvent.team].players.some(p=>p.active&&!/^GK$/i.test(p.role)&&p.id===homeEvent.playerId));
+ assert.equal(home.events.at(-1).type,'rebound');
+ const away=create(812),awayKeeper=away.teams[0].players[0],awayShooter=away.teams[1].players[9];
+ awayKeeper.x=5;awayKeeper.y=50;awayShooter.x=10;awayShooter.y=62;
+ const awayEvent=resolveKeeperParryRebound(away,awayKeeper,awayShooter,1);
+ assert.equal(awayEvent.x,12);
+ assert.equal(awayEvent.y,45.8);
+ assert.equal(away.ball.team,awayEvent.team);
+ assert.equal(away.ball.playerId,awayEvent.playerId);
+ assert.ok(away.teams[awayEvent.team].players.some(p=>p.active&&!/^GK$/i.test(p.role)&&p.id===awayEvent.playerId));
 });
 
 test('controlled defender shot deflections award mirrored corners to the attacking team',()=>{
