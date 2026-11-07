@@ -281,3 +281,13 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - The new audit checks score/shot/on-target consistency, possession reconciliation, bounded player and ball coordinates, stamina bounds, active ball ownership, event clock validity and player-reference integrity.
 - This audit is pending its own CI result; it is not yet an accepted milestone.
 - Continue next with integration-level movement/defensive tracking tests, then set-piece/restart correctness. Keep the shadow engine read-only and the legacy engine authoritative.
+
+
+## 9. Restart and boundary audit — 2026-11-07
+
+- Added a pure boundary classifier for the first pitch line crossed by a supplied ball segment. It awards throw-ins, corners and goal kicks using the attacking direction and last-touch team.
+- Added an atomic boundary transition helper that invokes the existing restart resolver, assigns an active taker and creates exactly one restart event. In-play segments leave possession and the event log unchanged.
+- Added deterministic tests for both attacking directions, both touchlines, corner/goal-kick ownership, invalid inputs, in-play segments and single-event restart transitions.
+- Latest match-engine checks passed on commit `f3923f73f8f332e946fed6a1d6f3b8dd14cdaa2f`. The matching Android APK build is still in progress at the time of this update; no device test is implied.
+- **Important remaining gap:** this helper is not yet called by the live `stepAction` loop. Current passes resolve directly to receivers and shots do not yet carry a modeled ball trajectory to the goal line. Do not mark live boundary handling complete until realistic pass/shot paths, deflections and restart awards are integrated and tested end-to-end.
+- Next: design and test shot trajectory/outcome semantics (on-target, wide, over-bar, blocked, saved, rebound/deflection) before wiring any goal-line restart into live simulation. Preserve deterministic replay, event/stat consistency, Shadow Mode and legacy result authority.
