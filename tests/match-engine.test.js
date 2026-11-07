@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
+const {createMatch,resolveRestart,classifyBoundaryRestart,resolveBallBoundary,resolveShotDeflectionBoundary,stepMatch,simulateMatch,restoreRandom,choosePassTarget,classifyPassPattern,findShotBlocker,shotDeflectionOutcome,isDefensiveThird,chooseClearanceTarget,resolveDefensiveRecovery,startCounterTransition,counterTransitionActive,defensiveCoverTarget,defensiveLineTarget,findPassInterceptor,passLaneInterceptionChance,effectiveMentality,strikerRunTarget}=require('../js/match/engine');
 function team(name,side){
  const roles=['GK','DF','DF','DF','DF','DM','CM','AM','LW','ST','RW'];
  const xs=side===0?[6,24,27,30,33,42,47,55,67,72,68]:[94,76,73,70,67,58,53,45,33,28,32];
@@ -478,7 +478,28 @@ test('live goalkeeper parries and defender deflections award corners to the atta
   }
  }
  assert.ok(parries>0,'the deterministic cohort must exercise goalkeeper parries');
- assert.ok(deflections>0,'the deterministic cohort must exercise defender deflections');
+ // Defender deflection is covered by a controlled, mirrored trajectory test below.
+});
+
+test('controlled defender shot deflections award mirrored corners to the attacking team',()=>{
+ const home=create(701),homeContact={x:99,y:50};
+ const homeResult=resolveShotDeflectionBoundary(home,homeContact,0,100,8);
+ assert.ok(homeResult,'home deflection must cross the goal line');
+ assert.equal(homeResult.restartType,'corner');
+ assert.equal(homeResult.teamId,0);
+ assert.equal(homeResult.event.team,0);
+ assert.equal(homeResult.event.x,97);
+ assert.equal(homeResult.event.y,3);
+ assert.ok(home.teams[0].players.some(p=>p.active&&p.id===homeResult.event.playerId));
+ const away=create(702),awayContact={x:1,y:50};
+ const awayResult=resolveShotDeflectionBoundary(away,awayContact,1,0,92);
+ assert.ok(awayResult,'away deflection must cross the opposite goal line');
+ assert.equal(awayResult.restartType,'corner');
+ assert.equal(awayResult.teamId,1);
+ assert.equal(awayResult.event.team,1);
+ assert.equal(awayResult.event.x,3);
+ assert.equal(awayResult.event.y,97);
+ assert.ok(away.teams[1].players.some(p=>p.active&&p.id===awayResult.event.playerId));
 });
 
 test('live unblocked off-target shots award a goal kick with valid restart ownership',()=>{
