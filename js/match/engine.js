@@ -76,7 +76,7 @@ function strikerRunTarget(player,carrier,teamId,defenders){
  const maxTarget=Math.max(minTarget,Math.min(98,progress+18));
  // On an advanced wide delivery, the striker attacks the far-post corridor
  // just behind the defensive line; central attacks retain the normal run.
- const targetProgress=clamp(lineProgress+2,minTarget,maxTarget);
+ const targetProgress=clamp(lineProgress+2.1,minTarget,maxTarget);
  return{x:clamp(teamId===0?targetProgress:100-targetProgress,2,98),y:lane.y,active:true,crossingLane};
 }
 function updateShape(s,teamId,carrier,counterActive=false){
@@ -407,7 +407,8 @@ function stepAction(s){
  const attackManpower=manpowerProfile(t,effectiveMentality(s,tid));
  // Fewer active attackers means fewer coordinated runs and lower shot volume.
  // Keep the penalty modest so a red card changes the match without deciding it alone.
- const baseShotChance=(.09+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
+ const strikerShotBoost=/^(ST|CF|FW|FWD)$/i.test(String(carrier.role||''))?.006:0;
+ const baseShotChance=(.09+strikerShotBoost+(carrier.shooting*sharpness)/1400-pd/1200)*(1-(11-attackManpower.activeCount)*.045);
  const reboundFollowUp=!!reboundOpportunity&&tid===reboundOpportunity.attackingTeam;
  const crossFollowUp=!!crossShotOpportunity;
  const followUpBoost=(reboundFollowUp?.16:0)+(crossFollowUp?.10:0);
