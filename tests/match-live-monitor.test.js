@@ -100,8 +100,8 @@ test('monitor rejects an over-limit batch atomically without partially applying 
  const players=monitor.shadow.state.teams[side].players;
  assert.equal(players.find(p=>p.id===String(outA.id)).active,true);
  assert.equal(players.find(p=>p.id===String(outB.id)).active,true);
- assert.equal(players.find(p=>p.id===inA.id).active,false);
- assert.equal(players.find(p=>p.id===inB.id).active,false);
+ assert.equal(players.some(p=>p.id===inA.id),false);
+ assert.equal(players.some(p=>p.id===inB.id),false);
  assert.equal(monitor.shadow.state.substitutions[side],4);
  assert.equal((monitor.shadow.state.substitutionLog||[]).length,0);
 });
