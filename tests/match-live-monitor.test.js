@@ -12,6 +12,22 @@ function team(name,offset=0){
 function live(home=true){
  return {xi:team('المستخدم'),O:{xi:team('المنافس',100)},home,tac:'balanced',en:{1:61},min:0,gu:0,go:0,bx:50,by:50,ps:0,sh:[0,0],oR:0,opp:{name:'المنافس'}};
 }
+test('shadow monitor snapshot restores events, deduplication and deterministic continuation',()=>{
+ const m=live(),first=Monitor.create({match:m,seed:712}),event={eventId:'persisted-legacy-event',type:'corner',teamId:0,minute:0};
+ Monitor.advance(first,m,13);
+ assert.equal(Monitor.recordLegacyEvent(first,event),true);
+ const stored=JSON.parse(JSON.stringify(Monitor.serialize(first)));
+ const restored=Monitor.restore(stored);
+ assert.equal(Monitor.recordLegacyEvent(restored,event),false);
+ assert.deepEqual(Monitor.render(restored,m),Monitor.render(first,m));
+ Monitor.advance(first,m,9);
+ Monitor.advance(restored,m,9);
+ const strip=state=>{const {random,...plain}=state;return plain};
+ assert.deepEqual(strip(restored.shadow.state),strip(first.shadow.state));
+ assert.equal(restored.shadow.state.random.state,first.shadow.state.random.state);
+ assert.equal(restored.steps,first.steps);
+ assert.throws(()=>Monitor.restore({schemaVersion:1,shadow:{state:{}}}),/RESTORE/);
+});
 test('monitor records supported legacy incidents once without changing match simulation state',()=>{
  const m=live(),monitor=Monitor.create({match:m,seed:940}),state=monitor.shadow.state;
  const before={minute:state.minute,score:state.score.slice(),possession:state.possession.slice(),shots:state.shots.slice(),random:state.random};
