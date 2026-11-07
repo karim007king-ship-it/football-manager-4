@@ -1,6 +1,8 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
 const Session=require('../js/match/session-store');
 function fixture(){
  const players=Array.from({length:22},(_,i)=>({id:'p'+i,name:'Player '+i,clubId:i<11?1:2,pos:i%11===0?'GK':'MID',inj:i===1?2:0}));
@@ -38,4 +40,13 @@ test('match session rejects career mismatches and missing saved players',()=>{
  assert.throws(()=>Session.restore(saved,{...game,round:6}),/different career/);
  const broken=JSON.parse(JSON.stringify(saved));broken.match.xiIds[0]='missing';
  assert.throws(()=>Session.restore(broken,game),/no longer exists/);
+});
+
+test('game startup resumes a validated active match and checkpoints only safe states',()=>{
+ assert.match(html,/FM4MatchSession\.serialize\(\{match:M,game:G,shadowSnapshot\}\)/);
+ assert.match(html,/FM4MatchSession\.restore\(snapshot,G\)/);
+ assert.match(html,/FM4ShadowMonitor\.restore\(restored\.shadowSnapshot\)/);
+ assert.match(html,/M\.q\.length\|\|M\.hold\|\|M\.so/);
+ assert.match(html,/window\.onload=\(\)=>\{load\(\);if\(G&&restoreMatchSession\(\)\)return/);
+ assert.match(html,/clearMatchSession\(\);busy=false;M=null;shadowMonitor=null/);
 });
