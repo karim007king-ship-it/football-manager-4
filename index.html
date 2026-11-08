@@ -713,8 +713,48 @@ function flavor(){let us=Math.random()<.5,T=us?M.xi:opponentOnPitch(),a=pick(T).
   ()=>{Q(`${tm()} ⚔️ صراع قوي بين ${a} و${pick(us?M.O.xi:M.xi).name} على الكرة`,'');Q(`${tm()} ${pick(['الحكم يلوّح بمواصلة اللعب','خطأ لصالح '+(us?'فريقك':M.opp.name),'الكرة تعود إلى المنتصف'])}`,'')},
   ()=>Q(`${tm()} 📣 ${pick(['أهازيج الجماهير تهزّ المدرجات','المدرب يصرخ بالتعليمات من الخط','اللاعبون يطلبون الهدوء من الجمهور','عدسات التلفزيون تلتقط وجوه المتوترين'])}`,'log-info')];
   pick(K)()}
-function sb(){let ps=M.min?Math.round(M.ps/M.min):50,m=M.min>90&&!M.et?'90+'+(M.min-90):M.min;
-  sbPaint(`<div class="sbm">${badge(G.uid,24)}${C(G.uid).name} <b>${M.gu} - ${M.go}</b> ${M.opp.name}${badge(M.opp,24)}</div><div class="dim" style="text-align:center">⏱ ${m}' | تسديدات ${M.sh[0]}-${M.sh[1]} (على المرمى ${M.st[0]}-${M.st[1]}) | استحواذ ${ps}%-${100-ps}% | ${TAC[M.tac]} | ${M.xi.length} لاعباً</div>${shadowMonitorHtml()}`)}
+function sb(){
+  const ps=M.min?Math.round(M.ps/M.min):50;
+  const minute=M.min>90&&!M.et?'90+'+(M.min-90):M.min;
+  const phase=M.so?'ركلات الترجيح':M.et?'وقت إضافي':M.min>=45?'الشوط الثاني':'الشوط الأول';
+  const status=M.done?'انتهت':M.so?'ركلات الترجيح':M.paused?(M.min===45?'استراحة':'متوقفة'):'مباشرة';
+  const weather=M.wx==='rain'?'🌧️ أمطار':'☀️ صحو';
+  const userVenue=M.home?'المضيف':'الضيف',opponentVenue=M.home?'الضيف':'المضيف';
+  const competition=M.cup?'🏆 '+CN[G.cup.s]:'🏟️ مباراة الدوري';
+  sbPaint(`<section class="match-live-card" aria-label="لوحة المباراة">
+    <div class="match-live-topline">
+      <span class="match-live-competition">${competition}</span>
+      <span class="match-live-clock">⏱ ${minute}'</span>
+      <span class="match-live-state">${status}</span>
+    </div>
+    <div class="match-live-scoreline">
+      <div class="match-live-team">
+        <span class="match-live-badge">${badge(G.uid,26)}</span>
+        <b>${C(G.uid).name}</b>
+        <small>${userVenue}</small>
+      </div>
+      <div class="match-live-score">
+        <div class="match-live-score-digits" dir="ltr"><b>${M.gu}</b><span>:</span><b>${M.go}</b></div>
+        <small>${phase}</small>
+      </div>
+      <div class="match-live-team">
+        <span class="match-live-badge">${badge(M.opp,26)}</span>
+        <b>${M.opp.name}</b>
+        <small>${opponentVenue}</small>
+      </div>
+    </div>
+    <div class="match-live-stats" aria-label="إحصائيات المباراة">
+      <div class="match-live-stat"><small>التسديدات</small><b>${M.sh[0]} <i>–</i> ${M.sh[1]}</b><span>فريقك / الخصم</span></div>
+      <div class="match-live-stat"><small>على المرمى</small><b>${M.st[0]} <i>–</i> ${M.st[1]}</b><span>فريقك / الخصم</span></div>
+      <div class="match-live-stat"><small>الاستحواذ</small><b>${ps}% <i>–</i> ${100-ps}%</b><span>فريقك / الخصم</span></div>
+      <div class="match-live-stat"><small>اللاعبون</small><b>${M.xi.length} <i>–</i> ${opponentOnPitch().length}</b><span>داخل الملعب</span></div>
+    </div>
+    <div class="match-live-tactical-strip">
+      <span>🎯 ${TAC[M.tac]}</span><span>🔥 ${PRN[M.pr]}</span><span>🏃 ${TPN[M.tp]}</span><span>↔️ ${WDN[M.wd]}</span><span>${weather}</span>
+    </div>
+    ${shadowMonitorHtml()}
+  </section>`);
+}
 
 function liveS(){let sum=0,mor=0;
   M.xi.forEach(p=>{let sl=M.slot[p.id],pen=p.pos==sl?0:(sl=='GK'||p.pos=='GK'?30:9);sum+=(p.ovr+(trt(p)=='big'&&(M.cup||M.derby||M.min>=75)?3:0)-pen-(M.hurt.has(p.id)?15:0))*(.85+.15*M.en[p.id]/100);mor+=p.morale});
