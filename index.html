@@ -327,8 +327,8 @@ function offer(p,y){let d=demand(p,y),b=d*4,lo=Math.round(d*.85/100)*100;
       else{p.rf=G.season;p.morale=cl(p.morale-8,30,100);save();say('😠 '+p.name+' رفض العرض وانزعج!');go('contracts')}}}],true)}
 function signC(p,y,w,b){if(G.budget<b)return say('❌ ميزانيتك لا تكفي لمكافأة التوقيع ('+money(b)+').');
   G.budget-=b;p.cy=Math.min(5,cy(p)+y);p.wg=w;p.rf=0;p.morale=cl(p.morale+6,30,100);save();say('✅ جُدّد عقد '+p.name+': تمديد '+y+(y==1?' موسم':' مواسم')+' (متبقٍ '+p.cy+')');go('contracts')}
-function contractsEnd(){let U=G.uid,gone=[],add=[],h='',sq=()=>G.players.filter(p=>p.clubId==U);
-  sq().forEach(p=>{p.cy=cy(p)-1;if(p.cy<=0)gone.push(p)});gone.forEach(p=>{p.clubId=0;p.wg=0;p.cy=0});
+function contractsEnd(){let U=G.uid,gone=[],add=[],h='',sq=()=>G.players.filter(p=>p.clubId==U),loaned=()=> (G.loans||[]).filter(l=>l.status==='active'&&l.fromClubId===U).map(l=>G.players.find(p=>p.id===l.playerId)).filter(p=>p&&p.clubId!==U);
+  [...sq(),...loaned()].forEach(p=>{p.cy=cy(p)-1;if(p.cy<=0){gone.push(p);if(p.clubId===U){p.clubId=0;p.wg=0;p.cy=0}else p.loanContractExpired=true}});
   while(sq().length<16||sq().filter(p=>p.pos=='GK').length<2){let gk=sq().filter(p=>p.pos=='GK').length<2,n=mkPlayer(U,gk?'GK':pick(['DEF','MID','FWD']),52,true);n.cy=3;G.players.push(n);add.push(n)}
   if(gone.length)h+=`<br><br>📝 <b>انتهت عقود:</b> ${gone.map(p=>p.name+' ('+p.ovr+')').join('، ')} وغادروا مجاناً`;
   if(add.length)h+=`<br>صعد ${add.length} لاعبين شباب من الأكاديمية لتعويض النقص`;return h}
@@ -1329,7 +1329,7 @@ function endSeason(){
     p.ovr=cl(p.ovr+(p.age<24?R(0,3):p.age<30?R(-1,1):-R(0,3)),40,92);p.morale=70;p.inj=0;
     if(p.age>=36){let c=C(p.clubId);Object.assign(p,mkPlayer(p.clubId,p.pos,Math.max(50,c.ovr-12),true),{id:p.id,pot:undefined,xp:0,cy:3,wg:undefined})}});
   const loanReturn=FM4TransferSystem.returnLoansAtSeasonEnd({players:G.players,loans:G.loans||[],season:G.season});
-  if(loanReturn.ok){G.players=loanReturn.players;G.loans=loanReturn.loans;if(loanReturn.returnedPlayerIds.length)G.news.push('🔁 عودة '+loanReturn.returnedPlayerIds.length+' لاعباً من الإعارة بعد نهاية الموسم');}
+  if(loanReturn.ok){G.players=loanReturn.players;G.loans=loanReturn.loans;loanReturn.returnedPlayerIds.forEach(id=>{const p=G.players.find(x=>x.id===id);if(p&&p.loanContractExpired){p.clubId=0;p.wg=0;p.cy=0;delete p.loanContractExpired}});if(loanReturn.returnedPlayerIds.length)G.news.push('🔁 عودة '+loanReturn.returnedPlayerIds.length+' لاعباً من الإعارة بعد نهاية الموسم');}
   G.season++;G.round=0;G.fix=mkFix();
   G.clubs.forEach(c=>Object.assign(c,{pts:0,p:0,w:0,d:0,l:0,gf:0,ga:0}));
   aiRefresh();genObj();newCup();msg+='<br><br>تقدم عمر اللاعبين وتغيرت مستوياتهم.<br>🎯 وصلت أهداف جديدة من الإدارة للموسم القادم.';
