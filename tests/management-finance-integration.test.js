@@ -124,7 +124,7 @@ test('match settlement posts all income and operating costs atomically', () => {
   assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance batch:'/);
 });
 
-test('idempotent ledger replay is treated as a successful financial post', () => {
+test('duplicate ledger replay cannot repeat non-financial side effects', () => {
   assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance ledger:'/);
   assert.match(html, /return !result\.duplicate\}\\nfunction financePostBatch/);
 });
