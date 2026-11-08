@@ -75,14 +75,16 @@
       return fail('INVALID_PERIOD', 'بيانات الموسم أو الجولة غير صالحة.');
     }
     const draft = { budget: state.budget, financeHistory: (Array.isArray(state.financeHistory) ? state.financeHistory : []).map(item => ({ ...item })) };
+    let hasNewEntry = false;
     for (let index = 0; index < batch.length; index += 1) {
       const entry = batch[index] || {};
       const result = applyToCareer(draft, { ...entry, season: entry.season === undefined ? context.season : entry.season, round: entry.round === undefined ? context.round : entry.round });
       if (!result.ok) return { ...result, failedIndex: index };
+      if (!result.duplicate) hasNewEntry = true;
     }
     state.budget = draft.budget;
     state.financeHistory = draft.financeHistory;
-    return { ok: true, duplicate: false, budget: state.budget, financeHistory: state.financeHistory };
+    return { ok: true, duplicate: !hasNewEntry, budget: state.budget, financeHistory: state.financeHistory };
   }
 
   function summarize(history, season) {
