@@ -6,6 +6,14 @@ const path = require('node:path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const financeLedger = require('../js/management/finance-ledger');
 
+test('season finalization validates loan history before applying season side effects', () => {
+  const guard = html.indexOf("function endSeason(){");
+  const preflight = html.indexOf("const loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd", guard);
+  const prize = html.indexOf("league-prize", guard);
+  assert.ok(guard >= 0 && preflight > guard && prize > preflight);
+  assert.match(html, /if\(!loanPreflight\.ok\)\{console\.error\('FM4 loan lifecycle:'/);
+});
+
 test('season finalization is guarded against duplicate execution', () => {
   assert.ok(html.includes("function endSeason(){"));
   assert.ok(html.includes("if(G.round<14||G.lastCompletedSeason===G.season)"));
