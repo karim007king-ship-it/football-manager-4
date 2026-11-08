@@ -36,3 +36,15 @@ test('goalkeeper attributes are generated, displayed and improved through traini
   assert.match(html, /p\.pos==='GK'\?'<br/);
   assert.match(html, /if\(p\.pos==='GK'\)\['gkReflexes','gkHandling','gkPositioning','gkOneOnOne','gkDistribution'\]/);
 });
+
+test('live match screen has a structured scoreboard, telemetry and tactical strip', () => {
+  const html = read('index.html');
+  const css = read('ui-polish.css');
+
+  assert.match(html, /class="match-live-scoreline"/);
+  assert.match(html, /class="match-live-stats"/);
+  assert.match(html, /class="match-live-tactical-strip"/);
+  assert.match(html, /function sb\(\)[\s\S]{0,2600}match-live-score-digits/);
+  assert.match(css, /body\.match-live #sb \.match-live-card/);
+  assert.match(css, /body\.match-live #ctl\{\s*position:sticky/);
+});
