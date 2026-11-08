@@ -215,3 +215,33 @@ test('finalization rejects corrupted bonus, overflow and invalid contract terms 
   assert.equal(badYears.code, 'INVALID_CONTRACT_MONEY');
   assert.equal(ctx.players.find(p => p.id === '2-8').clubId, 2);
 });
+
+
+test('contract renewal validates ownership, terms and available signing budget without mutating source', () => {
+  const ctx = setup(), player = { ...ctx.player, cy: 2, wg: 2000 };
+  const base = { player, clubId: 2, currentYears: 2, addYears: 2, weeklyWage: 3200, signingBonus: 12800, budget: 50000 };
+  const result = Negotiations.completeRenewal(base);
+  assert.equal(result.ok, true);
+  assert.equal(result.contractYears, 4);
+  assert.equal(result.player.cy, 4);
+  assert.equal(result.player.wg, 3200);
+  assert.equal(result.budget, 37200);
+  assert.equal(player.cy, 2);
+  assert.equal(player.wg, 2000);
+  assert.equal(Negotiations.validateRenewal({ ...base, clubId: 1 }).code, 'PLAYER_NOT_FOUND');
+  assert.equal(Negotiations.validateRenewal({ ...base, addYears: 0 }).code, 'INVALID_CONTRACT_LENGTH');
+  assert.equal(Negotiations.validateRenewal({ ...base, weeklyWage: -1 }).code, 'INVALID_CONTRACT_MONEY');
+  assert.equal(Negotiations.validateRenewal({ ...base, signingBonus: Number.MAX_SAFE_INTEGER + 1 }).code, 'INVALID_CONTRACT_MONEY');
+  assert.equal(Negotiations.validateRenewal({ ...base, budget: 1000 }).code, 'INSUFFICIENT_BUDGET');
+  assert.equal(Negotiations.validateRenewal({ ...base, currentYears: 5 }).code, 'CONTRACT_AT_MAXIMUM');
+});
+
+test('contract renewal caps the resulting duration and rejects invalid budgets safely', () => {
+  const ctx = setup(), player = { ...ctx.player, cy: 4 };
+  const base = { player, clubId: 2, currentYears: 4, addYears: 3, weeklyWage: 2500, signingBonus: 0, budget: 0 };
+  const result = Negotiations.completeRenewal(base);
+  assert.equal(result.ok, true);
+  assert.equal(result.contractYears, 5);
+  assert.equal(result.player.cy, 5);
+  assert.equal(Negotiations.validateRenewal({ ...base, budget: -1 }).code, 'INVALID_BUDGET');
+});
