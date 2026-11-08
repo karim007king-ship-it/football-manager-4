@@ -66,7 +66,7 @@ test('match presentation exposes explicit halftime, extra-time, penalty and full
  const html=read('index.html');
  const css=read('ui-polish.css');
  for(const state of ['live','halftime','extratime','penalties','fulltime']){
-  assert.match(html,new RegExp("['\\\"]"+state+"['\\\"]:"));
+  assert.match(html,new RegExp('\\\\b'+state+'\\\\s*:'));
  }
  assert.match(html,/match-live-card match-state-\$\{matchState\}/);
  assert.match(html,/match-live-phase-banner/);
