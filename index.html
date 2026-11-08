@@ -768,14 +768,14 @@ function loanPlayer(id){
 }
 function loanTerms(id,toClubId){
   const p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
-  const base=val(p),fee1=Math.round(base*.05/1000)*1000,fee2=Math.round(base*.08/1000)*1000;
+  const remainingContract=cy(p);const base=val(p),fee1=Math.round(base*.05/1000)*1000,fee2=Math.round(base*.08/1000)*1000;
   const choices=[
     {durationSeasons:1,wageSharePct:50,fee:fee1,label:'موسم واحد • تحمّل 50% من الراتب • رسوم '+money(fee1)},
     {durationSeasons:1,wageSharePct:75,fee:fee1,label:'موسم واحد • تحمّل 75% من الراتب • رسوم '+money(fee1)},
     {durationSeasons:2,wageSharePct:50,fee:fee2,label:'موسمان • تحمّل 50% من الراتب • رسوم '+money(fee2)},
     {durationSeasons:2,wageSharePct:75,fee:fee2,label:'موسمان • تحمّل 75% من الراتب • رسوم '+money(fee2)}
   ];
-  menu('شروط إعارة '+p.name,choices.map(x=>({l:x.label,fn:()=>confirmLoan(id,toClubId,x)})),true);
+  menu('شروط إعارة '+p.name+' • العقد المتبقي '+remainingContract+' موسم',choices.filter(x=>x.durationSeasons<=remainingContract).map(x=>({l:x.label,fn:()=>confirmLoan(id,toClubId,x)})),true);
 }
 function confirmLoan(id,toClubId,terms){
   const p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
