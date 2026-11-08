@@ -56,6 +56,16 @@ test('maps composite OVR to a restrained finishing estimate',()=>{
  assert.ok(striker.shooting<player.ovr,'composite OVR should not be copied as elite finishing');
 });
 
+test('derives a transparent aerial proxy from OVR and playing role while honoring supplied aerial data',()=>{
+ const squad=legacyTeam('الكرات الهوائية');
+ squad.players[2].aerial=91;
+ const mapped=toEngineTeam(squad);
+ assert.equal(mapped.players[2].aerial,91,'an explicit aerial value must be preserved');
+ assert.ok(mapped.players[3].aerial>mapped.players[6].aerial,'a centre-back role should receive a stronger aerial prior than central midfield');
+ assert.ok(mapped.players[9].aerial>mapped.players[6].aerial,'a striker role should receive a stronger aerial prior than central midfield');
+ for(const player of mapped.players)assert.ok(player.aerial>=1&&player.aerial<=100);
+});
+
 test('creates a valid match from two legacy lineups and simulates it',()=>{
  const s=createMatchFromGame({home:legacyTeam('المضيف'),away:legacyTeam('الضيف',1),seed:91});
  assert.equal(s.teams[0].name,'المضيف');assert.equal(s.teams[1].name,'الضيف');
