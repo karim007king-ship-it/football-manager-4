@@ -32,6 +32,13 @@ test('offer creation records parties and rejects duplicate active negotiations',
   assert.equal(makeOffer(ctx, { negotiations: [first.offer] }).code, 'NEGOTIATION_ALREADY_ACTIVE');
 });
 
+test('repeated negotiations for the same player receive distinct IDs', () => {
+  const ctx = setup(), first = makeOffer(ctx);
+  const second = makeOffer(ctx, { negotiations: [{ ...first.offer, status: 'rejected' }] });
+  assert.equal(second.ok, true);
+  assert.notEqual(second.offer.id, first.offer.id);
+});
+
 test('offer validation rejects invalid money, clubs, loaned players and insufficient budget', () => {
   const ctx = setup();
   assert.equal(makeOffer(ctx, { fee: -1 }).code, 'INVALID_FEE');
