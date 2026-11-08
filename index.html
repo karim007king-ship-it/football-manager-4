@@ -264,10 +264,10 @@ function newCup(){let i=G.clubs.filter(c=>c.dv==C(G.uid).dv).map(c=>c.id).sort((
 function simCup(a,b){let s=teamS(a),t=teamS(b),[x,y]=quickGoals(s,t,true);
   if(x==y){let w=Math.random()<.5+(s.pw-t.pw)/60;return{w:w?a:b,l:`${C(a).name} ${x}-${y} ${C(b).name} (ركلات)`}}
   return{w:x>y?a:b,l:`${C(a).name} ${x}-${y} ${C(b).name}`}}
-function cupAdvance(ur){let c=G.cup,U=G.uid,ws=[];
-  c.pairs.forEach(p=>{if(ur&&p.includes(U)){ws.push(ur.w?U:(p[0]==U?p[1]:p[0]));c.lg.push(CN[c.s]+': '+ur.l)}else{let r=simCup(p[0],p[1]);ws.push(r.w);c.lg.push(CN[c.s]+': '+r.l)}});
-  if(c.s+1>=3){const inF=c.pairs[0].includes(U);if(ws[0]===U&&!financePost('s'+G.season+':cup:champion','cup-prize','مكافأة الفوز بكأس تونس',600000))return;if(ws[0]!==U&&inF&&!financePost('s'+G.season+':cup:runner-up','cup-prize','مكافأة وصافة كأس تونس',150000))return}
-  c.due=false;c.s++;
+function cupAdvance(ur){let c=G.cup;if(!c||c.done)return;let U=G.uid,ws=[],roundLogs=[];
+  c.pairs.forEach(p=>{if(ur&&p.includes(U)){ws.push(ur.w?U:(p[0]==U?p[1]:p[0]));roundLogs.push(CN[c.s]+': '+ur.l)}else{let r=simCup(p[0],p[1]);ws.push(r.w);roundLogs.push(CN[c.s]+': '+r.l)}});
+  if(c.s+1>=3){const inF=c.pairs[0].includes(U);if(ws[0]===U&&!financePostRecorded('s'+G.season+':cup:champion','cup-prize','مكافأة الفوز بكأس تونس',600000))return;if(ws[0]!==U&&inF&&!financePostRecorded('s'+G.season+':cup:runner-up','cup-prize','مكافأة وصافة كأس تونس',150000))return}
+  c.lg.push(...roundLogs);c.due=false;c.s++;
   if(c.s>=3){c.done=true;c.champ=ws[0];let inF=c.pairs[0].includes(U);
     if(ws[0]==U){G.conf=cl(G.conf+15,0,100);c.msg='🏆 توّجت بكأس تونس! +600k و+15% ثقة'}
     else{if(inF){c.msg='🥈 وصيف الكأس +150k'}else c.msg='بطل الكأس: '+C(ws[0]).name}
@@ -519,6 +519,7 @@ let saveWarn=false;
 function save(){try{if(G&&!Array.isArray(G.loans))G.loans=[];if(G&&!Array.isArray(G.negotiations))G.negotiations=[];if(G&&!Array.isArray(G.financeHistory))G.financeHistory=[];localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
 function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2){G=o;if(!Array.isArray(G.loans))G.loans=[];if(!Array.isArray(G.negotiations))G.negotiations=[];if(!Array.isArray(G.financeHistory))G.financeHistory=[]}}}catch(e){}}
 function financePost(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok){console.error('FM4 finance ledger:',result.code,result.message);return false}return !result.duplicate}
+function financePostRecorded(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok){console.error('FM4 finance ledger:',result.code,result.message);return false}return true}
 function financePostBatch(entries){const result=FM4FinanceLedger.applyBatchToCareer(G,entries,{season:G.season,round:G.round+1});if(!result.ok){console.error('FM4 finance batch:',result.code,result.message,result.failedIndex);return false}return !result.duplicate}
 function financeHtml(seasonFilter='current',categoryFilter='all'){
   const history=Array.isArray(G.financeHistory)?G.financeHistory:[],seasons=[...new Set(history.map(x=>x.season).filter(Number.isInteger))].sort((a,b)=>b-a);
