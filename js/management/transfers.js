@@ -23,6 +23,7 @@
 
   function validateSquadMove(players, player, fromClubId, toClubId, rules) {
     const r = rulesWith(rules);
+    if (!players.some(p => p.clubId === toClubId)) return fail('BUYER_NOT_FOUND', 'النادي المشتري غير موجود في قاعدة بيانات المسيرة.');
     if (fromClubId !== 0) {
       const from = clubPlayers(players, fromClubId);
       if (from.length - 1 < r.minSquadSize) return fail('SELLER_SQUAD_TOO_SMALL', 'لا يمكن إتمام الصفقة لأنها ستترك النادي البائع بعدد لاعبين أقل من الحد الأدنى.');
@@ -91,6 +92,7 @@
     }
     if (player.clubId !== x.sellerClubId) return fail('SELLER_MISMATCH', 'اللاعب ليس ضمن النادي البائع.');
     if (!validMoney(x.fee)) return fail('INVALID_FEE', 'قيمة البيع غير صالحة.');
+    if (!validMoney(x.budget) || !Number.isSafeInteger(x.budget + x.fee)) return fail('INVALID_BUDGET', 'ميزانية النادي أو قيمة الصفقة غير صالحة.');
     if (x.loans && x.loans.some(l => l.status === 'active' && l.playerId === player.id)) {
       return fail('PLAYER_ON_LOAN', 'لا يمكن بيع لاعب مرتبط بإعارة نشطة.');
     }
@@ -172,7 +174,11 @@
     if (!Array.isArray(x.players) || !Array.isArray(x.loans) || !Number.isInteger(x.season)) {
       return fail('INVALID_RETURN_INPUT', 'بيانات إرجاع الإعارات غير مكتملة.');
     }
-    const due = new Set(x.loans.filter(l => l.status === 'active' && l.endSeason <= x.season).map(l => l.playerId));
+    const activeDue = x.loans.filter(l => l.status === 'active' && l.endSeason <= x.season);
+    if (activeDue.some(l => !x.players.some(p => p.id === l.playerId) || !Number.isInteger(l.fromClubId))) {
+      return fail('INVALID_ACTIVE_LOAN', 'تعذر إرجاع الإعارة بسبب سجل لاعب أو نادٍ غير صالح.');
+    }
+    const due = new Set(activeDue.map(l => l.playerId));
     const loans = x.loans.map(l => due.has(l.playerId) && l.status === 'active'
       ? { ...l, status: 'completed', returnedSeason: x.season }
       : { ...l });
