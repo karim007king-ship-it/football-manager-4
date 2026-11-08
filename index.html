@@ -511,7 +511,7 @@ function newGame(uid){
   G.cn=1;if(uid>8)G.sd={cap:0,tp:1,fans:45,mk:0};G.players.forEach(p=>{if(p.clubId==uid)p.cy=R(2,4)});refreshMarket();genObj();newCup();save();go('home')}
 
 let saveWarn=false;
-function save(){try{if(G&&!Array.isArray(G.loans))G.loans=[];localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
+function save(){try{if(G&&!Array.isArray(G.loans))G.loans=[];if(G&&!Array.isArray(G.negotiations))G.negotiations=[];localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
 function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2){G=o;if(!Array.isArray(G.loans))G.loans=[]}}}catch(e){}}
 
 function strength(cid,tac,form,noLu){
