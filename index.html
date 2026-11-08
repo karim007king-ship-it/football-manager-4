@@ -233,7 +233,7 @@ const TR=()=>G.tr||(G.tr={lv:1,focus:'',ind:[],fac:0});
 function pot(p){if(p.pot===undefined)p.pot=cl(p.ovr+(p.age<24?R(3,9):p.age<28?R(1,4):R(0,1)),p.ovr,94);if(p.pot<p.ovr)p.pot=p.ovr;return p.pot}
 function gain(p){let t=TR(),af=p.age<21?1.6:p.age<25?1.2:p.age<30?1:p.age<33?.5:.2;
   return INT[t.lv].x*af*(t.focus==p.pos?1.5:1)*(t.ind.includes(p.id)?1.8:1)*(1+.15*t.fac)}
-function trainWeek(){let t=TR(),I=INT[t.lv],ups=[];if(I.c)financePost('s'+G.season+':r'+(G.round+1)+':training','training','تكلفة التدريب الأسبوعي',-I.c);
+function trainWeek(){let t=TR(),I=INT[t.lv],ups=[];if(I.c&&!financePost('s'+G.season+':r'+(G.round+1)+':training','training','تكلفة التدريب الأسبوعي',-I.c)){log('⚠️ تعذّر تسجيل تكلفة التدريب؛ تم تجاوز تدريب هذا الأسبوع','log-bad');return;}
   G.players.filter(p=>p.clubId==G.uid).forEach(p=>{
     if(t.lv==2&&!p.inj&&Math.random()<.01){p.inj=R(1,3);log(`🚑 ${p.name} أُصيب في التدريب المكثف (${p.inj} أسابيع)`,'log-bad')}
     if(t.lv==2)p.morale=cl(p.morale-1,30,100);else if(t.lv==0)p.morale=cl(p.morale+1,30,100);
@@ -371,7 +371,7 @@ function ofRow(){let n=(G.of||[]).length;return n?`<div class="row"><span>📨 �
 function ofOk(x){let p=G.players.find(y=>y.id==x.pid),sq=G.players.filter(y=>y.clubId==G.uid);
   if(sq.length<=14){say('❌ لا يمكن النزول تحت 14 لاعباً.');return false}
   if(p.pos=='GK'&&sq.filter(y=>y.pos=='GK').length<=1){say('❌ تحتاج حارسين على الأقل.');return false}return true}
-function ofDone(i,price){let x=G.of[i],p=G.players.find(y=>y.id==x.pid);p.clubId=x.cid;financePost('s'+G.season+':offer-sale:'+p.id,'transfer-income','بيع اللاعب '+p.name,price);G.of=G.of.filter((y,k)=>k!=i&&y.pid!=x.pid);
+function ofDone(i,price){let x=G.of[i],p=G.players.find(y=>y.id==x.pid);if(!p||!financePost('s'+G.season+':r'+(G.round+1)+':offer-sale:'+p.id,'transfer-income','بيع اللاعب '+p.name,price))return say('❌ تعذّر تسجيل دخل الصفقة؛ لم يتم بيع اللاعب.');p.clubId=x.cid;G.of=G.of.filter((y,k)=>k!=i&&y.pid!=x.pid);
   G.news.push(`💸 بِعتَ ${p.name} إلى ${C(x.cid).name} بمبلغ ${money(price)}`);save();say('✅ تمت الصفقة: '+money(price));go('offers')}
 function ofAcc(i){let x=G.of[i];if(ofOk(x))ofDone(i,x.price)}
 function ofRej(i){G.of.splice(i,1);save();go('offers')}
@@ -789,7 +789,7 @@ function transferError(result){return say('❌ '+(result&&result.message?result.
 function buy(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
   let result=FM4TransferSystem.completePurchase({players:G.players,playerId:id,buyerClubId:G.uid,sellerClubId:p.clubId,fee:val(p),budget:G.budget,contractYears:3,weeklyWage:wageOf(p),season:G.season,loans:G.loans||[]});
   if(!result.ok)return transferError(result);
-  G.players=result.players;if(!financePost('s'+G.season+':r'+(G.round+1)+':transfer-buy:'+id,'transfer-expense','شراء اللاعب '+p.name,-val(p)))return say('❌ تعذّر تسجيل قيمة الانتقال.');let signed=G.players.find(x=>x.id==id);signed.morale=70;save();say('✅ تم شراء '+signed.name+' بعقد 3 مواسم');go('market')}
+  if(!financePost('s'+G.season+':r'+(G.round+1)+':transfer-buy:'+id,'transfer-expense','شراء اللاعب '+p.name,-val(p)))return say('❌ تعذّر تسجيل قيمة الانتقال؛ لم يتم إتمام الشراء.');G.players=result.players;let signed=G.players.find(x=>x.id==id);signed.morale=70;save();say('✅ تم شراء '+signed.name+' بعقد 3 مواسم');go('market')}
 function negotiationRows(){
   const active=(G.negotiations||[]).filter(n=>['countered','club_accepted','player_countered'].includes(n.status)).slice(-6).reverse();
   return active.length?'<h3 class="title">مفاوضات تحتاج متابعة</h3>'+active.map(n=>{const p=G.players.find(x=>x.id===n.playerId);return p?'<div class="row"><span>'+uiEsc(p.name)+'<br><span class="dim">'+(n.status==='countered'?'عرض مضاد من النادي':n.status==='club_accepted'?'موافقة النادي • بانتظار عقد اللاعب':'طلب راتب مضاد من اللاعب')+'</span></span><button class="mini" onclick="resumeNegotiation(\''+uiEsc(n.id)+'\')">متابعة</button></div>':''}).join(''):'';
@@ -894,7 +894,7 @@ function finalizeNegotiatedTransfer(id){
   if(!offer)return say('❌ انتهت صلاحية المفاوضات.');
   const result=FM4NegotiationSystem.finalizeDeal({offer,players:G.players,budget:G.budget,transferSystem:FM4TransferSystem,loans:G.loans||[]});
   if(!result.ok)return transferError(result);
-  G.players=result.players;if(!financePost('s'+G.season+':negotiation:'+id+':fee','transfer-expense','قيمة انتقال '+G.players.find(x=>x.id===offer.playerId).name,-offer.fee))return say('❌ تعذّر تسجيل قيمة الانتقال.');if(offer.signingBonus&&!financePost('s'+G.season+':negotiation:'+id+':bonus','signing-bonus','مكافأة توقيع '+G.players.find(x=>x.id===offer.playerId).name,-offer.signingBonus))return say('❌ تعذّر تسجيل مكافأة التوقيع.');
+  const playerName=G.players.find(x=>x.id===offer.playerId).name,financeDraft={budget:G.budget,financeHistory:(G.financeHistory||[]).map(x=>({...x}))};const feeEntry=FM4FinanceLedger.applyToCareer(financeDraft,{eventId:'s'+G.season+':negotiation:'+id+':fee',season:G.season,round:G.round+1,category:'transfer-expense',description:'قيمة انتقال '+playerName,amount:-offer.fee});if(!feeEntry.ok||feeEntry.duplicate)return say('❌ تعذّر تسجيل قيمة الانتقال؛ لم يتم إتمام الصفقة.');if(offer.signingBonus){const bonusEntry=FM4FinanceLedger.applyToCareer(financeDraft,{eventId:'s'+G.season+':negotiation:'+id+':bonus',season:G.season,round:G.round+1,category:'signing-bonus',description:'مكافأة توقيع '+playerName,amount:-offer.signingBonus});if(!bonusEntry.ok||bonusEntry.duplicate)return say('❌ تعذّر تسجيل مكافأة التوقيع؛ لم يتم إتمام الصفقة.');}G.budget=financeDraft.budget;G.financeHistory=financeDraft.financeHistory;G.players=result.players;
   G.negotiations=G.negotiations.map(x=>x.id===id?result.offer:x);
   G.news.push('🤝 انضم '+G.players.find(x=>x.id===offer.playerId).name+' بعد مفاوضات ناجحة مقابل '+money(offer.fee));
   save();say('✅ اكتملت الصفقة: '+G.players.find(x=>x.id===offer.playerId).name+' • راتب '+money(offer.weeklyWage)+' أسبوعياً • مكافأة توقيع '+money(offer.signingBonus||0));go('squad');
