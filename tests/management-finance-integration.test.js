@@ -14,7 +14,7 @@ test('finance ledger loads before the game controller', () => {
 test('new careers initialize finance history and old saves migrate safely', () => {
   assert.match(html, /negotiations:\[\],financeHistory:\[\]/);
   assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]/);
-  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]\}\}catch/);
+  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]\}\}\}catch/);
 });
 
 test('league match settlement posts gate, sponsor and operating costs atomically', () => {
@@ -97,7 +97,7 @@ test('all remaining non-initial budget changes are represented in the ledger', (
 
 test('failed ledger posting cannot complete offer sales or apply training gains', () => {
   assert.match(html, /if\(!p\|\|!financePost\([^;]*offer-sale/);
-  assert.match(html, /if\\(I\\.c&&!financePost\\([\\s\\S]*?return;/);
+  assert.match(html, /if\(I\.c&&!financePost\([\s\S]*?return;/);
 });
 
 test('negotiated transfer fee and signing bonus are posted atomically before player mutation', () => {
