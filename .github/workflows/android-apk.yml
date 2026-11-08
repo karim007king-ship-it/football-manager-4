@@ -3,7 +3,7 @@ name: FM4 Android APK
 on:
   workflow_dispatch:
   push:
-    branches: ["fix/match-engine-v2"]
+    branches: ["fix/match-engine-v2", "feature/**"]
     paths:
       - "index.html"
       - "ui-polish.css"
