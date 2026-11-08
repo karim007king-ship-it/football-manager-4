@@ -618,6 +618,9 @@ function go(t){
     if(missing)warnings.push('ينقص التشكيل '+missing+' لاعباً لإكمال 11 لاعباً');
     if(injured.length)warnings.push(injured.length+' لاعباً مصاباً ضمن التشكيلة');
     if(outOfPosition.length)warnings.push(outOfPosition.length+' لاعباً خارج مركزه الطبيعي');
+    const warningsHtml=warnings.length
+      ? '<section class="tactics-warnings" role="status"><b>⚠️ تنبيهات التشكيلة</b><ul>'+warnings.map(w=>'<li>'+uiEsc(w)+'</li>').join('')+'</ul><button type="button" class="action-btn" data-open-lineup>مراجعة التشكيلة</button></section>'
+      : '<p class="tactics-ready">✓ التشكيلة الحالية مكتملة ولا تظهر إصابات أو مراكز غير مطابقة.</p>';
     c.innerHTML=`<div class="tactics-heading"><div><h2 class="title">🎯 مركز التكتيك</h2><p class="dim">إدارة أسلوب اللعب والخطة قبل المباراة</p></div><span class="tactics-current">${TAC[G.tactic]||TAC.balanced}</span></div>
       <section class="tactics-strength" aria-label="مؤشرات قوة التشكيلة">
         <div class="tactics-strength-main"><small>قوة التشكيلة الأساسية</small><b>${s.pw.toFixed(1)}</b><span>من تقييم اللاعبين الحالي</span></div>
@@ -632,7 +635,7 @@ function go(t){
           <span class="tactics-shape-goal">🥅</span><div class="tactics-shape-row"><b>${formation[3]}</b><span>هجوم</span></div><div class="tactics-shape-row"><b>${formation[2]}</b><span>وسط</span></div><div class="tactics-shape-row"><b>${formation[1]}</b><span>دفاع</span></div><div class="tactics-shape-row"><b>1</b><span>حارس</span></div>
         </div>
       </section>
-      ${warnings.length?`<section class="tactics-warnings" role="status"><b>⚠️ تنبيهات التشكيلة</b><ul>${warnings.map(w=>`<li>${w}</li>`).join('')}</ul><button type="button" class="action-btn" data-open-lineup>مراجعة التشكيلة</button></section>':`<p class="tactics-ready">✓ التشكيلة الحالية مكتملة ولا تظهر إصابات أو مراكز غير مطابقة.</p>`}
+      ${warningsHtml}
       <button type="button" class="action-btn gold tactics-lineup-action" data-open-lineup>👥 إدارة التشكيلة الأساسية${G.lu&&G.lu.p.length?' • مخصّصة':''}</button>
       <p class="tactics-footnote">المؤشرات مبنية على بيانات الفريق الحالية. تغيير الخطة أو الأسلوب يحفظ اختيارك، ولا يغيّر نتيجة مباراة سابقة.</p>`;
     c.querySelectorAll('[data-tactic-choice]').forEach(button=>button.addEventListener('click',()=>setT(button.dataset.tacticChoice)));
