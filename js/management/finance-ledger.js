@@ -15,13 +15,13 @@
     if (!Array.isArray(x.history)) return fail('INVALID_HISTORY', 'سجل الحركات المالية غير صالح.');
     if (typeof x.eventId !== 'string' || !x.eventId.trim()) return fail('INVALID_EVENT_ID', 'معرّف الحركة المالية مطلوب.');
     if (!validAmount(x.amount) || x.amount === 0) return fail('INVALID_AMOUNT', 'قيمة الحركة يجب أن تكون عدداً صحيحاً آمناً وغير صفري.');
-    if (!Number.isSafeInteger(x.balanceBefore) || x.balanceBefore < 0) return fail('INVALID_BALANCE', 'الرصيد قبل الحركة غير صالح.');
+    if (!Number.isSafeInteger(x.balanceBefore)) return fail('INVALID_BALANCE', 'الرصيد قبل الحركة غير صالح.');
     if (!validPeriod(x.season) || x.season < 1 || !validPeriod(x.round)) return fail('INVALID_PERIOD', 'بيانات الموسم أو الجولة غير صالحة.');
     if (typeof x.category !== 'string' || !x.category.trim() || typeof x.description !== 'string' || !x.description.trim()) {
       return fail('INVALID_DETAILS', 'تصنيف الحركة ووصفها مطلوبان.');
     }
     const balanceAfter = x.balanceBefore + x.amount;
-    if (!Number.isSafeInteger(balanceAfter) || balanceAfter < 0) return fail('INVALID_RESULTING_BALANCE', 'الحركة ستؤدي إلى رصيد غير صالح أو سالب.');
+    if (!Number.isSafeInteger(balanceAfter)) return fail('INVALID_RESULTING_BALANCE', 'الحركة تتجاوز النطاق المالي الآمن.');
     const existing = x.history.find(item => item && item.id === x.eventId);
     if (existing) {
       const same = existing.amount === x.amount && existing.balanceBefore === x.balanceBefore &&
@@ -44,6 +44,20 @@
     return { ok: true, duplicate: false, history: [...x.history.map(item => ({ ...item })), transaction], transaction: { ...transaction }, balanceAfter };
   }
 
+  function applyToCareer(career, input) {
+    const state = career || {};
+    const x = input || {};
+    if (!Number.isSafeInteger(state.budget)) return fail('INVALID_CAREER_BUDGET', 'ميزانية المسيرة غير صالحة.');
+    if (!Array.isArray(state.financeHistory)) state.financeHistory = [];
+    const existing = state.financeHistory.find(item => item && item.id === x.eventId);
+    if (existing) return { ok: true, duplicate: true, transaction: { ...existing }, balanceAfter: state.budget };
+    const result = recordTransaction({ ...x, history: state.financeHistory, balanceBefore: state.budget });
+    if (!result.ok) return result;
+    state.financeHistory = result.history;
+    state.budget = result.balanceAfter;
+    return { ok: true, duplicate: false, transaction: result.transaction, balanceAfter: result.balanceAfter };
+  }
+
   function summarize(history, season) {
     if (!Array.isArray(history) || !Number.isInteger(season) || season < 1) return fail('INVALID_SUMMARY_INPUT', 'بيانات ملخص الموسم غير صالحة.');
     const entries = history.filter(item => item && item.season === season);
@@ -53,5 +67,5 @@
     return { ok: true, season, count: entries.length, income, expenses, net: income - expenses, entries: entries.map(item => ({ ...item })) };
   }
 
-  return Object.freeze({ recordTransaction, summarize });
+  return Object.freeze({ recordTransaction, applyToCareer, summarize });
 });
