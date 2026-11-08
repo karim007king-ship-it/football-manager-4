@@ -84,6 +84,12 @@ test('loan rejects invalid parties, duplicate active loan and club loan limit', 
   assert.equal(Transfers.validateLoan({ ...base, loans: many }).code, 'LOAN_LIMIT_REACHED');
 });
 
+test('loan cannot outlast the player's remaining contract', () => {
+  const players = roster().map(p => p.id === '2-8' ? { ...p, cy: 1 } : p);
+  const input = { players, loans: [], playerId: '2-8', fromClubId: 2, toClubId: 1, season: 1, durationSeasons: 2, loanFee: 0, wageSharePct: 50 };
+  assert.equal(Transfers.validateLoan(input).code, 'CONTRACT_TOO_SHORT');
+});
+
 test('loan protects both clubs roster and goalkeeper minimums', () => {
   const players = roster().filter(p => p.clubId !== 2 || p.id !== '2-0');
   const base = { players, loans: [], playerId: '2-1', fromClubId: 2, toClubId: 1, season: 1, durationSeasons: 1, loanFee: 0, wageSharePct: 50 };
