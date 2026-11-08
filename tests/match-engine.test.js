@@ -256,6 +256,7 @@ test('clearance second balls are contested only under nearby pressure and can be
  defending.players.filter(p=>p.id!==defender.id&&p.id!==outlet.id).forEach(p=>{p.x=95;p.y=50;});
  outlet.x=55;outlet.y=32;
  const opponent=retained.teams[0].players.find(p=>p.role==='ST');
+ retained.teams[0].players.filter(p=>p.id!==opponent.id).forEach(p=>{p.x=8;p.y=50;});
  opponent.x=61;opponent.y=36;
  const event=resolveDefensiveRecovery(retained,defending,defender,0,()=>0);
  assert.equal(event.type,'clearance');
@@ -271,6 +272,7 @@ test('clearance second balls are contested only under nearby pressure and can be
  away.players.filter(p=>p.id!==awayDefender.id&&p.id!==awayOutlet.id).forEach(p=>{p.x=95;p.y=50;});
  awayOutlet.x=55;awayOutlet.y=32;
  const pressing=lost.teams[0].players.find(p=>p.role==='ST');
+ lost.teams[0].players.filter(p=>p.id!==pressing.id).forEach(p=>{p.x=8;p.y=50;});
  pressing.x=55;pressing.y=32;
  const lostEvent=resolveDefensiveRecovery(lost,away,awayDefender,0,()=>0);
  assert.equal(lostEvent.type,'clearance');
