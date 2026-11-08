@@ -180,7 +180,7 @@ test('finance screen loads the isolated planner and exposes a non-mutating decis
 });
 
 test('contracts page includes weekly training in operating commitment totals', () => {
-  assert.match(html, /trainingWeekly=\\(INT\\[TR\\(\\)\\.lv\\]\\|\\|INT\\[1\\]\\)\\.c,weeklyCommitments=tot\\+academyWeekly\\+stadiumWeekly\\+trainingWeekly/);
+  assert.match(html, /trainingWeekly=\(INT\[TR\(\)\.lv\]\|\|INT\[1\]\)\.c,weeklyCommitments=tot\+academyWeekly\+stadiumWeekly\+trainingWeekly/);
   assert.match(html, /التدريب \/ أسبوع/);
 });
 
