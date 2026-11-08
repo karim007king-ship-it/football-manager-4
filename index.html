@@ -753,7 +753,7 @@ function buy(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ الل�
   if(!result.ok)return transferError(result);
   G.players=result.players;G.budget=result.budget;let signed=G.players.find(x=>x.id==id);signed.morale=70;save();say('✅ تم شراء '+signed.name+' بعقد 3 مواسم');go('market')}
 function sell(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');let pr=Math.round(val(p)*.85);
-  ask(\`بيع \${p.name} بمبلغ \${money(pr)}؟\`,()=>{let result=FM4TransferSystem.completeSale({players:G.players,playerId:id,sellerClubId:G.uid,buyerClubId:0,fee:pr,budget:G.budget,season:G.season,loans:G.loans||[]});
+  ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{let result=FM4TransferSystem.completeSale({players:G.players,playerId:id,sellerClubId:G.uid,buyerClubId:0,fee:pr,budget:G.budget,season:G.season,loans:G.loans||[]});
     if(!result.ok)return transferError(result);G.players=result.players;G.budget=result.budget;save();say('✅ تم بيع '+p.name);go('squad')})}
 function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem(MATCH_KEY)}catch(e){}G=null;M=null;shadowMonitor=null;busy=false;go('home')};f?d():ask('مسح كل التقدم وبدء لعبة جديدة؟',d)}
 
