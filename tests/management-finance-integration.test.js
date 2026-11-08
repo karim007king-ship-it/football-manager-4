@@ -23,6 +23,7 @@ test('season finalization quarantines invalid loan records and safely completes 
   assert.match(recovery, /const duplicateLoanPlayers=new Set/);
   assert.match(recovery, /status:'suspended'/);
   assert.match(recovery, /suspensionReason:duplicate\?'duplicate-active-player':'invalid-active-loan'/);
+  assert.match(recovery, /!Number\.isInteger\(loan\.endSeason\)\|\|loan\.endSeason<1/);
   assert.match(recovery, /loanPreflight=FM4TransferSystem\.returnLoansAtSeasonEnd/);
   assert.match(recovery, /أُوقف تقسيم راتبه/);
   assert.doesNotMatch(recovery, /return false/);
