@@ -240,7 +240,7 @@ test('live game page loads monitor dependencies before its controller and parses
  const bodyStart=start+marker.length;
  const end=html.indexOf('</script>',bodyStart);
  assert.ok(end>bodyStart,'main game controller script closes');
- new vm.Script('const KEY=\'fm_web_pro_v2\';'+html.slice(bodyStart,end));
+ try{new vm.Script('const KEY=\'fm_web_pro_v2\';'+html.slice(bodyStart,end))}catch(error){throw new Error('Main controller parse diagnostic: '+error.stack)}
  assert.match(html,/initShadowMonitor\(\)/);
  assert.match(html,/advanceShadowMonitor\(\)/);
  assert.match(html,/recordShadowLegacyEvent\('yellow_card'/);
