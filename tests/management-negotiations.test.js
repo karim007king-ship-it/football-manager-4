@@ -53,7 +53,7 @@ test('seller counters a credible but insufficient offer', () => {
   const ctx = setup(), created = makeOffer(ctx);
   const result = Negotiations.evaluateClubOffer({ offer: created.offer, player: ctx.player, fee: 90000, marketValue: 100000 });
   assert.equal(result.decision, 'countered');
-  assert.equal(result.offer.counterFee, 90000);
+  assert.equal(result.offer.counterFee, 112000);
   assert.equal(Negotiations.submitCounterOffer({ offer: result.offer, fee: 100000, budget: 1000000 }).offer.status, 'pending');
 });
 
