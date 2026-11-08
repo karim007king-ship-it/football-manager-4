@@ -29,6 +29,12 @@ test('season finalization quarantines invalid loan records and safely completes 
   assert.doesNotMatch(recovery, /return false/);
 });
 
+test('loan history view tolerates null or malformed entries', () => {
+  assert.match(html, /active=loans\.filter\(x=>x&&x\.status==='active'\)/);
+  assert.match(html, /history=loans\.filter\(x=>!x\|\|x\.status!=='active'\)/);
+  assert.match(html, /x=x&&typeof x==='object'\?x:\{\}/);
+});
+
 test('invalid loan history renders safe club and contract fallbacks', () => {
   assert.match(html, /from\?from\.name:'نادي غير معروف'/);
   assert.match(html, /to\?to\.name:'نادي غير معروف'/);
