@@ -26,7 +26,7 @@ test('final club counter acceptance is wired to the negotiation system', () => {
 });
 
 test('old career saves are migrated with an empty loans collection', () => {
-  assert.match(html, /if\(!Array\.isArray\(G\.loans\)\)G\.loans=\[\]/);
+  assert.match(html, /if\(!Array\.isArray\(G\.loans\)\)\{if\(G\.loans!==undefined&&G\.loans!==null\)G\.loansRecovery=G\.loans;G\.loans=\[\]\}/);
   assert.match(html, /if\(G&&!Array\.isArray\(G\.loans\)\)G\.loans=\[\]/);
 });
 
