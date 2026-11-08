@@ -117,3 +117,86 @@ body.match-live #ctl .cb{font-weight:700;white-space:normal;overflow-wrap:anywhe
  body.match-live #sb .pitch{height:210px!important}
  body.match-live #sb .pitch .pl{width:11px;height:11px}
 }
+
+/* Match screen v3 — scoreboard hierarchy, live telemetry and thumb controls */
+body.match-live #sb .match-live-card{
+ direction:rtl;background:linear-gradient(155deg,#172b3b 0%,#0c1721 78%);
+ border:1px solid #ffffff1c;border-radius:16px;padding:10px;margin:0 0 9px;
+ box-shadow:0 8px 22px #0005;
+}
+body.match-live #sb .match-live-topline{
+ display:flex;align-items:center;justify-content:space-between;gap:7px;
+ min-height:27px;padding:0 38px 7px 0;border-bottom:1px solid #ffffff14;
+ color:#aebfca;font-size:11px;
+}
+body.match-live #sb .match-live-competition{color:#f2c65f;font-weight:800;min-width:0;overflow-wrap:anywhere}
+body.match-live #sb .match-live-clock{
+ direction:ltr;font-variant-numeric:tabular-nums;color:#fff;font-weight:900;
+ background:#0005;border:1px solid #ffffff16;border-radius:8px;padding:4px 8px;white-space:nowrap;
+}
+body.match-live #sb .match-live-state{
+ color:#7fe0a7;background:#1c8a4b24;border:1px solid #48bd7b40;
+ border-radius:20px;padding:4px 8px;white-space:nowrap;font-weight:700;
+}
+body.match-live #sb .match-live-scoreline{
+ display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+ align-items:center;gap:8px;padding:12px 2px 10px;
+}
+body.match-live #sb .match-live-team{
+ min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;
+}
+body.match-live #sb .match-live-team b{
+ max-width:100%;font-size:clamp(11px,3.1vw,14px);line-height:1.35;
+ overflow-wrap:anywhere;
+}
+body.match-live #sb .match-live-team small{font-size:10px;color:#9eb0bd}
+body.match-live #sb .match-live-badge{height:30px;display:flex;align-items:center;justify-content:center}
+body.match-live #sb .match-live-score{
+ min-width:94px;text-align:center;padding:5px 12px;border-radius:12px;
+ background:linear-gradient(145deg,#26394a,#111d28);border:1px solid #ffffff18;
+}
+body.match-live #sb .match-live-score-digits{
+ display:flex;align-items:center;justify-content:center;gap:11px;
+ color:#f5cb62;font-size:clamp(25px,7vw,34px);font-weight:900;
+ font-variant-numeric:tabular-nums;line-height:1.1;
+}
+body.match-live #sb .match-live-score-digits span{color:#8fa2b0;font-size:19px}
+body.match-live #sb .match-live-score small{display:block;color:#b7c4ce;font-size:10px;margin-top:4px}
+body.match-live #sb .match-live-stats{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:2px;
+}
+body.match-live #sb .match-live-stat{
+ min-width:0;text-align:center;padding:7px 3px 6px;border-radius:10px;
+ background:#07121c;border:1px solid #ffffff12;
+}
+body.match-live #sb .match-live-stat small{display:block;color:#a8b9c5;font-size:10px;line-height:1.3}
+body.match-live #sb .match-live-stat b{
+ display:block;margin:4px 0 2px;color:#f5f7f8;font-size:clamp(13px,3.8vw,17px);
+ font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+body.match-live #sb .match-live-stat i{font-style:normal;color:#758b9b;font-size:11px;padding:0 2px}
+body.match-live #sb .match-live-stat span{display:block;color:#778d9c;font-size:8px}
+body.match-live #sb .match-live-tactical-strip{
+ display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;margin-top:8px;
+}
+body.match-live #sb .match-live-tactical-strip span{
+ padding:4px 7px;border-radius:7px;background:#ffffff0c;border:1px solid #ffffff10;
+ color:#c3d0d9;font-size:10px;line-height:1.3;
+}
+body.match-live #sb .snb{top:6px;left:6px}
+body.match-live #ctl{
+ position:sticky;bottom:var(--ui-safe);z-index:15;
+ padding:7px 6px calc(7px + var(--ui-safe));margin:0 0 5px;
+ border:1px solid #ffffff18;border-radius:13px;
+ background:#0b1722eF;backdrop-filter:blur(12px);
+ box-shadow:0 -5px 20px #0005;
+}
+body.match-live #ctl .grid{margin:0}
+@media(max-width:380px){
+ body.match-live #sb .match-live-card{padding:8px}
+ body.match-live #sb .match-live-scoreline{gap:4px}
+ body.match-live #sb .match-live-score{min-width:78px;padding:5px 7px}
+ body.match-live #sb .match-live-team b{font-size:11px}
+ body.match-live #sb .match-live-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.match-live #sb .match-live-stat span{font-size:9px}
+}
