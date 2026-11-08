@@ -29,6 +29,12 @@ test('season finalization quarantines invalid loan records and safely completes 
   assert.doesNotMatch(recovery, /return false/);
 });
 
+test('suspended loan records are visibly distinguished from completed history', () => {
+  assert.match(html, /x\.status==='suspended'\?'loss':'hl'/);
+  assert.match(html, /x\.status==='suspended'\?'معلّقة للمراجعة'/);
+  assert.match(html, /السجلات غير الصالحة تُعلّق للمراجعة/);
+});
+
 test('season finalization is guarded against duplicate execution', () => {
   assert.ok(html.includes("function endSeason(){"));
   assert.ok(html.includes("if(G.round<14||G.lastCompletedSeason===G.season)"));
