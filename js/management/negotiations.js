@@ -16,7 +16,7 @@
   });
   const fail = (code, message) => ({ ok: false, code, message });
   const money = value => Number.isSafeInteger(value) && value >= 0;
-  const round1000 = value => Math.ceil(value / 1000) * 1000;
+  const round1000 = value => Math.ceil(value / 1000 - 1e-10 * Math.max(1, Math.abs(value / 1000))) * 1000;
   const rulesWith = rules => ({ ...RULES, ...(rules || {}) });
 
   function validateOffer(x) {
