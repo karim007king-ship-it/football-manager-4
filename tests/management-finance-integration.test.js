@@ -179,6 +179,11 @@ test('finance screen loads the isolated planner and exposes a non-mutating decis
   assert.match(html, /محاكاة فقط: لم تتغير الميزانية أو المعاملات المسجلة/);
 });
 
+test('contracts page includes weekly training in operating commitment totals', () => {
+  assert.match(html, /trainingWeekly=\\(INT\\[TR\\(\\)\\.lv\\]\\|\\|INT\\[1\\]\\)\\.c,weeklyCommitments=tot\\+academyWeekly\\+stadiumWeekly\\+trainingWeekly/);
+  assert.match(html, /التدريب \/ أسبوع/);
+});
+
 test('finance forecast keeps player wages, academy and stadium commitments separate', () => {
   assert.match(html, /weeklyAcademy=ACW\[AC\(\)\.lv\]\|\|0,weeklyStadium=SDU\[SD\(\)\.cap\]\|\|0,weeklyTraining=\(INT\[TR\(\)\.lv\]\|\|INT\[1\]\)\.c/);
   assert.match(html, /weeklyCommitments:\{wages:weeklyWages,academy:weeklyAcademy,stadium:weeklyStadium,other:weeklyTraining\}/);
