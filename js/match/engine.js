@@ -5,7 +5,8 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const keeper=r=>/^(GK|G|GOALKEEPER)$/i.test(String(r||''));
 const aerialRoleBoost=r=>{r=String(r||'').toUpperCase();if(/^(CB|DF|DEF)$/.test(r))return 8;if(/^(ST|CF|FW|FWD)$/.test(r))return 6;if(/^(LB|RB|LWB|RWB|DM|CDM)$/.test(r))return 4;if(/^(LW|RW|LM|RM)$/.test(r))return 2;return 0;};
-const aerialContestSkill=p=>(Number(p.aerial??50)-50)*.025+Number(p.pace??50)*.006;
+const finiteNumber=(value,fallback)=>{if(value===null||value===undefined||(typeof value==='string'&&!value.trim()))return fallback;const n=Number(value);return Number.isFinite(n)?n:fallback;};
+const aerialContestSkill=p=>(finiteNumber(p?.aerial,50)-50)*.025+finiteNumber(p?.pace,50)*.006;
 const line=r=>{r=String(r||'').toUpperCase();if(/^(GK|G|GOALKEEPER)$/.test(r))return .07;if(/^(CB|LB|RB|LWB|RWB|DF|DEF)/.test(r))return .27;if(/^(DM|CDM|CM|LM|RM|AM|CAM|MF|MID)/.test(r))return .51;if(/^(LW|RW|ST|CF|FW|FWD)/.test(r))return .75;return .5;};
 function makeRandom(seed,allowZero=false){const n=Number(seed)>>>0;let s=allowZero?n:(n||1);const next=()=>{s=(1664525*s+1013904223)>>>0;next.state=s;return s/4294967296;};next.state=s;return next;}
 function restoreRandom(state){return makeRandom(Number(state)>>>0,true);}
@@ -18,14 +19,14 @@ function createMatch({teams,seed=1}={}){
    const role=p.role||(i===0?'GK':i<5?'DF':i<9?'MF':'FW'),lx=line(role);
    const x=clamp(Number(p.x??(tid===0?lx*100:100-lx*100)),2,98),y=clamp(Number(p.y??(8+(i%9)*10.5)),2,98);
    const isKeeper=keeper(role),fallbackGk=Number(p.goalkeeping??60);
-   const aerial=clamp(Number(p.aerial??(Number(p.defending??50)+aerialRoleBoost(role))),1,100);
+   const aerial=clamp(finiteNumber(p.aerial,finiteNumber(p.defending,50)+aerialRoleBoost(role)),1,100);
    const gkReflexes=clamp(Number(p.gkReflexes??fallbackGk),1,100);
    const gkHandling=clamp(Number(p.gkHandling??fallbackGk),1,100);
    const gkPositioning=clamp(Number(p.gkPositioning??fallbackGk),1,100);
    const gkOneOnOne=clamp(Number(p.gkOneOnOne??fallbackGk),1,100);
    const gkDistribution=clamp(Number(p.gkDistribution??fallbackGk),1,100);
    const gkComposite=gkReflexes*.28+gkHandling*.20+gkPositioning*.22+gkOneOnOne*.20+gkDistribution*.10;
-   return {id:String(p.id??i),name:String(p.name||'Player'),role,slotIndex:Number(p.slotIndex??i),pace:clamp(Number(p.pace??60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),aerial,goalkeeping:clamp(Number(p.goalkeeping??(isKeeper?gkComposite:35)),1,100),...(isKeeper?{gkReflexes,gkHandling,gkPositioning,gkOneOnOne,gkDistribution}:{}),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
+   return {id:String(p.id??i),name:String(p.name||'Player'),role,slotIndex:Number(p.slotIndex??i),pace:clamp(finiteNumber(p.pace,60),1,100),passing:clamp(Number(p.passing??60),1,100),shooting:clamp(Number(p.shooting??50),1,100),defending:clamp(Number(p.defending??50),1,100),aerial,goalkeeping:clamp(Number(p.goalkeeping??(isKeeper?gkComposite:35)),1,100),...(isKeeper?{gkReflexes,gkHandling,gkPositioning,gkOneOnOne,gkDistribution}:{}),stamina:clamp(Number(p.stamina??100),0,100),x,y,baseX:x,baseY:y,active:p.active!==false,direction:dir};
   })};
  });
  const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
