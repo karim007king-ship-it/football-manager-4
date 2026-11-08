@@ -784,7 +784,7 @@ function go(t){
 
 function setT(t){G.tactic=t;save();go('tactics')}
 function setF(f){G.form=f;save();go('tactics')}
-function sign(i){if(G.sponsor)return;let s=SP[i];if(!financePost('s'+G.season+':sponsor-signing:'+i,'sponsor-signing-income','مكافأة توقيع عقد الرعاية',s.b))return say('❌ تعذّر تسجيل مكافأة الرعاية.');G.sponsor={n:s.n,w:s.w,k:s.k};save();go('home')}
+function sign(i){if(G.sponsor)return;let s=SP[i];if(!financePost('s'+G.season+':r'+G.round+':sponsor-signing:'+i,'sponsor-signing-income','مكافأة توقيع عقد الرعاية',s.b))return say('❌ تعذّر تسجيل مكافأة الرعاية.');G.sponsor={n:s.n,w:s.w,k:s.k};save();go('home')}
 function transferError(result){return say('❌ '+(result&&result.message?result.message:'تعذّر تنفيذ الصفقة.'))}
 function buy(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
   let result=FM4TransferSystem.completePurchase({players:G.players,playerId:id,buyerClubId:G.uid,sellerClubId:p.clubId,fee:val(p),budget:G.budget,contractYears:3,weeklyWage:wageOf(p),season:G.season,loans:G.loans||[]});
@@ -925,7 +925,7 @@ function confirmLoan(id,toClubId,terms){
   ask('إعارة '+uiEsc(p.name)+' إلى '+uiEsc(club.name)+'؟<br>المدة: '+terms.durationSeasons+' موسم<br>رسوم الإعارة: '+money(terms.fee)+'<br>نسبة الراتب المسجلة في الاتفاق '+terms.wageSharePct+'%.',()=>{
     const result=FM4TransferSystem.createLoan({players:G.players,loans:G.loans||[],playerId:id,fromClubId:G.uid,toClubId,season:G.season,durationSeasons:terms.durationSeasons,loanFee:terms.fee,wageSharePct:terms.wageSharePct});
     if(!result.ok)return transferError(result);
-    if(terms.fee&&!financePost('s'+G.season+':loan-out:'+id,'loan-income','رسوم إعارة اللاعب '+p.name,terms.fee))return say('❌ تعذّر تسجيل رسوم الإعارة.');G.players=result.players;G.loans=result.loans;
+    if(terms.fee&&!financePost('s'+G.season+':r'+(G.round+1)+':loan-out:'+id,'loan-income','رسوم إعارة اللاعب '+p.name,terms.fee))return say('❌ تعذّر تسجيل رسوم الإعارة.');G.players=result.players;G.loans=result.loans;
     G.news.push('🔁 تمت إعارة '+p.name+' إلى '+club.name+' لمدة '+terms.durationSeasons+' موسم');
     save();say('✅ تمت الإعارة بنجاح.');go('loans');
   });
@@ -958,7 +958,7 @@ function confirmLoanIn(id,fromClubId,terms){
   ask('استعارة '+uiEsc(p.name)+' من '+uiEsc(C(fromClubId).name)+'؟<br>المدة: '+terms.durationSeasons+' موسم<br>الرسوم: '+money(terms.fee)+'<br>نسبة الراتب المسجلة: '+terms.wageSharePct+'%.',()=>{
     const result=FM4TransferSystem.createLoan({players:G.players,loans:G.loans||[],playerId:id,fromClubId,toClubId:G.uid,season:G.season,durationSeasons:terms.durationSeasons,loanFee:terms.fee,wageSharePct:terms.wageSharePct});
     if(!result.ok)return transferError(result);
-    if(terms.fee&&!financePost('s'+G.season+':loan-in:'+id,'loan-expense','رسوم استعارة اللاعب '+p.name,-terms.fee))return say('❌ تعذّر تسجيل رسوم الاستعارة.');G.players=result.players;G.loans=result.loans;
+    if(terms.fee&&!financePost('s'+G.season+':r'+(G.round+1)+':loan-in:'+id,'loan-expense','رسوم استعارة اللاعب '+p.name,-terms.fee))return say('❌ تعذّر تسجيل رسوم الاستعارة.');G.players=result.players;G.loans=result.loans;
     G.news.push('🔁 استعرت '+p.name+' من '+C(fromClubId).name+' لمدة '+terms.durationSeasons+' موسم');
     save();say('✅ تمت استعارة اللاعب وإضافته إلى فريقك.');go('loans');
   });
