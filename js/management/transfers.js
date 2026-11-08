@@ -198,6 +198,43 @@
     return { ok: true, players, loans, returnedPlayerIds: [...due] };
   }
 
+  function calculateWeeklyWageCommitment(input) {
+    const x = input || {};
+    if (!Array.isArray(x.players) || !Array.isArray(x.loans) || !Number.isInteger(x.clubId) || typeof x.wageForPlayer !== 'function') {
+      return fail('INVALID_WAGE_INPUT', 'بيانات حساب رواتب الإعارات غير مكتملة.');
+    }
+    const activeLoans = x.loans.filter(loan => loan && loan.status === 'active');
+    const byPlayer = new Map();
+    for (const loan of activeLoans) {
+      if (loan.playerId == null || !Number.isInteger(loan.fromClubId) || loan.fromClubId <= 0 ||
+          !Number.isInteger(loan.toClubId) || loan.toClubId <= 0 || loan.fromClubId === loan.toClubId ||
+          !Number.isInteger(loan.wageSharePct) || loan.wageSharePct < 0 || loan.wageSharePct > 100) {
+        return fail('INVALID_ACTIVE_LOAN', 'سجل إعارة نشط غير صالح لحساب الرواتب.');
+      }
+      if (byPlayer.has(loan.playerId)) return fail('DUPLICATE_ACTIVE_PLAYER_LOAN', 'يوجد أكثر من سجل إعارة نشط للاعب نفسه.');
+      byPlayer.set(loan.playerId, loan);
+    }
+    let amount = 0;
+    for (const player of x.players) {
+      const loan = byPlayer.get(player.id);
+      let sharePct = 100;
+      if (loan) {
+        if (player.clubId !== loan.toClubId) return fail('LOAN_PLAYER_CLUB_MISMATCH', 'النادي المسجل للاعب لا يطابق النادي المستعير.');
+        if (x.clubId === loan.toClubId) sharePct = loan.wageSharePct;
+        else if (x.clubId === loan.fromClubId) sharePct = 100 - loan.wageSharePct;
+        else continue;
+      } else if (player.clubId !== x.clubId) {
+        continue;
+      }
+      const wage = x.wageForPlayer(player);
+      if (!validMoney(wage)) return fail('INVALID_PLAYER_WAGE', 'راتب أحد اللاعبين غير صالح.');
+      const portion = Math.round(wage * sharePct / 100);
+      if (!Number.isSafeInteger(amount + portion)) return fail('WAGE_TOTAL_OVERFLOW', 'إجمالي الرواتب يتجاوز النطاق المالي المسموح.');
+      amount += portion;
+    }
+    return { ok: true, amount };
+  }
+
   return Object.freeze({
     DEFAULT_RULES,
     validatePurchase,
@@ -206,6 +243,7 @@
     completeSale,
     validateLoan,
     createLoan,
-    returnLoansAtSeasonEnd
+    returnLoansAtSeasonEnd,
+    calculateWeeklyWageCommitment
   });
 });
