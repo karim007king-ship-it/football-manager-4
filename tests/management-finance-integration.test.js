@@ -83,7 +83,8 @@ test('finance dashboard is reachable and displays real ledger metrics and transa
 
 test('finance dashboard filters its displayed totals and transactions by season and category', () => {
   assert.match(html, /history\.filter\(x=>\(selectedSeason==='all'\|\|x\.season===selectedSeason\)&&\(categoryFilter==='all'\|\|x\.category===categoryFilter\)\)/);
-  assert.match(html, /const summary=entries\.reduce/);
+  assert.match(html, /const summary=categoryFilter==='all'&&selectedSeason!=='all'\?FM4FinanceLedger\.summarize/);
+  assert.match(html, /entries\.reduce\(\(acc,x\)=>/);
   assert.match(html, /entries\.map\(x=>/);
 });
 
