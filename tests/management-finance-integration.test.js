@@ -149,3 +149,18 @@ test('finance reports compare income, expenses and net movement across seasons',
   assert.match(html, /رصيد بداية الموسم/);
   assert.match(html, /رصيد نهاية الموسم/);
 });
+
+
+test('career changes use route-specific sequential transaction IDs and reject selecting the current club', () => {
+  assert.match(html, /if\(cid===G\.uid\)return say\('أنت تعمل بالفعل مع هذا النادي\.'\)/);
+  assert.match(html, /routePrefix='s'\+G\.season\+'\:career-change\:'\+G\.round\+'\:from\:'\+oldId\+'\:to\:'\+cid/);
+  assert.match(html, /routeCount=\(G\.financeHistory\|\|\[\]\)\.filter\(x=>x&&typeof x\.id==='string'&&x\.id\.startsWith\(routePrefix\+'\:n'\)\)\.length/);
+  assert.match(html, /financePost\(routePrefix\+'\:n'\+routeCount,'career-budget-adjustment'/);
+});
+
+test('finance dashboard identifies the largest income and expense categories', () => {
+  assert.match(html, /const topIncome=categoryReport\.filter\(x=>x\[1\]\.income>0\)/);
+  assert.match(html, /const topExpense=categoryReport\.filter\(x=>x\[1\]\.expenses>0\)/);
+  assert.match(html, /أكبر مصدر دخل/);
+  assert.match(html, /أكبر بند مصروف/);
+});
