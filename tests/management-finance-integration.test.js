@@ -105,3 +105,8 @@ test('negotiated transfer fee and signing bonus are posted atomically before pla
   assert.match(html, /if\(!bonusEntry\.ok\|\|bonusEntry\.duplicate\)return say/);
   assert.match(html, /G\.budget=financeDraft\.budget;G\.financeHistory=financeDraft\.financeHistory;G\.players=result\.players/);
 });
+
+
+test('player sale commits roster changes only after ledger income is recorded', () => {
+  assert.match(html, /if\(!result\.ok\)return transferError\(result\);if\(!financePost\([^;]*transfer-sale[^;]*\)\)return say\([^;]*\);G\.players=result\.players/);
+});
