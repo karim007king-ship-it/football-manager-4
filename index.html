@@ -241,7 +241,7 @@ function trainWeek(){let t=TR(),I=INT[t.lv],ups=[];if(I.c)financePost('s'+G.seas
   log(`🏋️ التدريب (${I.n})${I.c?' -'+money(I.c):''}${ups.length?' | 📈 تطور: '+ups.join('، '):''}`,'log-goal')}
 function trSet(k,v){TR()[k]=v;save();go('train')}
 function trInd(id){let T=TR();if(T.ind.includes(id))T.ind=T.ind.filter(x=>x!=id);else if(T.ind.length>=3)return say('الحد الأقصى 3 لاعبين للتدريب الفردي.');else T.ind.push(id);save();go('train')}
-function upFac(){let T=TR(),c=FAC[T.fac];if(G.budget<c)return say('❌ ميزانيتك لا تكفي!');G.budget-=c;T.fac++;save();go('train')}
+function upFac(){let T=TR(),c=FAC[T.fac];if(G.budget<c)return say('❌ ميزانيتك لا تكفي!');if(!financePost('s'+G.season+':training-facility:'+T.fac,'facility-investment','تطوير مرافق التدريب',-c))return say('❌ تعذّر تسجيل تكلفة التطوير.');T.fac++;save();go('train')}
 function genObj(){let U=G.uid,r=G.clubs.filter(c=>c.dv==C(U).dv).map(c=>({id:c.id,pw:teamS(c.id).pw})).sort((a,b)=>b.pw-a.pw).findIndex(x=>x.id==U)+1;
   let yg=Math.max(0,...G.players.filter(p=>p.clubId==U&&p.age<=22).map(p=>p.ovr));
   let ex=[{k:'goals',t:cl(17-r,11,16),rw:150000,cf:3},{k:'cs',t:r<=3?5:4,rw:150000,cf:3},{k:'streak',t:r<=3?6:5,rw:180000,cf:4},
@@ -255,7 +255,7 @@ function met(o){let v=objCur(o);return o.k=='rank'?v<=o.t:v>=o.t}
 function objRows(){return (G.obj||[]).map(o=>{let v=objCur(o),t=o.k=='rank'?'المركز '+v:o.k=='budget'?money(v):v;
   return `<div class="row"><span>${o.k=='rank'?'📍':met(o)?'✅':'⏳'} ${otxt(o)}<br><span class="dim">الحالي: ${t} • المكافأة ${money(o.rw)} + ${o.cf}% ثقة${o.k=='rank'?' • الفشل -10% ثقة':''}</span></span></div>`}).join('')}
 function objEnd(){let h='<br><br><b>🎯 أهداف الإدارة</b>';
-  (G.obj||[]).forEach(o=>{let ok=met(o);if(ok){G.budget+=o.rw;G.conf=cl(G.conf+o.cf,0,100)}else if(o.k=='rank')G.conf=cl(G.conf-10,0,100);
+  (G.obj||[]).forEach((o,i)=>{let ok=met(o);if(ok){if(financePost('s'+G.season+':management-objective:'+i,'management-prize','مكافأة هدف الإدارة: '+otxt(o),o.rw))G.conf=cl(G.conf+o.cf,0,100)}else if(o.k=='rank')G.conf=cl(G.conf-10,0,100);
     h+=`<br>${ok?'✅':'❌'} ${otxt(o)}${ok?' (+'+money(o.rw)+')':''}`});return h}
 const CN=['ربع النهائي','نصف النهائي','النهائي'];
 function newCup(){let i=G.clubs.filter(c=>c.dv==C(G.uid).dv).map(c=>c.id).sort(()=>Math.random()-.5);G.cup={s:0,pairs:[[i[0],i[1]],[i[2],i[3]],[i[4],i[5]],[i[6],i[7]]],lg:[],due:false,done:false}}
@@ -266,8 +266,8 @@ function cupAdvance(ur){let c=G.cup,U=G.uid,ws=[];
   c.pairs.forEach(p=>{if(ur&&p.includes(U)){ws.push(ur.w?U:(p[0]==U?p[1]:p[0]));c.lg.push(CN[c.s]+': '+ur.l)}else{let r=simCup(p[0],p[1]);ws.push(r.w);c.lg.push(CN[c.s]+': '+r.l)}});
   c.due=false;c.s++;
   if(c.s>=3){c.done=true;c.champ=ws[0];let inF=c.pairs[0].includes(U);
-    if(ws[0]==U){G.budget+=600000;G.conf=cl(G.conf+15,0,100);c.msg='🏆 توّجت بكأس تونس! +600k و+15% ثقة'}
-    else{if(inF){G.budget+=150000;c.msg='🥈 وصيف الكأس +150k'}else c.msg='بطل الكأس: '+C(ws[0]).name}
+    if(ws[0]==U){financePost('s'+G.season+':cup:champion','cup-prize','مكافأة الفوز بكأس تونس',600000);G.conf=cl(G.conf+15,0,100);c.msg='🏆 توّجت بكأس تونس! +600k و+15% ثقة'}
+    else{if(inF){financePost('s'+G.season+':cup:runner-up','cup-prize','مكافأة وصافة كأس تونس',150000);c.msg='🥈 وصيف الكأس +150k'}else c.msg='بطل الكأس: '+C(ws[0]).name}
     G.news.push(c.msg)}
   else{c.pairs=[];for(let i=0;i<ws.length;i+=2)c.pairs.push([ws[i],ws[i+1]])}}
 function cupCheck(){let c=G.cup;if(!c||c.done)return;
@@ -773,7 +773,7 @@ function transferError(result){return say('❌ '+(result&&result.message?result.
 function buy(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
   let result=FM4TransferSystem.completePurchase({players:G.players,playerId:id,buyerClubId:G.uid,sellerClubId:p.clubId,fee:val(p),budget:G.budget,contractYears:3,weeklyWage:wageOf(p),season:G.season,loans:G.loans||[]});
   if(!result.ok)return transferError(result);
-  G.players=result.players;G.budget=result.budget;let signed=G.players.find(x=>x.id==id);signed.morale=70;save();say('✅ تم شراء '+signed.name+' بعقد 3 مواسم');go('market')}
+  G.players=result.players;if(!financePost('s'+G.season+':r'+(G.round+1)+':transfer-buy:'+id,'transfer-expense','شراء اللاعب '+p.name,-val(p)))return say('❌ تعذّر تسجيل قيمة الانتقال.');let signed=G.players.find(x=>x.id==id);signed.morale=70;save();say('✅ تم شراء '+signed.name+' بعقد 3 مواسم');go('market')}
 function negotiationRows(){
   const active=(G.negotiations||[]).filter(n=>['countered','club_accepted','player_countered'].includes(n.status)).slice(-6).reverse();
   return active.length?'<h3 class="title">مفاوضات تحتاج متابعة</h3>'+active.map(n=>{const p=G.players.find(x=>x.id===n.playerId);return p?'<div class="row"><span>'+uiEsc(p.name)+'<br><span class="dim">'+(n.status==='countered'?'عرض مضاد من النادي':n.status==='club_accepted'?'موافقة النادي • بانتظار عقد اللاعب':'طلب راتب مضاد من اللاعب')+'</span></span><button class="mini" onclick="resumeNegotiation(\''+uiEsc(n.id)+'\')">متابعة</button></div>':''}).join(''):'';
@@ -878,14 +878,14 @@ function finalizeNegotiatedTransfer(id){
   if(!offer)return say('❌ انتهت صلاحية المفاوضات.');
   const result=FM4NegotiationSystem.finalizeDeal({offer,players:G.players,budget:G.budget,transferSystem:FM4TransferSystem,loans:G.loans||[]});
   if(!result.ok)return transferError(result);
-  G.players=result.players;G.budget=result.budget;
+  G.players=result.players;if(!financePost('s'+G.season+':negotiation:'+id+':fee','transfer-expense','قيمة انتقال '+G.players.find(x=>x.id===offer.playerId).name,-offer.fee))return say('❌ تعذّر تسجيل قيمة الانتقال.');if(offer.signingBonus&&!financePost('s'+G.season+':negotiation:'+id+':bonus','signing-bonus','مكافأة توقيع '+G.players.find(x=>x.id===offer.playerId).name,-offer.signingBonus))return say('❌ تعذّر تسجيل مكافأة التوقيع.');
   G.negotiations=G.negotiations.map(x=>x.id===id?result.offer:x);
   G.news.push('🤝 انضم '+G.players.find(x=>x.id===offer.playerId).name+' بعد مفاوضات ناجحة مقابل '+money(offer.fee));
   save();say('✅ اكتملت الصفقة: '+G.players.find(x=>x.id===offer.playerId).name+' • راتب '+money(offer.weeklyWage)+' أسبوعياً • مكافأة توقيع '+money(offer.signingBonus||0));go('squad');
 }
 function sell(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');let pr=Math.round(val(p)*.85);
   ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{let result=FM4TransferSystem.completeSale({players:G.players,playerId:id,sellerClubId:G.uid,buyerClubId:0,fee:pr,budget:G.budget,season:G.season,loans:G.loans||[]});
-    if(!result.ok)return transferError(result);G.players=result.players;G.budget=result.budget;save();say('✅ تم بيع '+p.name);go('squad')})}
+    if(!result.ok)return transferError(result);G.players=result.players;if(!financePost('s'+G.season+':r'+(G.round+1)+':transfer-sale:'+id,'transfer-income','بيع اللاعب '+p.name,pr))return say('❌ تعذّر تسجيل دخل البيع.');save();say('✅ تم بيع '+p.name);go('squad')})}
 function loanPlayer(id){
   const p=G.players.find(x=>x.id==id&&x.clubId==G.uid);if(!p)return say('❌ اللاعب غير موجود في فريقك.');
   if((G.loans||[]).some(x=>x.playerId===id&&x.status==='active'))return say('❌ اللاعب مرتبط بإعارة نشطة بالفعل.');
