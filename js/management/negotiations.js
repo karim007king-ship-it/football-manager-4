@@ -203,6 +203,34 @@
     };
   }
 
+  function validateRenewal(input) {
+    const x = input || {};
+    const player = x.player;
+    if (!player || player.id === undefined || player.clubId !== x.clubId) return fail('PLAYER_NOT_FOUND', 'اللاعب لم يعد ضمن ناديك.');
+    if (!Number.isInteger(x.currentYears) || x.currentYears < 0 || x.currentYears > RULES.maxContractYears) return fail('INVALID_CURRENT_CONTRACT', 'مدة العقد الحالية غير صالحة.');
+    if (!Number.isInteger(x.addYears) || x.addYears < 1 || x.addYears > 3) return fail('INVALID_CONTRACT_LENGTH', 'مدة التمديد يجب أن تكون بين موسم وثلاثة مواسم.');
+    if (!money(x.weeklyWage) || !money(x.signingBonus)) return fail('INVALID_CONTRACT_MONEY', 'الراتب أو مكافأة التوقيع غير صالحة.');
+    if (!money(x.budget)) return fail('INVALID_BUDGET', 'ميزانية النادي غير صالحة.');
+    if (!Number.isSafeInteger(x.currentYears + x.addYears)) return fail('INVALID_CONTRACT_LENGTH', 'مدة العقد الناتجة غير صالحة.');
+    const contractYears = Math.min(RULES.maxContractYears, x.currentYears + x.addYears);
+    if (contractYears <= x.currentYears) return fail('CONTRACT_AT_MAXIMUM', 'بلغ عقد اللاعب الحد الأقصى المسموح.');
+    if (!Number.isSafeInteger(x.weeklyWage + x.signingBonus)) return fail('BUDGET_OVERFLOW', 'إجمالي شروط العقد يتجاوز النطاق المالي المسموح.');
+    if (x.budget < x.signingBonus) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي لمكافأة التوقيع.');
+    return { ok: true, player, contractYears, weeklyWage: x.weeklyWage, signingBonus: x.signingBonus };
+  }
+
+  function completeRenewal(input) {
+    const checked = validateRenewal(input);
+    if (!checked.ok) return checked;
+    return {
+      ok: true,
+      player: { ...checked.player, cy: checked.contractYears, wg: checked.weeklyWage, rf: 0 },
+      budget: input.budget - checked.signingBonus,
+      signingBonus: checked.signingBonus,
+      contractYears: checked.contractYears
+    };
+  }
+
   return Object.freeze({
     RULES,
     createOffer,
@@ -212,6 +240,8 @@
     evaluatePlayerContract,
     acceptPlayerCounter,
     expireAtSeasonEnd,
+    validateRenewal,
+    completeRenewal,
     finalizeDeal
   });
 });
