@@ -52,8 +52,8 @@ test('sponsor signing, renewals, player loans and outgoing player sales use the 
 
 test('player purchases, negotiated transfers and player sales are posted through the finance ledger', () => {
   assert.match(html, /:transfer-buy:'\+id,'transfer-expense'/);
-  assert.match(html, /:negotiation:'\+id\+':fee','transfer-expense'/);
-  assert.match(html, /:negotiation:'\+id\+':bonus','signing-bonus'/);
+  assert.match(html, /:negotiation:'\\+id\\+':fee',season:G\\.season,round:G\\.round\\+1,category:'transfer-expense'/);
+  assert.match(html, /:negotiation:'\\+id\\+':bonus',season:G\\.season,round:G\\.round\\+1,category:'signing-bonus'/);
   assert.match(html, /:transfer-sale:'\+id,'transfer-income'/);
   assert.doesNotMatch(html, /G\.players=result\.players;G\.budget=result\.budget;let signed=/);
 });
@@ -97,7 +97,7 @@ test('all remaining non-initial budget changes are represented in the ledger', (
 
 test('failed ledger posting cannot complete offer sales or apply training gains', () => {
   assert.match(html, /if\(!p\|\|!financePost\([^;]*offer-sale/);
-  assert.match(html, /if\(I\.c&&!financePost\([^;]*return;\}/);
+  assert.match(html, /if\\(I\\.c&&!financePost\\([^;]*return;\\}/);
 });
 
 test('negotiated transfer fee and signing bonus are posted atomically before player mutation', () => {
