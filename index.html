@@ -200,6 +200,7 @@ td .bdg{margin-left:6px}.sbm .bdg{margin:0 4px}
   <button class="nav-btn" data-tab="tactics" onclick="go('tactics')"><span>🎯</span>التكتيك</button>
   <button class="nav-btn" data-tab="table" onclick="go('table')"><span>🏆</span>الترتيب</button>
   <button class="nav-btn" data-tab="market" onclick="go('market')"><span>💼</span>السوق</button>
+  <button class="nav-btn" data-tab="finance" onclick="go('finance')"><span>💰</span>المالية</button>
 </div>
 <div id="modal"><div id="mbox"><div id="mtxt"></div><div class="btns"><button id="myes" style="background:var(--pr)">حسناً</button><button id="mno" type="button" style="background:#555">رجوع</button></div></div></div>
 
@@ -393,7 +394,7 @@ function jobsHtml(forced){let co=CO(),h=forced?`<h2 style="color:var(--red);text
   if(!(G.jobs||[]).length)h+='<div class="row dim">لا عروض حالياً</div>';
   if(forced)h+='<button class="action-btn" style="background:#555" onclick="resetGame(true)">بدء لعبة جديدة</button>';return h}
 function jobRow(){let n=(G.jobs||[]).length;return n&&!G.fired?`<div class="row"><span>🧳 عروض تدريب:</span><span><b class="hl">${n}</b> <button class="mini" onclick="go('jobs')">عرض</button></span></div>`:''}
-function takeJob(cid){let nc=C(cid),old=C(G.uid).name;G.players=G.players.filter(p=>p.clubId!=-1);G.uid=cid;G.fired=false;G.jobs=[];G.of=[];G.sponsor=null;G.conf=60;G.budget=nc.dv==1?7000000:3500000;
+function takeJob(cid){let nc=C(cid),old=C(G.uid).name,newBudget=nc.dv==1?7000000:3500000,adjustment=newBudget-G.budget;if(adjustment&&!financePost('s'+G.season+':career-change:'+G.round+':club:'+cid,'career-budget-adjustment','تسوية ميزانية عند الانتقال من '+old+' إلى '+nc.name,adjustment))return say('تعذّر تسجيل تسوية الميزانية.');G.players=G.players.filter(p=>p.clubId!=-1);G.uid=cid;G.fired=false;G.jobs=[];G.of=[];G.sponsor=null;G.conf=60;
   G.sd={cap:nc.dv==1?1:0,tp:1,fans:nc.dv==1?55:45,mk:0};G.ac={lv:0};for(let i=0;i<3;i++)G.players.push(mkProspect(0));G.tr={lv:1,focus:'',ind:[],fac:0};G.st={cs:0,best:0,cur:0};
   G.players.forEach(p=>{if(p.clubId==cid){p.cy=R(1,4);p.wg=wageOf(p);p.morale=70;p.inj=0}});
   newCup();genObj();G.news.push(`🧳 تركتَ ${old} وتعاقدت مع ${nc.name}`);save();go('home')}
@@ -516,6 +517,19 @@ let saveWarn=false;
 function save(){try{if(G&&!Array.isArray(G.loans))G.loans=[];if(G&&!Array.isArray(G.negotiations))G.negotiations=[];if(G&&!Array.isArray(G.financeHistory))G.financeHistory=[];localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
 function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2){G=o;if(!Array.isArray(G.loans))G.loans=[];if(!Array.isArray(G.negotiations))G.negotiations=[];if(!Array.isArray(G.financeHistory))G.financeHistory=[]}}}catch(e){}}
 function financePost(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok){console.error('FM4 finance ledger:',result.code,result.message);return false}return !result.duplicate}
+function financeHtml(seasonFilter='current',categoryFilter='all'){
+  const history=Array.isArray(G.financeHistory)?G.financeHistory:[],seasons=[...new Set(history.map(x=>x.season).filter(Number.isInteger))].sort((a,b)=>b-a);
+  if(!seasons.includes(G.season))seasons.unshift(G.season);
+  const selectedSeason=seasonFilter==='all'?'all':Number(seasonFilter==='current'?G.season:seasonFilter);
+  const entries=history.filter(x=>(selectedSeason==='all'||x.season===selectedSeason)&&(categoryFilter==='all'||x.category===categoryFilter)).slice().sort((a,b)=>b.season-a.season||b.round-a.round);
+  const summary=selectedSeason==='all'?history.reduce((acc,x)=>{if(x.amount>0)acc.income+=x.amount;else acc.expenses-=x.amount;acc.count++;return acc},{income:0,expenses:0,count:0}):FM4FinanceLedger.summarize(history,selectedSeason);
+  const income=summary.income||0,expenses=summary.expenses||0,net=income-expenses;
+  const categories=[...new Set(history.map(x=>x.category).filter(Boolean))].sort();
+  const seasonOptions='<option value="current" '+(selectedSeason===G.season?'selected':'')+'>الموسم الحالي ('+G.season+')</option><option value="all" '+(selectedSeason==='all'?'selected':'')+'>كل المواسم</option>'+seasons.filter(x=>x!==G.season).map(x=>'<option value="'+x+'" '+(selectedSeason===x?'selected':'')+'>الموسم '+x+'</option>').join('');
+  const categoryOptions='<option value="all" '+(categoryFilter==='all'?'selected':'')+'>كل التصنيفات</option>'+categories.map(x=>'<option value="'+uiEsc(x)+'" '+(categoryFilter===x?'selected':'')+'>'+uiEsc(x)+'</option>').join('');
+  return '<h2 class="title">💰 السجل المالي</h2><div class="chips"><div class="chip"><small>الرصيد الحالي</small><b>'+money(G.budget)+'</b></div><div class="chip"><small>إجمالي الإيرادات</small><b class="win">'+money(income)+'</b></div><div class="chip"><small>إجمالي المصروفات</small><b class="loss">'+money(expenses)+'</b></div></div><div class="row"><b>صافي الحركة للفترة</b><b class="'+(net>=0?'win':'loss')+'">'+(net>0?'+':'')+money(net)+'</b></div><div class="row"><span>عدد الحركات</span><b>'+summary.count+'</b></div><div class="two"><label class="dim">الفترة<select id="finance-season" onchange="financeRender(this.value,document.getElementById(\'finance-category\').value)" style="display:block;width:100%;padding:9px;background:#0b1520;color:white;border:1px solid #ffffff25;border-radius:8px">'+seasonOptions+'</select></label><label class="dim">التصنيف<select id="finance-category" onchange="financeRender(document.getElementById(\'finance-season\').value,this.value)" style="display:block;width:100%;padding:9px;background:#0b1520;color:white;border:1px solid #ffffff25;border-radius:8px">'+categoryOptions+'</select></label></div><h3 class="title" style="margin-top:16px">📒 تفاصيل الحركات</h3>'+(entries.length?entries.map(x=>'<div class="pcard"><div class="row"><b>م'+x.season+' • ج'+x.round+'</b><span class="'+(x.amount>0?'win':'loss')+'">'+(x.amount>0?'+':'')+money(x.amount)+'</span></div><p>'+uiEsc(x.description)+'</p><div class="row"><span class="dim">'+uiEsc(x.category)+'</span><span class="dim">الرصيد بعد الحركة: '+money(x.balanceAfter)+'</span></div></div>').join(''):'<p class="dim" style="text-align:center;padding:18px">لا توجد حركات مالية في هذا الاختيار.</p>')+'<p class="dim">يعرض السجل الحركات المسجلة في النظام المالي. الرصيد الحالي هو رصيد المسيرة، وقد يختلف عن صافي الفترة المحددة بسبب الرصيد الافتتاحي أو المواسم السابقة.</p>';
+}
+function financeRender(seasonFilter,categoryFilter){const c=$(\'content\');if(c)c.innerHTML=financeHtml(seasonFilter,categoryFilter)}
 
 function strength(cid,tac,form,noLu){
   let ps=G.players.filter(p=>p.clubId==cid),f=FORM[form],xi=[],sl={},sum=0,mor=0,miss=[],lu=(cid==G.uid&&!noLu)?G.lu:null,rk=p=>lu?(lu.p.includes(p.id)?-1:lu.b.includes(p.id)?1:0):0,ord=(a,b)=>(a.inj?1:0)-(b.inj?1:0)||rk(a)-rk(b)||b.ovr-a.ovr;
@@ -716,6 +730,8 @@ function go(t){
     ${a.lv<3?`<button class="action-btn gold" onclick="upAc()">🏗️ ترقية الأكاديمية — ${money(ACC[a.lv])}</button><p class="dim">كل مستوى: مواهب أكثر وأقوى، تقدير أدق للإمكانات، تطور أسرع، مقاعد أكثر (مع تكلفة أسبوعية).</p>`:'<p class="hl">أقصى مستوى 🌟</p>'}
     <p class="dim">تصل مواهب جديدة كل نهاية موسم وتتطور داخل الأكاديمية. من يتجاوز 18 عاماً دون ترقية يغادر، فاحسم أمرهم قبل نهاية الموسم. الإمكانات المعروضة تقدير (~) وتزداد دقته بالمستوى.</p>`+
     (l.length?l.map(p=>`<div class="row"><span>[${POS[p.pos]}] ${p.name}<br><span class="dim">عمر ${p.age}${p.age>=18?' ⚠️ يغادر هذا الموسم':''} • الحالي ${p.ovr} • إمكانات ~${cl(p.pot+p.fz,p.ovr,95)}</span></span><span style="display:flex;gap:4px"><button class="mini" onclick="promote('${p.id}')">ترقية</button><button class="mini r" onclick="dropP('${p.id}')">تسريح</button></span></div>`).join(''):'<div class="row dim">لا مواهب حالياً، تصل مواهب جديدة نهاية الموسم.</div>');
+  }else if(t=='finance'){
+    c.innerHTML=financeHtml('current','all');
   }else if(t=='contracts'){
     let l=mine().sort((a,b)=>cy(a)-cy(b)||b.ovr-a.ovr),tot=l.reduce((s,p)=>s+wg(p),0);
     const academyWeekly=ACW[AC().lv]||0,stadiumWeekly=SDU[SD().cap]||0,weeklyCommitments=tot+academyWeekly+stadiumWeekly;
@@ -1184,7 +1200,7 @@ function lockerEvent(){if(Math.random()>.28)return;let U=G.uid,mine=G.players.fi
   if(hb.length)ev.push(()=>{let p=pick(hb);menu(`😤 ${p.name} (🔥 عصبي) يقتحم مكتبك غاضباً: «لماذا أنا على الدكة؟!»`,[
     {l:'🤝 أعده بفرصة قريبة (+8 معنويات)',fn:()=>{p.morale=cl(p.morale+8,30,100);say('وعدتَ '+p.name+' بفرصة قريبة')}},
     {l:'🧊 تجاهله (-8 معنويات، خطر تصريح علني)',fn:()=>{p.morale=cl(p.morale-8,30,100);if(Math.random()<.35){G.conf=cl(G.conf-3,0,100);G.news.push(p.name+' ينتقد المدرب علناً بسبب قلة اللعب');say('😠 '+p.name+' هاجمك إعلامياً! (-3% ثقة)')}else say(p.name+' غادر المكتب غاضباً')}},
-    {l:'💸 غرّمه 20 ألفاً',fn:()=>{G.budget+=20000;p.morale=cl(p.morale-4,30,100);say('غرّمتَ '+p.name)}}],false)});
+    {l:'💸 غرّمه 20 ألفاً',fn:()=>{if(!financePost('s'+G.season+':r'+(G.round+1)+':discipline:'+p.id,'disciplinary-income','غرامة انضباطية على '+p.name,20000))return say('تعذّر تسجيل الغرامة.');p.morale=cl(p.morale-4,30,100);say('غرّمتَ '+p.name)}}],false)});
   let ld=mine.filter(p=>trt(p)=='leader'&&!p.inj);
   if(ld.length&&G.st&&G.st.cur==0)ev.push(()=>{let p=pick(ld);menu(`👑 القائد ${p.name} يطلب اجتماعاً مع اللاعبين بعد الخسارة. تسمح؟`,[
     {l:'✅ نعم، دعه يتحدث (+4 معنويات للجميع)',fn:()=>{mine.forEach(x=>x.morale=cl(x.morale+4,30,100));say('👑 كلمة '+p.name+' رفعت الروح')}},
