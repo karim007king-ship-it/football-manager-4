@@ -93,8 +93,9 @@ test('finance ledger loads before the game controller', () => {
 
 test('new careers initialize finance history and old saves migrate safely', () => {
   assert.match(html, /negotiations:\[\],financeHistory:\[\]/);
-  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]/);
-  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]\}\}\}catch/);
+  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)\{if\(G\.financeHistory!==undefined&&G\.financeHistory!==null\)G\.financeHistoryRecovery=G\.financeHistory;G\.financeHistory=\[\]\}/);
+  assert.match(html, /localStorage\.setItem\(KEY\+'_recovery',raw\)/);
+  assert.match(html, /احتفظنا بنسخة استرداد إن أمكن/);
 });
 
 test('league match settlement posts gate, sponsor and operating costs atomically', () => {
