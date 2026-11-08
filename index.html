@@ -788,12 +788,20 @@ function beginNegotiation(id,fee){
   showPlayerContract(result.offer);
 }
 function showClubCounter(offer){
-  const fee=offer.counterFee;
-  menu('عرض مضاد من '+C(offer.sellerClubId).name+' • '+money(fee),[
-    {l:'قبول قيمة النادي '+money(fee),fn:()=>answerClubCounter(offer.id,fee)},
-    {l:'تقديم عرض أعلى '+money(Math.ceil(fee*1.05/1000)*1000),fn:()=>answerClubCounter(offer.id,Math.ceil(fee*1.05/1000)*1000)},
+  const fee=offer.counterFee,items=[
+    {l:'قبول قيمة النادي '+money(fee),fn:()=>acceptClubCounter(offer.id)},
     {l:'رفض العرض وإنهاء المفاوضات',fn:()=>rejectNegotiation(offer.id)}
-  ],true);
+  ];
+  if((offer.clubRounds||0)<FM4NegotiationSystem.RULES.maxClubRounds)items.splice(1,0,
+    {l:'تقديم عرض أعلى '+money(Math.ceil(fee*1.05/1000)*1000),fn:()=>answerClubCounter(offer.id,Math.ceil(fee*1.05/1000)*1000)});
+  menu('عرض مضاد من '+C(offer.sellerClubId).name+' • '+money(fee),items,true);
+}
+function acceptClubCounter(id){
+  const offer=(G.negotiations||[]).find(x=>x.id===id),p=offer&&G.players.find(x=>x.id===offer.playerId);
+  if(!offer||!p)return say('❌ انتهت صلاحية المفاوضات.');
+  const result=FM4NegotiationSystem.acceptClubCounter({offer,player:p,budget:G.budget});
+  if(!result.ok)return transferError(result);
+  G.negotiations=G.negotiations.map(x=>x.id===id?result.offer:x);save();showPlayerContract(result.offer);
 }
 function answerClubCounter(id,fee){
   const offer=(G.negotiations||[]).find(x=>x.id===id),p=offer&&G.players.find(x=>x.id===offer.playerId);
