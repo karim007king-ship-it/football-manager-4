@@ -64,7 +64,9 @@ test('unfinished negotiations can be resumed or explicitly rejected from the mar
 test('renewal UI delegates signing to the validated contract domain rules', () => {
   assert.match(html, /function signC\(p,y,w,b\)\{const result=FM4NegotiationSystem\.completeRenewal/);
   assert.match(html, /if\(!result\.ok\)return say\('❌ '\+result\.message\)/);
-  assert.match(html, /G\.budget=result\.budget;Object\.assign\(p,result\.player\)/);
+  assert.match(html, /financePost\('s'\+G\.season\+':renewal:'\+p\.id\+':'.*?'signing-bonus','مكافأة تجديد عقد '\+p\.name,-b\)/);
+  assert.match(html, /Object\.assign\(p,result\.player\)/);
+  assert.doesNotMatch(html, /G\.budget=result\.budget;Object\.assign\(p,result\.player\)/);
 });
 
 
