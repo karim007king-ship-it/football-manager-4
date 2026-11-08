@@ -1511,7 +1511,25 @@ function endMatch(){
 
 function endSeason(){
   if(G.round<14||G.lastCompletedSeason===G.season){console.warn('FM4 season lifecycle: season is not ready or already finalized',G.season,G.round);return false}
-  const loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd({players:G.players,loans:G.loans||[],season:G.season});if(!loanPreflight.ok){console.error('FM4 loan lifecycle:',loanPreflight.code,loanPreflight.message);G.news.push('⚠️ تعذّر التحقق من سجلات الإعارة؛ لم تُغيّر ملكية اللاعبين المعارين')}
+  let loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd({players:G.players,loans:G.loans||[],season:G.season});
+  if(!loanPreflight.ok){
+    console.error('FM4 loan lifecycle:',loanPreflight.code,loanPreflight.message);
+    const activeLoanCounts=new Map();
+    (G.loans||[]).forEach(loan=>{if(loan&&loan.status==='active')activeLoanCounts.set(loan.playerId,(activeLoanCounts.get(loan.playerId)||0)+1)});
+    const duplicateLoanPlayers=new Set([...activeLoanCounts].filter(([,count])=>count>1).map(([id])=>id));
+    G.loans=(G.loans||[]).map((loan,index)=>{
+      if(!loan||typeof loan!=='object')return {id:'recovered-invalid-loan:'+G.season+':'+index,status:'suspended',suspendedSeason:G.season,suspensionReason:'invalid-record'};
+      if(loan.status!=='active')return loan;
+      const player=G.players.find(p=>p.id===loan.playerId);
+      const duplicate=duplicateLoanPlayers.has(loan.playerId);
+      const invalid=!player||!Number.isInteger(loan.fromClubId)||loan.fromClubId<=0||!Number.isInteger(loan.toClubId)||loan.toClubId<=0||loan.fromClubId===loan.toClubId||player.clubId!==loan.toClubId||!Number.isInteger(loan.wageSharePct)||loan.wageSharePct<0||loan.wageSharePct>100;
+      if(!duplicate&&!invalid)return loan;
+      return {...loan,status:'suspended',suspendedSeason:G.season,suspensionReason:duplicate?'duplicate-active-player':'invalid-active-loan'};
+    });
+    G.news.push('⚠️ عُلّقت سجلات الإعارة غير الصالحة مع حفظ تاريخها؛ بقي اللاعب في ناديه الحالي وأُوقف تقسيم راتبه حتى مراجعة السجل');
+    loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd({players:G.players,loans:G.loans,season:G.season});
+    if(!loanPreflight.ok){console.error('FM4 loan recovery:',loanPreflight.code,loanPreflight.message);G.news.push('⚠️ بقيت بعض سجلات الإعارة بحاجة إلى مراجعة يدوية');}
+  }
   const negotiationExpiry=FM4NegotiationSystem.expireAtSeasonEnd({negotiations:G.negotiations||[],season:G.season});if(negotiationExpiry.ok){G.negotiations=negotiationExpiry.negotiations;if(negotiationExpiry.expired)G.news.push('⌛ انتهت '+negotiationExpiry.expired+' مفاوضات غير مكتملة مع نهاية الموسم');}
   let t=table(),rk=t.findIndex(x=>x.id==G.uid)+1,rw=(rk==1?900000:rk==2?500000:rk==3?250000:50000)*(C(G.uid).dv==2?.5:1);
   if(!financePost('s'+G.season+':league-prize','league-prize','مكافأة مركز الدوري',rw)){G.news.push('⚠️ تعذّر تسجيل مكافأة مركز الدوري');rw=0}G.conf=cl(G.conf+cl(((G.exp||rk)-rk)*5,-15,15)+(rk<=3?4:0),0,100);
