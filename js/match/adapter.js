@@ -6,6 +6,7 @@
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const engineApi=()=>typeof module!=='undefined'&&module.exports?require('./engine'):window.FM4MatchEngine;
 const round=v=>Math.round(clamp(Number(v)||0,1,100));
+const finiteNumber=(value,fallback)=>{if(value===null||value===undefined||(typeof value==='string'&&!value.trim()))return fallback;const n=Number(value);return Number.isFinite(n)?n:fallback;};
 const POS_ROLES={
  GK:['GK'],
  DEF:{3:['CB','CB','CB'],4:['LB','CB','CB','RB'],5:['LWB','CB','CB','CB','RWB'],6:['LB','CB','CB','CB','CB','RB']},
@@ -52,7 +53,7 @@ function estimateSkills(p,role){
  const keeperComposite=round(reflexes*.28+handling*.20+positioning*.22+oneOnOne*.20+distribution*.10);
  return{
   pace:round(o+paceBoost+mood-penalty),
-  aerial:round(p.aerial??(o+aerialBoost+mood-penalty)),
+  aerial:round(finiteNumber(p.aerial,o+aerialBoost+mood-penalty)),
   goalkeeping:isKeeper?keeperComposite:35,
   ...(isKeeper?{gkReflexes:reflexes,gkHandling:handling,gkPositioning:positioning,gkOneOnOne:oneOnOne,gkDistribution:distribution}:{}),
   passing:round(o+passBoost+mood-penalty),
