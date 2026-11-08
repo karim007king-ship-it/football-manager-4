@@ -739,15 +739,18 @@ function sb(){
   const minute=M.min>90&&!M.et?'90+'+(M.min-90):M.min;
   const phase=M.so?'ركلات الترجيح':M.et?'وقت إضافي':M.min>=45?'الشوط الثاني':'الشوط الأول';
   const status=M.done?'انتهت':M.so?'ركلات الترجيح':M.paused?(M.min===45?'استراحة':'متوقفة'):'مباشرة';
+  const matchState=M.done?'fulltime':M.so?'penalties':M.et?'extratime':M.paused&&M.min===45?'halftime':M.paused?'paused':'live';
+  const phaseMessage={live:'المباراة جارية — تابع التغييرات لحظة بلحظة',halftime:'استراحة بين الشوطين — راجع الأداء والتبديلات',extratime:'وقت إضافي — الحسم لم يُحسم بعد',penalties:'ركلات الترجيح — كل ركلة قد تحسم التأهل',fulltime:'صافرة النهاية — اكتملت المباراة',paused:'المباراة متوقفة مؤقتاً'}[matchState];
   const weather=M.wx==='rain'?'🌧️ أمطار':'☀️ صحو';
   const userVenue=M.home?'المضيف':'الضيف',opponentVenue=M.home?'الضيف':'المضيف';
   const competition=M.cup?'🏆 '+CN[G.cup.s]:'🏟️ مباراة الدوري';
-  sbPaint(`<section class="match-live-card" aria-label="لوحة المباراة">
+  sbPaint(`<section class="match-live-card match-state-${matchState}" aria-label="لوحة المباراة">
     <div class="match-live-topline">
       <span class="match-live-competition">${competition}</span>
       <span class="match-live-clock">⏱ ${minute}'</span>
       <span class="match-live-state">${status}</span>
     </div>
+    <div class="match-live-phase-banner" role="status" aria-live="polite">${phaseMessage}</div>
     <div class="match-live-scoreline">
       <div class="match-live-team">
         <span class="match-live-badge">${badge(G.uid,26)}</span>
