@@ -235,3 +235,29 @@ body.match-live #ctl .cb:focus-visible{
 body.match-live #ctl #bp{background:linear-gradient(145deg,#267a50,#17452f);border-color:#54bd8155}
 body.match-live #ctl #bs{background:linear-gradient(145deg,#876721,#514018);border-color:#d7ad4c55}
 body.match-live #ctl .cb:disabled{filter:grayscale(.65);opacity:.42}
+
+/* Match phase states — clear visual transitions without touching match logic */
+body.match-live #sb .match-live-phase-banner{
+ margin:2px 0 5px;padding:7px 9px;border:1px solid #ffffff14;border-radius:9px;
+ background:#ffffff08;color:#c8d5de;text-align:center;font-size:11px;font-weight:700;line-height:1.5;
+}
+body.match-live #sb .match-state-live .match-live-phase-banner{border-inline-start:3px solid #35b875}
+body.match-live #sb .match-state-halftime .match-live-phase-banner{
+ background:#8a68201c;border-color:#d8ae4b55;color:#f4d98c;border-inline-start:3px solid #e6b84f;
+}
+body.match-live #sb .match-state-extratime .match-live-phase-banner{
+ background:#244f7b30;border-color:#58a5e755;color:#b9dcff;border-inline-start:3px solid #58a5e7;
+}
+body.match-live #sb .match-state-penalties .match-live-phase-banner{
+ background:#6e2e3a35;border-color:#e56d7b70;color:#ffd0d5;border-inline-start:3px solid #e56d7b;
+ animation:fm4-penalty-pulse 2.2s ease-in-out infinite;
+}
+body.match-live #sb .match-state-fulltime .match-live-phase-banner{
+ background:#24583b35;border-color:#55c58b66;color:#b9f0d0;border-inline-start:3px solid #55c58b;
+}
+body.match-live #sb .match-state-halftime .match-live-state,
+body.match-live #sb .match-state-extratime .match-live-state,
+body.match-live #sb .match-state-penalties .match-live-state,
+body.match-live #sb .match-state-fulltime .match-live-state{font-weight:900}
+@keyframes fm4-penalty-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+@media(prefers-reduced-motion:reduce){body.match-live #sb .match-state-penalties .match-live-phase-banner{animation:none}}
