@@ -21,10 +21,10 @@ test('league match settlement posts gate, sponsor and operating costs as separat
   assert.match(html, /financePrefix\+'match-gate','match-income','مداخيل المباراة',gate/);
   assert.match(html, /financePrefix\+'sponsor','sponsor-income','دخل عقد الرعاية',spn/);
   assert.match(html, /financePrefix\+'weekly-costs','operating-expense','الأجور والأكاديمية وصيانة الاستاد',-wages/);
-  assert.match(html, /G\.budget\+=gate\+spn-wages/ === null ? /x/ : /x/);
+  assert.doesNotMatch(html, /G\.budget\s*\+=\s*gate\s*\+\s*spn\s*-\s*wages/);
 });
 
 test('weekly training cost is posted once per league round', () => {
-  assert.match(html, /s'\+G\.season\+':r'\+\(G\.round\+1\)\+':training'/);
+  assert.match(html, /financePost\('s'\+G\.season\+':r'\+\(G\.round\+1\)\+':training','training'/);
   assert.match(html, /financePost\([^;]*'training','تكلفة التدريب الأسبوعي',-I\.c\)/);
 });
