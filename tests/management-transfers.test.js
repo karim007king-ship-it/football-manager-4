@@ -153,3 +153,38 @@ test('invalid money, wage share and player references fail safely', () => {
   assert.equal(Transfers.validatePurchase({ players, playerId: 'missing', buyerClubId: 1, sellerClubId: 2, fee: 0, budget: 10, contractYears: 2, weeklyWage: 10 }).code, 'PLAYER_NOT_FOUND');
   assert.equal(Transfers.validateLoan({ players, playerId: '2-8', fromClubId: 2, toClubId: 1, season: 1, durationSeasons: 1, loanFee: 0, wageSharePct: 101 }).code, 'INVALID_WAGE_SHARE');
 });
+
+
+test('weekly wage commitments split an active loan salary between the borrowing and parent clubs', () => {
+  const players = [
+    { id: 'loaned', clubId: 1, wg: 10000 },
+    { id: 'regular', clubId: 1, wg: 4000 },
+    { id: 'parent-player', clubId: 2, wg: 6000 }
+  ];
+  const loans = [{ id: 'loan-1', playerId: 'loaned', fromClubId: 2, toClubId: 1, wageSharePct: 75, status: 'active' }];
+  const borrower = Transfers.calculateWeeklyWageCommitment({ players, loans, clubId: 1, wageForPlayer: p => p.wg });
+  const parent = Transfers.calculateWeeklyWageCommitment({ players, loans, clubId: 2, wageForPlayer: p => p.wg });
+  assert.deepEqual(borrower, { ok: true, amount: 11500 });
+  assert.deepEqual(parent, { ok: true, amount: 8500 });
+  assert.equal(borrower.amount + parent.amount, 20000);
+});
+
+test('weekly wage allocation handles zero and full borrowing-club shares', () => {
+  const players = [{ id: 'zero', clubId: 1, wg: 9000 }, { id: 'full', clubId: 2, wg: 9000 }];
+  const loans = [
+    { id: 'loan-zero', playerId: 'zero', fromClubId: 2, toClubId: 1, wageSharePct: 0, status: 'active' },
+    { id: 'loan-full', playerId: 'full', fromClubId: 1, toClubId: 2, wageSharePct: 100, status: 'active' }
+  ];
+  assert.equal(Transfers.calculateWeeklyWageCommitment({ players, loans, clubId: 1, wageForPlayer: p => p.wg }).amount, 0);
+  assert.equal(Transfers.calculateWeeklyWageCommitment({ players, loans, clubId: 2, wageForPlayer: p => p.wg }).amount, 18000);
+});
+
+test('weekly wage allocation rejects duplicate or inconsistent active loan records safely', () => {
+  const players = [{ id: 'loaned', clubId: 1, wg: 10000 }];
+  const base = { players, clubId: 1, wageForPlayer: p => p.wg };
+  const loan = { playerId: 'loaned', fromClubId: 2, toClubId: 1, wageSharePct: 75, status: 'active' };
+  assert.equal(Transfers.calculateWeeklyWageCommitment({ ...base, loans: [loan, { ...loan, id: 'duplicate' }] }).code, 'DUPLICATE_ACTIVE_PLAYER_LOAN');
+  assert.equal(Transfers.calculateWeeklyWageCommitment({ ...base, loans: [{ ...loan, wageSharePct: 101 }] }).code, 'INVALID_ACTIVE_LOAN');
+  assert.equal(Transfers.calculateWeeklyWageCommitment({ ...base, loans: [{ ...loan, toClubId: 3 }] }).code, 'LOAN_PLAYER_CLUB_MISMATCH');
+  assert.equal(Transfers.calculateWeeklyWageCommitment({ ...base, loans: [loan], wageForPlayer: () => -1 }).code, 'INVALID_PLAYER_WAGE');
+});
