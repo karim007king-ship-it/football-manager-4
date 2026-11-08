@@ -50,7 +50,14 @@
     if (!Number.isSafeInteger(state.budget)) return fail('INVALID_CAREER_BUDGET', 'ميزانية المسيرة غير صالحة.');
     const history = Array.isArray(state.financeHistory) ? state.financeHistory : [];
     const existing = history.find(item => item && item.id === x.eventId);
-    if (existing) return { ok: true, duplicate: true, transaction: { ...existing }, balanceAfter: state.budget };
+    if (existing) {
+      const same = existing.amount === x.amount && existing.season === x.season &&
+        existing.round === x.round && existing.category === x.category &&
+        existing.description === x.description;
+      return same
+        ? { ok: true, duplicate: true, transaction: { ...existing }, balanceAfter: state.budget }
+        : fail('EVENT_ID_CONFLICT', 'معرّف الحركة مستخدم مسبقاً لبيانات مالية مختلفة.');
+    }
     const result = recordTransaction({ ...x, history, balanceBefore: state.budget });
     if (!result.ok) return result;
     state.financeHistory = result.history;
