@@ -110,3 +110,8 @@ test('negotiated transfer fee and signing bonus are posted atomically before pla
 test('player sale commits roster changes only after ledger income is recorded', () => {
   assert.match(html, /if\(!result\.ok\)return transferError\(result\);if\(!financePost\([^;]*transfer-sale[^;]*\)\)return say\([^;]*\);G\.players=result\.players/);
 });
+
+
+test('player purchase ledger posting precedes roster mutation', () => {
+  assert.match(html, /if\(!financePost\([^;]*transfer-buy[^;]*\)\)return say\([^;]*\);G\.players=result\.players/);
+});
