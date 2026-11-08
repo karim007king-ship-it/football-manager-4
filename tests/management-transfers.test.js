@@ -79,6 +79,8 @@ test('loan rejects invalid parties, duplicate active loan and club loan limit', 
   const players = roster();
   const base = { players, loans: [], playerId: '2-8', fromClubId: 2, toClubId: 1, season: 4, durationSeasons: 1, loanFee: 0, wageSharePct: 50 };
   assert.equal(Transfers.validateLoan({ ...base, toClubId: 2 }).code, 'INVALID_CLUBS');
+  assert.equal(Transfers.validateLoan({ ...base, fromClubId: 0 }).code, 'INVALID_CLUBS');
+  assert.equal(Transfers.validateLoan({ ...base, loans: {} }).code, 'INVALID_LOANS');
   assert.equal(Transfers.validateLoan({ ...base, loans: [{ playerId: '2-8', status: 'active', toClubId: 3 }] }).code, 'PLAYER_ALREADY_LOANED');
   const many = [0, 1, 2].map(i => ({ playerId: 'x' + i, status: 'active', toClubId: 1 }));
   assert.equal(Transfers.validateLoan({ ...base, loans: many }).code, 'LOAN_LIMIT_REACHED');
