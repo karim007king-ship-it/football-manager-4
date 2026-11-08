@@ -1508,7 +1508,7 @@ function endMatch(){
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;if(!done)setTimeout(lockerEvent,700)}
 
 function endSeason(){
-  if(G.lastCompletedSeason===G.season){console.warn('FM4 season lifecycle: season already finalized',G.season);return false}
+  if(G.round<14||G.lastCompletedSeason===G.season){console.warn('FM4 season lifecycle: season is not ready or already finalized',G.season,G.round);return false}
   const negotiationExpiry=FM4NegotiationSystem.expireAtSeasonEnd({negotiations:G.negotiations||[],season:G.season});if(negotiationExpiry.ok){G.negotiations=negotiationExpiry.negotiations;if(negotiationExpiry.expired)G.news.push('⌛ انتهت '+negotiationExpiry.expired+' مفاوضات غير مكتملة مع نهاية الموسم');}
   let t=table(),rk=t.findIndex(x=>x.id==G.uid)+1,rw=(rk==1?900000:rk==2?500000:rk==3?250000:50000)*(C(G.uid).dv==2?.5:1);
   if(!financePost('s'+G.season+':league-prize','league-prize','مكافأة مركز الدوري',rw)){G.news.push('⚠️ تعذّر تسجيل مكافأة مركز الدوري');rw=0}G.conf=cl(G.conf+cl(((G.exp||rk)-rk)*5,-15,15)+(rk<=3?4:0),0,100);
