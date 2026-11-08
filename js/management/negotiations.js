@@ -130,6 +130,21 @@
     return { ok: true, offer: { ...offer, weeklyWage: offer.counterWage, status: 'player_accepted', counterWage: null } };
   }
 
+  function expireAtSeasonEnd(input) {
+    const x = input || {};
+    if (!Array.isArray(x.negotiations) || !Number.isInteger(x.season) || x.season < 1) return fail('INVALID_EXPIRY_INPUT', 'بيانات إنهاء المفاوضات غير صالحة.');
+    const active = new Set(['pending', 'countered', 'club_accepted', 'player_countered', 'player_accepted']);
+    let expired = 0;
+    const negotiations = x.negotiations.map(n => {
+      if (n && active.has(n.status) && Number.isInteger(n.season) && n.season <= x.season) {
+        expired++;
+        return { ...n, status: 'expired', expiredSeason: x.season };
+      }
+      return { ...n };
+    });
+    return { ok: true, negotiations, expired };
+  }
+
   function finalizeDeal(input) {
     const x = input || {};
     const offer = x.offer;
@@ -166,6 +181,7 @@
     submitCounterOffer,
     evaluatePlayerContract,
     acceptPlayerCounter,
+    expireAtSeasonEnd,
     finalizeDeal
   });
 });
