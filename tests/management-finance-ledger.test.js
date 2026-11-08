@@ -79,3 +79,13 @@ test('career ledger survives JSON save and restore without duplicate replay', ()
   assert.equal(restored.budget, 1500);
   assert.equal(restored.financeHistory.length, 1);
 });
+
+test('career posting rejects a reused event ID with a different amount', () => {
+  const career = { budget: 500, financeHistory: [] };
+  Finance.applyToCareer(career, { eventId: 's1:r2:gate', season: 1, round: 2, category: 'match', description: 'Gate income', amount: 100 });
+  const conflict = Finance.applyToCareer(career, { eventId: 's1:r2:gate', season: 1, round: 2, category: 'match', description: 'Gate income', amount: 200 });
+  assert.equal(conflict.ok, false);
+  assert.equal(conflict.code, 'EVENT_ID_CONFLICT');
+  assert.equal(career.budget, 600);
+  assert.equal(career.financeHistory.length, 1);
+});
