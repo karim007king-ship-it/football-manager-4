@@ -14,14 +14,18 @@ test('season contract processing decrements a loaned player only once when loan 
   assert.match(html.slice(loaned, borrowed), /\[\.\.\.new Set\(/);
 });
 
-test('season finalization checks loan history before side effects without blocking the season', () => {
+test('season finalization quarantines invalid loan records and safely completes remaining returns', () => {
   const guard = html.indexOf("function endSeason(){");
-  const preflight = html.indexOf("const loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd", guard);
+  const preflight = html.indexOf("let loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd", guard);
   const prize = html.indexOf("league-prize", guard);
   assert.ok(guard >= 0 && preflight > guard && prize > preflight);
-  assert.match(html, /if\(!loanPreflight\.ok\)\{console\.error\('FM4 loan lifecycle:'/);
-  assert.match(html, /G\.news\.push\('⚠️ تعذّر التحقق من سجلات الإعارة/);
-  assert.doesNotMatch(html.slice(preflight, prize), /return false/);
+  const recovery = html.slice(preflight, prize);
+  assert.match(recovery, /const duplicateLoanPlayers=new Set/);
+  assert.match(recovery, /status:'suspended'/);
+  assert.match(recovery, /suspensionReason:duplicate\?'duplicate-active-player':'invalid-active-loan'/);
+  assert.match(recovery, /loanPreflight=FM4TransferSystem\.returnLoansAtSeasonEnd/);
+  assert.match(recovery, /أُوقف تقسيم راتبه/);
+  assert.doesNotMatch(recovery, /return false/);
 });
 
 test('season finalization is guarded against duplicate execution', () => {
