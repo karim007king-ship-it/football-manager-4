@@ -73,10 +73,10 @@ test('seller rejects an offer below the minimum threshold', () => {
 test('player negotiates wages and can counter with a clear demand', () => {
   const ctx = setup(), created = makeOffer(ctx);
   const club = Negotiations.evaluateClubOffer({ offer: created.offer, player: ctx.player, fee: 120000, marketValue: 100000 });
-  const result = Negotiations.evaluatePlayerContract({ offer: club.offer, player: ctx.player, weeklyWage: 1800, contractYears: 3, signingBonus: 10000 });
+  const result = Negotiations.evaluatePlayerContract({ offer: club.offer, player: ctx.player, weeklyWage: 2000, contractYears: 3, signingBonus: 10000 });
   assert.equal(result.decision, 'countered');
   assert.equal(result.offer.status, 'player_countered');
-  assert.ok(result.demandedWage > 1800);
+  assert.ok(result.demandedWage > 2000);
   const accepted = Negotiations.acceptPlayerCounter({ offer: result.offer, budget: 1000000 });
   assert.equal(accepted.offer.status, 'player_accepted');
   assert.equal(accepted.offer.weeklyWage, result.demandedWage);
@@ -141,7 +141,7 @@ test('computed wage is used when a player has no stored wage field', () => {
   delete player.wg;
   const created = Negotiations.createOffer({ player, buyerClubId: 1, budget: 1000000, fee: 100000, weeklyWage: 2000, contractYears: 3 });
   const club = Negotiations.evaluateClubOffer({ offer: created.offer, player, fee: 120000, marketValue: 100000 });
-  const result = Negotiations.evaluatePlayerContract({ offer: club.offer, player, currentWage: 2000, weeklyWage: 1800, contractYears: 3 });
+  const result = Negotiations.evaluatePlayerContract({ offer: club.offer, player, currentWage: 2000, weeklyWage: 2000, contractYears: 3 });
   assert.equal(result.decision, 'countered');
-  assert.ok(result.demandedWage > 1800);
+  assert.ok(result.demandedWage > 2000);
 });
