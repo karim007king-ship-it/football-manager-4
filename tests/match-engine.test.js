@@ -861,7 +861,7 @@ test('engine events receive unique stable IDs and preserve their sequence across
  delete restored.randomState;
  assert.equal(restored.eventSequence,uninterrupted.eventSequence);
  assert.ok(restored.events.length>0);
- assert.ok(restored.events.every(e=>/^fm4-event-\\d+$/.test(e.id)));
+ assert.ok(restored.events.every(e=>/^fm4-event-\d+$/.test(e.id)));
  assert.equal(new Set(restored.events.map(e=>e.id)).size,restored.events.length);
  for(let i=0;i<53;i++){stepMatch(uninterrupted);stepMatch(restored);}
  const stripRandom=({random,...state})=>state;
