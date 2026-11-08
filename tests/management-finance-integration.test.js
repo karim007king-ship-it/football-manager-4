@@ -6,6 +6,14 @@ const path = require('node:path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const financeLedger = require('../js/management/finance-ledger');
 
+test('season contract processing decrements a loaned player only once when loan history has duplicates', () => {
+  const start = html.indexOf("function contractsEnd()");
+  const loaned = html.indexOf("loaned=()=>", start);
+  const borrowed = html.indexOf("borrowedIds=", loaned);
+  assert.ok(start >= 0 && loaned > start && borrowed > loaned);
+  assert.match(html.slice(loaned, borrowed), /\[\.\.\.new Set\(/);
+});
+
 test('season finalization checks loan history before side effects without blocking the season', () => {
   const guard = html.indexOf("function endSeason(){");
   const preflight = html.indexOf("const loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd", guard);
