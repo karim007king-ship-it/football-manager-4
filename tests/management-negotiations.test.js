@@ -110,3 +110,21 @@ test('counter rounds cannot exceed configured negotiation limit', () => {
   const offer = { ...created.offer, status: 'countered', clubRounds: 3 };
   assert.equal(Negotiations.submitCounterOffer({ offer, fee: 100000, budget: 1000000 }).code, 'NEGOTIATION_LIMIT');
 });
+
+test('unfinished negotiations expire cleanly at season rollover', () => {
+  const result = Negotiations.expireAtSeasonEnd({
+    season: 3,
+    negotiations: [
+      { id: 'a', season: 3, status: 'pending' },
+      { id: 'b', season: 2, status: 'player_countered' },
+      { id: 'c', season: 3, status: 'completed' },
+      { id: 'd', season: 4, status: 'pending' }
+    ]
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.expired, 2);
+  assert.equal(result.negotiations[0].status, 'expired');
+  assert.equal(result.negotiations[0].expiredSeason, 3);
+  assert.equal(result.negotiations[2].status, 'completed');
+  assert.equal(result.negotiations[3].status, 'pending');
+});
