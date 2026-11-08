@@ -52,3 +52,10 @@ test('the selected signing bonus is included in the affordability check', () => 
   assert.match(html, /weeklyWage,contractYears,signingBonus,budget:G\\.budget/);
   assert.match(html, /G\\.budget>=offer\\.fee\\+bonus/);
 });
+
+test('unfinished negotiations can be resumed or explicitly rejected from the market', () => {
+  assert.match(html, /function negotiationRows\(/);
+  assert.match(html, /function resumeNegotiation\(/);
+  assert.match(html, /function rejectNegotiation\(/);
+  assert.match(html, /negotiationRows\(\)\+l\.map/);
+});
