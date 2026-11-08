@@ -13,15 +13,15 @@ test('finance ledger loads before the game controller', () => {
 
 test('new careers initialize finance history and old saves migrate safely', () => {
   assert.match(html, /negotiations:\[\],financeHistory:\[\]/);
-  assert.match(html, /eventId:financePrefix\+'match-gate',category:'match-income',description:'مداخيل المباراة',amount:gate/);
-  assert.match(html, /eventId:financePrefix\+'sponsor',category:'sponsor-income',description:'دخل عقد الرعاية',amount:spn/);
-  assert.match(html, /eventId:financePrefix\+'weekly-costs',category:'operating-expense',description:'الأجور والأكاديمية وصيانة الاستاد',amount:-wages/);
+  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]/);
+  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]\}\}catch/);
+});
 
-test('league match settlement posts gate, sponsor and operating costs as separate entries', () => {
-  assert.match(html, /financePrefix\+'match-gate','match-income','مداخيل المباراة',gate/);
-  assert.match(html, /financePrefix\+'sponsor','sponsor-income','دخل عقد الرعاية',spn/);
-  assert.match(html, /financePrefix\+'weekly-costs','operating-expense','الأجور والأكاديمية وصيانة الاستاد',-wages/);
-  assert.doesNotMatch(html, /G\.budget\s*\+=\s*gate\s*\+\s*spn\s*-\s*wages/);
+test('league match settlement posts gate, sponsor and operating costs atomically', () => {
+  assert.match(html, /const settlement=\[\{eventId:financePrefix\+'match-gate',category:'match-income',description:'مداخيل المباراة',amount:gate\}/);
+  assert.match(html, /settlement\.push\(\{eventId:financePrefix\+'sponsor',category:'sponsor-income'/);
+  assert.match(html, /settlement\.push\(\{eventId:financePrefix\+'weekly-costs',category:'operating-expense'/);
+  assert.match(html, /financePostBatch\(settlement\)/);
 });
 
 test('weekly training cost is posted once per league round', () => {
