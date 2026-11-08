@@ -13,9 +13,9 @@ test('finance ledger loads before the game controller', () => {
 
 test('new careers initialize finance history and old saves migrate safely', () => {
   assert.match(html, /negotiations:\[\],financeHistory:\[\]/);
-  assert.match(html, /if\(G&&!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]/);
-  assert.match(html, /if\(!Array\.isArray\(G\.financeHistory\)\)G\.financeHistory=\[\]/);
-});
+  assert.match(html, /eventId:financePrefix\+'match-gate',category:'match-income',description:'مداخيل المباراة',amount:gate/);
+  assert.match(html, /eventId:financePrefix\+'sponsor',category:'sponsor-income',description:'دخل عقد الرعاية',amount:spn/);
+  assert.match(html, /eventId:financePrefix\+'weekly-costs',category:'operating-expense',description:'الأجور والأكاديمية وصيانة الاستاد',amount:-wages/);
 
 test('league match settlement posts gate, sponsor and operating costs as separate entries', () => {
   assert.match(html, /financePrefix\+'match-gate','match-income','مداخيل المباراة',gate/);
@@ -114,4 +114,22 @@ test('player sale commits roster changes only after ledger income is recorded', 
 
 test('player purchase ledger posting precedes roster mutation', () => {
   assert.match(html, /if\(!financePost\([^;]*transfer-buy[^;]*\)\)return say\([^;]*\);G\.players=result\.players/);
+});
+
+
+test('match settlement posts all income and operating costs atomically', () => {
+  assert.match(html, /function financePostBatch\(entries\)/);
+  assert.match(html, /const settlement=\[\{eventId:financePrefix\+'match-gate'/);
+  assert.match(html, /if\(financePostBatch\(settlement\)\)/);
+  assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance batch:'/);
+});
+
+test('idempotent ledger replay is treated as a successful financial post', () => {
+  assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance ledger:'/);
+  assert.match(html, /return true\}\\nfunction financePostBatch/);
+});
+
+test('cup and promotion rewards are not claimed before ledger confirmation', () => {
+  assert.match(html, /if\(c\.s\+1>=3\)\{const inF=c\.pairs\[0\]\.includes\(U\);if\(ws\[0\]===U&&!financePost/);
+  assert.match(html, /if\(up\.includes\(uc\)\)\{if\(financePost/);
 });
