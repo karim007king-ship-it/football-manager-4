@@ -93,8 +93,10 @@
     const offer = x.offer;
     if (!offer || offer.status !== 'countered') return fail('NO_COUNTER_TO_ANSWER', 'لا يوجد عرض مضاد بانتظار الرد.');
     if ((offer.clubRounds || 0) >= rulesWith(x.rules).maxClubRounds) return fail('NEGOTIATION_LIMIT', 'بلغت المفاوضات الحد الأقصى للجولات.');
-    if (!money(x.fee) || !money(x.budget)) return fail('INVALID_MONEY', 'قيمة العرض أو الميزانية غير صالحة.');
-    if (x.budget < x.fee + (offer.signingBonus || 0)) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي للعرض الجديد.');
+    const bonus = offer.signingBonus || 0;
+    if (!money(x.fee) || !money(x.budget) || !money(bonus)) return fail('INVALID_MONEY', 'قيمة العرض أو الميزانية أو مكافأة التوقيع غير صالحة.');
+    if (!Number.isSafeInteger(x.fee + bonus)) return fail('BUDGET_OVERFLOW', 'إجمالي تكلفة العرض يتجاوز النطاق المالي المسموح.');
+    if (x.budget < x.fee + bonus) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي للعرض الجديد.');
     return { ok: true, offer: { ...offer, fee: x.fee, status: 'pending', counterFee: null } };
   }
 
@@ -146,7 +148,10 @@
     const x = input || {};
     const offer = x.offer;
     if (!offer || offer.status !== 'player_countered' || !money(offer.counterWage)) return fail('NO_PLAYER_COUNTER', 'لا يوجد طلب راتب مضاد.');
-    if (!money(x.budget) || x.budget < offer.fee + (offer.signingBonus || 0)) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي لإتمام الصفقة.');
+    const bonus = offer.signingBonus || 0;
+    if (!money(offer.fee) || !money(bonus) || !Number.isSafeInteger(offer.fee + bonus)) return fail('INVALID_CONTRACT_MONEY', 'قيمة الانتقال أو مكافأة التوقيع غير صالحة.');
+    if (!money(x.budget)) return fail('INVALID_BUDGET', 'ميزانية النادي غير صالحة.');
+    if (x.budget < offer.fee + bonus) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي لإتمام الصفقة.');
     return { ok: true, offer: { ...offer, weeklyWage: offer.counterWage, status: 'player_accepted', counterWage: null } };
   }
 
@@ -170,7 +175,11 @@
     const offer = x.offer;
     if (!offer || offer.status !== 'player_accepted') return fail('NEGOTIATION_NOT_COMPLETE', 'لم تكتمل موافقة النادي واللاعب بعد.');
     if (!Array.isArray(x.players) || !x.players.some(p => p.id === offer.playerId && p.clubId === offer.sellerClubId)) return fail('STALE_NEGOTIATION', 'اللاعب لم يعد تابعاً للنادي البائع.');
-    if (!money(x.budget) || x.budget < offer.fee + (offer.signingBonus || 0)) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي لقيمة الانتقال ومكافأة التوقيع.');
+    const bonus = offer.signingBonus || 0;
+    if (!money(offer.fee) || !money(bonus) || !money(offer.weeklyWage) || !Number.isInteger(offer.contractYears) || offer.contractYears < 1 || offer.contractYears > 5) return fail('INVALID_CONTRACT_MONEY', 'بيانات قيمة الانتقال أو الراتب أو مدة العقد غير صالحة.');
+    if (!Number.isSafeInteger(offer.fee + bonus)) return fail('BUDGET_OVERFLOW', 'إجمالي تكلفة الصفقة يتجاوز النطاق المالي المسموح.');
+    if (!money(x.budget)) return fail('INVALID_BUDGET', 'ميزانية النادي غير صالحة.');
+    if (x.budget < offer.fee + bonus) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي لقيمة الانتقال ومكافأة التوقيع.');
     if (!x.transferSystem || typeof x.transferSystem.completePurchase !== 'function') return fail('TRANSFER_SYSTEM_MISSING', 'نظام تنفيذ الانتقالات غير متاح.');
     const transfer = x.transferSystem.completePurchase({
       players: x.players,
