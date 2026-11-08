@@ -766,7 +766,9 @@ function startNegotiation(id){
   const p=G.players.find(x=>x.id==id&&x.clubId>0&&x.clubId!==G.uid);
   if(!p)return say('❌ اللاعب لم يعد متاحاً للتفاوض.');
   if((G.loans||[]).some(x=>x.playerId===id&&x.status==='active'))return say('❌ اللاعب مرتبط بإعارة نشطة.');
-  const value=val(p),choices=[.85,1,1.15].map(r=>Math.ceil(value*r/1000)*1000);
+  const value=val(p),precheck=FM4TransferSystem.validatePurchase({players:G.players,playerId:id,buyerClubId:G.uid,sellerClubId:p.clubId,fee:Math.ceil(value*.85/1000)*1000,budget:G.budget,contractYears:3,weeklyWage:wageOf(p),season:G.season,loans:G.loans||[]});
+  if(!precheck.ok)return transferError(precheck);
+  const choices=[.85,1,1.15].map(r=>Math.ceil(value*r/1000)*1000);
   menu('تقديم عرض أولي لضم '+p.name,choices.map(fee=>({l:'عرض '+money(fee),fn:()=>beginNegotiation(id,fee)})),true);
 }
 function beginNegotiation(id,fee){
