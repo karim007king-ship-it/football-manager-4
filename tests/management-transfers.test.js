@@ -84,7 +84,7 @@ test('loan rejects invalid parties, duplicate active loan and club loan limit', 
   assert.equal(Transfers.validateLoan({ ...base, loans: many }).code, 'LOAN_LIMIT_REACHED');
 });
 
-test('loan cannot outlast the player's remaining contract', () => {
+test('loan cannot outlast the remaining player contract', () => {
   const players = roster().map(p => p.id === '2-8' ? { ...p, cy: 1 } : p);
   const input = { players, loans: [], playerId: '2-8', fromClubId: 2, toClubId: 1, season: 1, durationSeasons: 2, loanFee: 0, wageSharePct: 50 };
   assert.equal(Transfers.validateLoan(input).code, 'CONTRACT_TOO_SHORT');
