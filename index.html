@@ -567,11 +567,49 @@ function go(t){
     ${G.news.length?'<h3 class="title" style="margin-top:16px">آخر الأخبار</h3>'+G.news.slice(-6).reverse().map(n=>`<div class="row dim">${n}</div>`).join(''):''}
     <button class="action-btn" style="background:#555" onclick="resetGame()">🔄 لعبة جديدة</button>`;
   }else if(t=='squad'){
-    let xi=teamS(U).xi.map(p=>p.id),ord=['GK','DEF','MID','FWD'];
-    let l=mine().sort((a,b)=>ord.indexOf(a.pos)-ord.indexOf(b.pos)||b.ovr-a.ovr);
-    c.innerHTML=`<h2 class="title">التشكيلة (${l.length}/26)</h2><button class="action-btn" style="margin:0 0 8px;background:#2c3b4e" onclick="go('stats')">📊 الإحصائيات والجوائز</button><button class="action-btn" style="margin:0 0 8px;background:#2c3b4e" onclick="go('contracts')">📝 العقود والرواتب</button><button class="action-btn" style="margin:0 0 8px;background:#2c3b4e" onclick="go('academy')">🎓 أكاديمية الشباب</button><button class=\"action-btn\" style=\"margin:0 0 8px;background:#2c3b4e\" onclick=\"traitHelp()\">🧬 صفات اللاعبين</button><button class=\"action-btn\" style=\"margin:0 0 8px;background:#2c3b4e\" onclick=\"storyList()\">📖 قصص المواسم</button>`+l.map(p=>
-      `<div class="row"><span>${xi.includes(p.id)?'★ ':''}[${POS[p.pos]}] ${p.name}${trChip(p)}<br><span class="dim">عمر ${p.age} • إمكانات ${pot(p)} • ⚽${ST(p).g} 🎯${ST(p).a} • معنويات ${p.morale}% • ${money(val(p))} • عقد ${cy(p)}س</span>${p.pos==='GK'?'<br><span class="dim">🧤 رد الفعل '+(p.gkReflexes??p.ovr)+' • الإمساك '+(p.gkHandling??p.ovr)+' • التمركز '+(p.gkPositioning??p.ovr)+' • الانفراد '+(p.gkOneOnOne??p.ovr)+' • التوزيع '+(p.gkDistribution??p.ovr)+'</span>':''}</span>
-      <span class="ovr ${ovc(p.ovr)}">${p.ovr}</span>${p.inj?'<span class="loss">🚑'+p.inj+'أ</span>':''}<button class="mini r" onclick="sell('${p.id}')">بيع</button></div>`).join('');
+    const xi=teamS(U).xi.map(p=>p.id),ord=['GK','DEF','MID','FWD'];
+    const l=mine().sort((a,b)=>ord.indexOf(a.pos)-ord.indexOf(b.pos)||b.ovr-a.ovr);
+    const totalWage=l.reduce((sum,p)=>sum+wg(p),0);
+    const groups=ord.map(pos=>{
+      const players=l.filter(p=>p.pos===pos);
+      if(!players.length)return '';
+      return `<section class="squad-group" data-squad-group="${pos}">
+        <header><b>${uiEsc(POS[pos])}</b><span>${players.length} لاعب</span></header>
+        <div class="squad-grid">${players.map(p=>{
+          const starter=xi.includes(p.id),injured=!!p.inj;
+          return `<article class="squad-player ${starter?'is-starter':''} ${injured?'is-injured':''}">
+            <div class="squad-player-top"><span class="squad-position">${uiEsc(POS[p.pos])}</span><strong class="ovr ${ovc(p.ovr)}">${p.ovr}</strong></div>
+            <h3>${uiEsc(p.name)}</h3>
+            <div class="squad-player-tags">${starter?'<span class="squad-tag starter">أساسي</span>':'<span class="squad-tag">احتياط</span>'}${injured?'<span class="squad-tag injured">🚑 مصاب • '+p.inj+' أسابيع</span>':''}${p.morale<50?'<span class="squad-tag low-morale">معنويات منخفضة</span>':''}</div>
+            <div class="squad-player-metrics">
+              <span><small>العمر</small><b>${p.age}</b></span><span><small>الإمكانات</small><b>${pot(p)}</b></span><span><small>المعنويات</small><b>${p.morale}%</b></span>
+              <span><small>الأهداف</small><b>${ST(p).g}</b></span><span><small>التمريرات الحاسمة</small><b>${ST(p).a}</b></span><span><small>العقد</small><b>${cy(p)} سنة</b></span>
+            </div>
+            ${p.pos==='GK'?'<div class="squad-keeper">🧤 رد الفعل '+(p.gkReflexes??p.ovr)+' • الإمساك '+(p.gkHandling??p.ovr)+' • التمركز '+(p.gkPositioning??p.ovr)+' • الانفراد '+(p.gkOneOnOne??p.ovr)+' • التوزيع '+(p.gkDistribution??p.ovr)+'</div>':''}
+            <div class="squad-player-footer"><span>القيمة <b>${money(val(p))}</b></span><span>الراتب <b>${money(wg(p))}/أسبوع</b></span></div>
+            <button type="button" class="squad-sell" data-sell-player="${uiEsc(p.id)}">بيع اللاعب</button>
+          </article>`;
+        }).join('')}</div>
+      </section>`;
+    }).join('');
+    c.innerHTML=`<div class="squad-heading"><div><h2 class="title">قائمة الفريق</h2><p class="dim">إدارة اللاعبين ومراجعة حالتهم الفنية والمالية</p></div><strong class="squad-count">${l.length}<small>/26</small></strong></div>
+      <div class="squad-summary"><div><small>عدد اللاعبين</small><b>${l.length}/26</b></div><div><small>التشكيلة الأساسية</small><b>${xi.length}/11</b></div><div><small>الأجور الأسبوعية</small><b>${money(totalWage)}</b></div></div>
+      <div class="squad-shortcuts">
+        <button class="action-btn" onclick="go('lineup')">👥 التشكيلة الأساسية</button><button class="action-btn" onclick="go('stats')">📊 الإحصائيات والجوائز</button>
+        <button class="action-btn" onclick="go('contracts')">📝 العقود والرواتب</button><button class="action-btn" onclick="go('academy')">🎓 أكاديمية الشباب</button>
+        <button class="action-btn" onclick="traitHelp()">🧬 صفات اللاعبين</button><button class="action-btn" onclick="storyList()">📖 قصص المواسم</button>
+      </div>
+      <div class="squad-filters" role="group" aria-label="تصفية اللاعبين حسب المركز">
+        <button type="button" class="squad-filter active" data-squad-filter="ALL" aria-pressed="true">الكل</button>
+        ${ord.map(pos=>`<button type="button" class="squad-filter" data-squad-filter="${pos}" aria-pressed="false">${uiEsc(POS[pos])}</button>`).join('')}
+      </div>
+      ${groups||'<p class="squad-empty">لا يوجد لاعبون في الفريق حالياً.</p>'}`;
+    c.querySelectorAll('[data-squad-filter]').forEach(button=>button.addEventListener('click',()=>{
+      const filter=button.dataset.squadFilter;
+      c.querySelectorAll('[data-squad-filter]').forEach(item=>{const active=item===button;item.classList.toggle('active',active);item.setAttribute('aria-pressed',String(active))});
+      c.querySelectorAll('[data-squad-group]').forEach(group=>group.hidden=filter!=='ALL'&&group.dataset.squadGroup!==filter);
+    }));
+    c.querySelectorAll('[data-sell-player]').forEach(button=>button.addEventListener('click',()=>sell(button.dataset.sellPlayer)));
   }else if(t=='tactics'){
     let s=teamS(U);
     c.innerHTML=`<h2 class="title">التكتيك والخطط</h2>
