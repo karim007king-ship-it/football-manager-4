@@ -33,7 +33,7 @@ test('goalkeeper attributes are generated, displayed and improved through traini
     assert.match(html, new RegExp(attribute));
   }
   assert.match(html, /const keeperStats=pos==='GK'\?\{/);
-  assert.match(html, /p\.pos==='GK'\?'<br/);
+  assert.match(html, /p\.pos==='GK'\?'<div class="squad-keeper"/);
   assert.match(html, /if\(p\.pos==='GK'\)\['gkReflexes','gkHandling','gkPositioning','gkOneOnOne','gkDistribution'\]/);
 });
 
