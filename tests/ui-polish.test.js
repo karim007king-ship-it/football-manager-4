@@ -84,7 +84,7 @@ test('match presentation exposes explicit halftime, extra-time, penalty and full
 test('extra-time and penalty score changes repaint the live phase banner immediately',()=>{
  const html=read('index.html');
  assert.match(html,/M\.et=1;M\.min=90;M\.end=120;log\([\s\S]{0,100}sb\(\);return/);
- assert.match(html,/penalties:`ركلات الترجيح \\$\\{M\\.so\\?M\\.so\\.u:0\\}/);
+ assert.match(html,/penalties:`ركلات الترجيح \$\{M\.so\?M\.so\.u:0\}/);
  assert.match(html,/function soKick\(\)\{M\.so\.ph=0;sb\(\)/);
  assert.match(html,/function soOpp\(\)\{M\.so\.ph=1;sb\(\)/);
 });
