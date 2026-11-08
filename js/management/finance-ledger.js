@@ -65,6 +65,26 @@
     return { ok: true, duplicate: false, transaction: result.transaction, balanceAfter: result.balanceAfter };
   }
 
+  function applyBatchToCareer(career, entries, period) {
+    const state = career || {};
+    const batch = Array.isArray(entries) ? entries : null;
+    const context = period || {};
+    if (!Number.isSafeInteger(state.budget)) return fail('INVALID_CAREER_BUDGET', 'ميزانية المسيرة غير صالحة.');
+    if (!batch) return fail('INVALID_BATCH', 'دفعة الحركات المالية غير صالحة.');
+    if (!Number.isInteger(context.season) || context.season < 1 || !Number.isInteger(context.round) || context.round < 0) {
+      return fail('INVALID_PERIOD', 'بيانات الموسم أو الجولة غير صالحة.');
+    }
+    const draft = { budget: state.budget, financeHistory: (Array.isArray(state.financeHistory) ? state.financeHistory : []).map(item => ({ ...item })) };
+    for (let index = 0; index < batch.length; index += 1) {
+      const entry = batch[index] || {};
+      const result = applyToCareer(draft, { ...entry, season: entry.season === undefined ? context.season : entry.season, round: entry.round === undefined ? context.round : entry.round });
+      if (!result.ok) return { ...result, failedIndex: index };
+    }
+    state.budget = draft.budget;
+    state.financeHistory = draft.financeHistory;
+    return { ok: true, duplicate: false, budget: state.budget, financeHistory: state.financeHistory };
+  }
+
   function summarize(history, season) {
     if (!Array.isArray(history) || !Number.isInteger(season) || season < 1) return fail('INVALID_SUMMARY_INPUT', 'بيانات ملخص الموسم غير صالحة.');
     const entries = history.filter(item => item && item.season === season);
@@ -77,5 +97,5 @@
     return { ok: true, season, count: entries.length, income, expenses, net, openingBalance, closingBalance, entries: entries.map(item => ({ ...item })) };
   }
 
-  return Object.freeze({ recordTransaction, applyToCareer, summarize });
+  return Object.freeze({ recordTransaction, applyToCareer, applyBatchToCareer, summarize });
 });
