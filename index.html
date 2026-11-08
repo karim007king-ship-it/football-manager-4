@@ -277,10 +277,10 @@ function cupTab(){let c=G.cup;if(!c)return'';let h='<h3 class="title" style="mar
   if(!c.done)h+=`<div class="row"><span class="hl">القادم: ${CN[c.s]}</span></div>`+c.pairs.map(p=>`<div class="row"><span>${badge(p[0],16)} ${C(p[0]).name} × ${C(p[1]).name} ${badge(p[1],16)}</span></div>`).join('');
   else h+=`<div class="row"><span class="hl">${c.champ==G.uid?'🏆 أنت البطل':'البطل: '+C(c.champ).name}</span></div>`;return h}
 function soStart(){M.so={u:0,o:0,n:0,ph:0};log('🥅 ركلات الترجيح! الأعصاب مشدودة...','log-info');soKick()}
-function soKick(){M.so.ph=0;if(M.skip)return soRes(R(0,2));
+function soKick(){M.so.ph=0;sb();if(M.skip)return soRes(R(0,2));
   menu(`🥅 ركلتك رقم ${M.so.n+1} (${M.so.u}-${M.so.o}) — اختر اتجاه التسديدة`,DIRS.map((d,i)=>({l:d,fn:()=>soRes(i)})),false)}
 function soRes(d){let g=kick(d,rdir());if(g)M.so.u++;log(`${scorer(M.xi)} يسدد ${DIRS[d]}: ${g?'هدف ⚽':'مصدودة 🧤'}`,g?'log-goal':'log-bad');soOpp()}
-function soOpp(){M.so.ph=1;if(M.skip)return soRes2(R(0,2));
+function soOpp(){M.so.ph=1;sb();if(M.skip)return soRes2(R(0,2));
   menu(`الخصم يسدد (${M.so.u}-${M.so.o}) — اختر اتجاه حارسك`,DIRS.map((d,i)=>({l:d,fn:()=>soRes2(i)})),false)}
 function soRes2(kd){let g=kick(rdir(),kd);if(g)M.so.o++;log(`${scorer(M.O.xi)} يسدد: ${g?'هدف للخصم ⚽':'حارسك يتصدى 🧤'}`,g?'log-bad':'log-goal');M.so.n++;
   let t=M.so,rem=5-t.n;
@@ -740,7 +740,7 @@ function sb(){
   const phase=M.so?'ركلات الترجيح':M.et?'وقت إضافي':M.min>=45?'الشوط الثاني':'الشوط الأول';
   const status=M.done?'انتهت':M.so?'ركلات الترجيح':M.paused?(M.min===45?'استراحة':'متوقفة'):'مباشرة';
   const matchState=M.done?'fulltime':M.so?'penalties':M.et?'extratime':M.paused&&M.min===45?'halftime':M.paused?'paused':'live';
-  const phaseMessage={live:'المباراة جارية — تابع التغييرات لحظة بلحظة',halftime:'استراحة بين الشوطين — راجع الأداء والتبديلات',extratime:'وقت إضافي — الحسم لم يُحسم بعد',penalties:'ركلات الترجيح — كل ركلة قد تحسم التأهل',fulltime:'صافرة النهاية — اكتملت المباراة',paused:'المباراة متوقفة مؤقتاً'}[matchState];
+  const phaseMessage={live:'المباراة جارية — تابع التغييرات لحظة بلحظة',halftime:'استراحة بين الشوطين — راجع الأداء والتبديلات',extratime:'وقت إضافي — الحسم لم يُحسم بعد',penalties:`ركلات الترجيح ${M.so?M.so.u:0} – ${M.so?M.so.o:0} — كل ركلة قد تحسم التأهل`,fulltime:'صافرة النهاية — اكتملت المباراة',paused:'المباراة متوقفة مؤقتاً'}[matchState];
   const weather=M.wx==='rain'?'🌧️ أمطار':'☀️ صحو';
   const userVenue=M.home?'المضيف':'الضيف',opponentVenue=M.home?'الضيف':'المضيف';
   const competition=M.cup?'🏆 '+CN[G.cup.s]:'🏟️ مباراة الدوري';
@@ -809,7 +809,7 @@ function tick(){
   sb();saveMatchSession();
   if(m>=M.end&&!M.q.length){
     if(M.cup&&M.gu==M.go){
-      if(!M.et){M.et=1;M.min=90;M.end=120;log('⏱️ تعادل! شوطان إضافيان...','log-info');return}
+      if(!M.et){M.et=1;M.min=90;M.end=120;log('⏱️ تعادل! شوطان إضافيان...','log-info');sb();return}
       soStart();return}
     M.done=true;clearInterval(M.t);motm();M.cup?endCup():endMatch()}}
 
