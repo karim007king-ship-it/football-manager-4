@@ -66,6 +66,14 @@ test('derives a transparent aerial proxy from OVR and playing role while honorin
  for(const player of mapped.players)assert.ok(player.aerial>=1&&player.aerial<=100);
 });
 
+test('falls back safely when a supplied aerial rating is malformed',()=>{
+ const squad=legacyTeam('قيمة هوائية غير صالحة');
+ squad.players[2].aerial='not-a-number';
+ squad.players[3].aerial='';
+ const mapped=toEngineTeam(squad);
+ assert.ok(mapped.players[2].aerial>1&&mapped.players[2].aerial<=100,'invalid text should fall back to the role-based estimate');
+ assert.ok(mapped.players[3].aerial>1&&mapped.players[3].aerial<=100,'blank input should fall back to the role-based estimate');
+});
 test('creates a valid match from two legacy lineups and simulates it',()=>{
  const s=createMatchFromGame({home:legacyTeam('المضيف'),away:legacyTeam('الضيف',1),seed:91});
  assert.equal(s.teams[0].name,'المضيف');assert.equal(s.teams[1].name,'الضيف');
