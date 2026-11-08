@@ -143,7 +143,7 @@
       buyerClubId: offer.buyerClubId,
       sellerClubId: offer.sellerClubId,
       fee: offer.fee,
-      budget: x.budget - (offer.signingBonus || 0),
+      budget: x.budget,
       contractYears: offer.contractYears,
       weeklyWage: offer.weeklyWage,
       season: offer.season,
