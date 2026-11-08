@@ -282,3 +282,14 @@ test('cup advancement commits round logs only after the prize is confirmed and a
   assert.match(html, /financePostRecorded\('s'\+G\.season\+':cup:runner-up'/);
   assert.match(html, /c\.lg\.push\(\.\.\.roundLogs\);c\.due=false;c\.s\+\+/);
 });
+
+
+test('weekly payroll and finance forecasts apply active loan wage shares', () => {
+  assert.match(html, /function clubWeeklyWages\(clubId\)\{const result=FM4TransferSystem\.calculateWeeklyWageCommitment/);
+  assert.match(html, /let wk=clubWeeklyWages\(U\)\+ACW/);
+  assert.match(html, /weeklyWages=clubWeeklyWages\(G\.uid\)/);
+  assert.match(html, /const weekly=clubWeeklyWages\(G\.uid\)/);
+  assert.match(html, /tot=clubWeeklyWages\(G\.uid\)/);
+  assert.match(html, /let wages=clubWeeklyWages\(U\)\+ACW/);
+  assert.match(html, /حصة النادي المستعير من الراتب/);
+});
