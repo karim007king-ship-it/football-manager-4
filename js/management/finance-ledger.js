@@ -72,7 +72,9 @@
     const expenses = entries.reduce((sum, item) => item.amount < 0 ? sum - item.amount : sum, 0);
     const net = income - expenses;
     if (!Number.isSafeInteger(income) || !Number.isSafeInteger(expenses) || !Number.isSafeInteger(net)) return fail('SUMMARY_OVERFLOW', 'إجمالي الحركات يتجاوز النطاق المالي الآمن.');
-    return { ok: true, season, count: entries.length, income, expenses, net, entries: entries.map(item => ({ ...item })) };
+    const openingBalance = entries.length ? entries[0].balanceBefore : null;
+    const closingBalance = entries.length ? entries[entries.length - 1].balanceAfter : null;
+    return { ok: true, season, count: entries.length, income, expenses, net, openingBalance, closingBalance, entries: entries.map(item => ({ ...item })) };
   }
 
   return Object.freeze({ recordTransaction, applyToCareer, summarize });
