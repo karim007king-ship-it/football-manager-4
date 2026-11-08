@@ -89,3 +89,20 @@ test('extra-time and penalty score changes repaint the live phase banner immedia
  assert.match(html,/function soKick\(\)\{M\.so\.ph=0;sb\(\)/);
  assert.match(html,/function soOpp\(\)\{M\.so\.ph=1;sb\(\)/);
 });
+
+test('shared choice modal is safe, accessible and keyboard-operable',()=>{
+ const html=read('index.html');
+ const css=read('ui-polish.css');
+ assert.match(html,/function menu\(title,items,cancel\)/);
+ assert.match(html,/content\.replaceChildren\(\)/);
+ assert.match(html,/button\.textContent=String\(item\.l/);
+ assert.doesNotMatch(html,/mtxt'\)\.innerHTML=.*menuPick/);
+ assert.match(html,/aria-modal','true'/);
+ assert.match(html,/aria-labelledby','match-menu-heading'/);
+ assert.match(html,/e\.key==='Escape'&&menuCanCancel/);
+ assert.match(html,/e\.key!=='Tab'/);
+ assert.match(html,/function menuPick\(i\)\{if\(!MN\[i\]\)return/);
+ assert.match(css,/\.match-menu-list/);
+ assert.match(css,/\.match-menu-option:focus-visible/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+});
