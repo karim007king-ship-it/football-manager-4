@@ -31,9 +31,9 @@ test('reusing an event ID with different money data is rejected', () => {
   assert.equal(first.history.length, 1);
 });
 
-test('rejects invalid amounts, negative resulting balances and malformed periods', () => {
+test('allows negative club balances but rejects unsafe values and malformed periods', () => {
   const base = { history: [], eventId: 'x', season: 1, round: 1, category: 'test', description: 'test', amount: -1, balanceBefore: 0 };
-  assert.equal(Finance.recordTransaction(base).code, 'INVALID_RESULTING_BALANCE');
+  assert.equal(Finance.recordTransaction(base).balanceAfter, -1);
   assert.equal(Finance.recordTransaction({ ...base, amount: 0 }).code, 'INVALID_AMOUNT');
   assert.equal(Finance.recordTransaction({ ...base, season: 0 }).code, 'INVALID_PERIOD');
   assert.equal(Finance.recordTransaction({ ...base, amount: Number.MAX_SAFE_INTEGER + 1 }).code, 'INVALID_AMOUNT');
@@ -46,4 +46,36 @@ test('season summary separates income, expenses and net movement', () => {
   const summary = Finance.summarize(otherSeason.history, 3);
   assert.deepEqual({ count: summary.count, income: summary.income, expenses: summary.expenses, net: summary.net }, { count: 2, income: 200000, expenses: 80000, net: 120000 });
   assert.equal(Finance.summarize(otherSeason.history, 4).count, 1);
+});
+
+test('career posting updates budget and history once, including negative balances', () => {
+  const career = { budget: 100, financeHistory: [] };
+  const first = Finance.applyToCareer(career, { eventId: 's1:r1:wages', season: 1, round: 1, category: 'wages', description: 'Weekly wages', amount: -150 });
+  assert.equal(first.ok, true);
+  assert.equal(first.duplicate, false);
+  assert.equal(career.budget, -50);
+  assert.equal(career.financeHistory.length, 1);
+  const replay = Finance.applyToCareer(career, { eventId: 's1:r1:wages', season: 1, round: 1, category: 'wages', description: 'Weekly wages', amount: -150 });
+  assert.equal(replay.ok, true);
+  assert.equal(replay.duplicate, true);
+  assert.equal(career.budget, -50);
+  assert.equal(career.financeHistory.length, 1);
+});
+
+test('failed career posting leaves the original state unchanged', () => {
+  const career = { budget: 100, financeHistory: [] };
+  const result = Finance.applyToCareer(career, { eventId: '', season: 1, round: 1, category: 'test', description: 'invalid', amount: -10 });
+  assert.equal(result.ok, false);
+  assert.equal(career.budget, 100);
+  assert.deepEqual(career.financeHistory, []);
+});
+
+test('career ledger survives JSON save and restore without duplicate replay', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  Finance.applyToCareer(career, { eventId: 's1:r3:gate', season: 1, round: 3, category: 'match', description: 'Gate income', amount: 500 });
+  const restored = JSON.parse(JSON.stringify(career));
+  const replay = Finance.applyToCareer(restored, { eventId: 's1:r3:gate', season: 1, round: 3, category: 'match', description: 'Gate income', amount: 500 });
+  assert.equal(replay.duplicate, true);
+  assert.equal(restored.budget, 1500);
+  assert.equal(restored.financeHistory.length, 1);
 });
