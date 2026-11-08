@@ -257,8 +257,8 @@ function met(o){let v=objCur(o);return o.k=='rank'?v<=o.t:v>=o.t}
 function objRows(){return (G.obj||[]).map(o=>{let v=objCur(o),t=o.k=='rank'?'المركز '+v:o.k=='budget'?money(v):v;
   return `<div class="row"><span>${o.k=='rank'?'📍':met(o)?'✅':'⏳'} ${otxt(o)}<br><span class="dim">الحالي: ${t} • المكافأة ${money(o.rw)} + ${o.cf}% ثقة${o.k=='rank'?' • الفشل -10% ثقة':''}</span></span></div>`}).join('')}
 function objEnd(){let h='<br><br><b>🎯 أهداف الإدارة</b>';
-  (G.obj||[]).forEach((o,i)=>{let ok=met(o);if(ok){if(financePost('s'+G.season+':management-objective:'+i,'management-prize','مكافأة هدف الإدارة: '+otxt(o),o.rw))G.conf=cl(G.conf+o.cf,0,100)}else if(o.k=='rank')G.conf=cl(G.conf-10,0,100);
-    h+=`<br>${ok?'✅':'❌'} ${otxt(o)}${ok?' (+'+money(o.rw)+')':''}`});return h}
+  (G.obj||[]).forEach((o,i)=>{let ok=met(o),paid=false;if(ok){paid=financePost('s'+G.season+':management-objective:'+i,'management-prize','مكافأة هدف الإدارة: '+otxt(o),o.rw);if(paid)G.conf=cl(G.conf+o.cf,0,100)}else if(o.k=='rank')G.conf=cl(G.conf-10,0,100);
+    h+=`<br>${ok?(paid?'✅':'⚠️'):'❌'} ${otxt(o)}${paid?' (+'+money(o.rw)+')':ok?' (تعذّر تسجيل المكافأة)':''}`});return h}
 const CN=['ربع النهائي','نصف النهائي','النهائي'];
 function newCup(){let i=G.clubs.filter(c=>c.dv==C(G.uid).dv).map(c=>c.id).sort(()=>Math.random()-.5);G.cup={s:0,pairs:[[i[0],i[1]],[i[2],i[3]],[i[4],i[5]],[i[6],i[7]]],lg:[],due:false,done:false}}
 function simCup(a,b){let s=teamS(a),t=teamS(b),[x,y]=quickGoals(s,t,true);
