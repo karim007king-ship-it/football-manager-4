@@ -901,7 +901,7 @@ function finalizeNegotiatedTransfer(id){
 }
 function sell(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');let pr=Math.round(val(p)*.85);
   ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{let result=FM4TransferSystem.completeSale({players:G.players,playerId:id,sellerClubId:G.uid,buyerClubId:0,fee:pr,budget:G.budget,season:G.season,loans:G.loans||[]});
-    if(!result.ok)return transferError(result);G.players=result.players;if(!financePost('s'+G.season+':r'+(G.round+1)+':transfer-sale:'+id,'transfer-income','بيع اللاعب '+p.name,pr))return say('❌ تعذّر تسجيل دخل البيع.');save();say('✅ تم بيع '+p.name);go('squad')})}
+    if(!result.ok)return transferError(result);if(!financePost('s'+G.season+':r'+(G.round+1)+':transfer-sale:'+id,'transfer-income','بيع اللاعب '+p.name,pr))return say('❌ تعذّر تسجيل دخل البيع؛ لم يتم إتمام الصفقة.');G.players=result.players;save();say('✅ تم بيع '+p.name);go('squad')})}
 function loanPlayer(id){
   const p=G.players.find(x=>x.id==id&&x.clubId==G.uid);if(!p)return say('❌ اللاعب غير موجود في فريقك.');
   if((G.loans||[]).some(x=>x.playerId===id&&x.status==='active'))return say('❌ اللاعب مرتبط بإعارة نشطة بالفعل.');
