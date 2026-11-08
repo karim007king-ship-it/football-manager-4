@@ -98,6 +98,24 @@
     return { ok: true, offer: { ...offer, fee: x.fee, status: 'pending', counterFee: null } };
   }
 
+  function acceptClubCounter(input) {
+    const x = input || {};
+    const offer = x.offer;
+    const player = x.player;
+    if (!offer || offer.status !== 'countered' || !money(offer.counterFee)) return fail('NO_COUNTER_TO_ANSWER', 'لا يوجد عرض مضاد من النادي لقبوله.');
+    if (!player || offer.playerId !== player.id || offer.sellerClubId !== player.clubId) return fail('STALE_NEGOTIATION', 'تغيرت ملكية اللاعب؛ لم يعد العرض المضاد صالحاً.');
+    const bonus = offer.signingBonus || 0;
+    if (!money(bonus) || !Number.isSafeInteger(offer.counterFee + bonus)) return fail('INVALID_CONTRACT_MONEY', 'قيمة العرض المضاد أو مكافأة التوقيع غير صالحة.');
+    if (!money(x.budget)) return fail('INVALID_BUDGET', 'ميزانية النادي غير صالحة.');
+    if (x.budget < offer.counterFee + bonus) return fail('INSUFFICIENT_BUDGET', 'الميزانية لا تكفي لقبول العرض المضاد.');
+    return {
+      ok: true,
+      offer: { ...offer, fee: offer.counterFee, status: 'club_accepted', counterFee: null },
+      decision: 'accepted',
+      message: 'تم قبول العرض المضاد من النادي.'
+    };
+  }
+
   function evaluatePlayerContract(input) {
     const x = input || {};
     const offer = x.offer;
@@ -181,6 +199,7 @@
     createOffer,
     evaluateClubOffer,
     submitCounterOffer,
+    acceptClubCounter,
     evaluatePlayerContract,
     acceptPlayerCounter,
     expireAtSeasonEnd,
