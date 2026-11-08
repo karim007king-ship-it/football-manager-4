@@ -38,19 +38,19 @@ test('contract UI includes duration, weekly wage and signing bonus choices', () 
 });
 
 test('preflight checks protect roster and budget before opening talks', () => {
-  assert.match(html, /FM4TransferSystem\\.validatePurchase/);
-  assert.match(html, /function startNegotiation\\(/);
+  assert.match(html, /FM4TransferSystem\.validatePurchase/);
+  assert.match(html, /function startNegotiation\(/);
 });
 
 test('legacy saves initialize negotiation history and season rollover expires open talks', () => {
-  assert.match(html, /function save\\(\\).*G\\.negotiations=\\[\\]/);
-  assert.match(html, /function load\\(\\).*G\\.negotiations=\\[\\]/);
-  assert.match(html, /FM4NegotiationSystem\\.expireAtSeasonEnd/);
+  assert.match(html, /function save\(\).*G\.negotiations=\[\]/);
+  assert.match(html, /function load\(\).*G\.negotiations=\[\]/);
+  assert.match(html, /FM4NegotiationSystem\.expireAtSeasonEnd/);
 });
 
 test('the selected signing bonus is included in the affordability check', () => {
-  assert.match(html, /weeklyWage,contractYears,signingBonus,budget:G\\.budget/);
-  assert.match(html, /G\\.budget>=offer\\.fee\\+bonus/);
+  assert.match(html, /weeklyWage,contractYears,signingBonus,budget:G\.budget/);
+  assert.match(html, /G\.budget>=offer\.fee\+bonus/);
 });
 
 test('unfinished negotiations can be resumed or explicitly rejected from the market', () => {
