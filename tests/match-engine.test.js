@@ -289,6 +289,28 @@ test('clearance second balls are contested only under nearby pressure and can be
  assert.equal(safeEvent.secondBall,undefined,'an uncontested clearance must keep its original outlet');
  assert.equal(safe.ball.playerId,safeOutlet.id);
 });
+test('clearance second-ball contests use aerial ability instead of unrelated passing or defending skills',()=>{
+ const run=(defendingId,defAerial,attackAerial,defSkill,attackSkill)=>{
+  const attackingId=1-defendingId;
+  const outlet={id:'outlet-'+defendingId,role:'CM',active:true,x:50,y:50,pace:50,aerial:defAerial,passing:10,defending:defSkill};
+  const press={id:'press-'+defendingId,role:'ST',active:true,x:50,y:50,pace:50,aerial:attackAerial,passing:attackSkill,defending:99};
+  const keeper={id:'keeper-'+defendingId,role:'GK',active:true,x:50,y:50,pace:100,aerial:100};
+  const state={teams:[{id:0,players:[]},{id:1,players:[]}],ball:{x:50,y:50,team:defendingId,playerId:outlet.id},actionCount:1,transition:null};
+  state.teams[defendingId].players.push(outlet,keeper);
+  state.teams[attackingId].players.push(press);
+  const event=resolveClearanceSecondBall(state,state.teams[defendingId],attackingId,outlet);
+  return{event,state,outlet,press};
+ };
+ for(const defendingId of [0,1]){
+  const aerialDefender=run(defendingId,95,15,10,99);
+  assert.equal(aerialDefender.event.outcome,'retained','the stronger aerial outlet must win despite weaker technical attributes');
+  assert.equal(aerialDefender.state.ball.playerId,aerialDefender.outlet.id);
+  const aerialAttacker=run(defendingId,15,95,99,10);
+  assert.equal(aerialAttacker.event.outcome,'lost','the stronger aerial presser must win despite weaker technical attributes');
+  assert.equal(aerialAttacker.state.ball.playerId,aerialAttacker.press.id);
+ }
+});
+
 test('clearance second-ball pressure cutoff is strict and ignores inactive players and goalkeepers',()=>{
  const makeState=(opponentDistance)=>{
   const outlet={id:'outlet',role:'CM',active:true,x:50,y:50,pace:50,passing:60,defending:60};
