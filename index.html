@@ -205,6 +205,7 @@ td .bdg{margin-left:6px}.sbm .bdg{margin:0 4px}
 
 <script src="js/management/transfers.js"></script>
 <script src="js/management/negotiations.js"></script>
+<script src="js/management/finance-ledger.js"></script>
 <script src="js/match/engine.js"></script>
 <script src="js/match/adapter.js"></script>
 <script src="js/match/live-bridge.js"></script>
@@ -507,13 +508,13 @@ function refreshMarket(){G.players=G.players.filter(p=>p.clubId!==0);
 function newGame(uid){
   G={v:2,uid,season:1,round:0,budget:uid>8?4000000:8000000,conf:70,tactic:'balanced',form:'4-4-2',sponsor:null,
     date:new Date(2026,7,1).getTime(),clubs:ALL.map((c,i)=>({id:i+1,name:c[0],ovr:c[1],dv:c[2],pts:0,p:0,w:0,d:0,l:0,gf:0,ga:0})),
-    players:[],fix:[],news:[],loans:[],negotiations:[]};G.fix=mkFix();
+    players:[],fix:[],news:[],loans:[],negotiations:[],financeHistory:[]};G.fix=mkFix();
   G.clubs.forEach(c=>LAY.forEach(pos=>G.players.push(mkPlayer(c.id,pos,c.ovr))));
   G.cn=1;if(uid>8)G.sd={cap:0,tp:1,fans:45,mk:0};G.players.forEach(p=>{if(p.clubId==uid)p.cy=R(2,4)});refreshMarket();genObj();newCup();save();go('home')}
 
 let saveWarn=false;
-function save(){try{if(G&&!Array.isArray(G.loans))G.loans=[];if(G&&!Array.isArray(G.negotiations))G.negotiations=[];localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
-function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2){G=o;if(!Array.isArray(G.loans))G.loans=[];if(!Array.isArray(G.negotiations))G.negotiations=[]}}}catch(e){}}
+function save(){try{if(G&&!Array.isArray(G.loans))G.loans=[];if(G&&!Array.isArray(G.negotiations))G.negotiations=[];if(G&&!Array.isArray(G.financeHistory))G.financeHistory=[];localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
+function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2){G=o;if(!Array.isArray(G.loans))G.loans=[];if(!Array.isArray(G.negotiations))G.negotiations=[];if(!Array.isArray(G.financeHistory))G.financeHistory=[]}}}catch(e){}}
 
 function strength(cid,tac,form,noLu){
   let ps=G.players.filter(p=>p.clubId==cid),f=FORM[form],xi=[],sl={},sum=0,mor=0,miss=[],lu=(cid==G.uid&&!noLu)?G.lu:null,rk=p=>lu?(lu.p.includes(p.id)?-1:lu.b.includes(p.id)?1:0):0,ord=(a,b)=>(a.inj?1:0)-(b.inj?1:0)||rk(a)-rk(b)||b.ovr-a.ovr;
