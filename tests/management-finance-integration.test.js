@@ -29,6 +29,12 @@ test('season finalization quarantines invalid loan records and safely completes 
   assert.doesNotMatch(recovery, /return false/);
 });
 
+test('invalid loan history renders safe club and contract fallbacks', () => {
+  assert.match(html, /from\?from\.name:'نادي غير معروف'/);
+  assert.match(html, /to\?to\.name:'نادي غير معروف'/);
+  assert.match(html, /Number\.isInteger\(x\.endSeason\)\?x\.endSeason:'—'/);
+});
+
 test('suspended loan records are visibly distinguished from completed history', () => {
   assert.match(html, /x\.status==='suspended'\?'loss':'hl'/);
   assert.match(html, /x\.status==='suspended'\?'معلّقة للمراجعة'/);
