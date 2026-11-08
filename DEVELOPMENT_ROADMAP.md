@@ -334,3 +334,16 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - No gameplay thresholds were changed in this verification sequence. The new engine remains shadow-only; legacy career results and saves remain authoritative. PR #1 remains unmerged.
 
 **Next:** perform a broader deterministic second-ball cohort audit (both teams, both directions, varied pace/defending/passing attributes, contested versus uncontested clearances), and reconcile event metadata, possession and immediate transition behavior. Then inspect cross-contest and aerial-player data contracts before introducing any aerial-duel attributes. Do not begin the full match-screen redesign until this engine audit has a clean acceptance report.
+
+## 13. Aerial contests and numeric-input hardening — 2026-11-08
+
+- Added a dedicated aerial rating to the isolated engine player schema. Explicit legacy/player aerial values are preserved; when absent, the adapter derives a transparent role-aware proxy from OVR, position, morale and injury state.
+- Cross contests and clearance second-ball contests now use the same aerial-skill function rather than mixing passing, shooting or defending ratings into aerial outcomes. Pace remains a secondary factor.
+- Added mirrored tests proving that aerial ability controls cross and second-ball outcomes in both attacking directions, independently of unrelated technical attributes.
+- Hardened aerial and pace normalization against malformed strings, blank strings, non-finite values and out-of-range aerial ratings. Safe fallbacks prevent NaN from contaminating candidate ordering.
+- Latest verified commit: `b7ed1b5ca05fc1fcea0cabf6adc8ceb66fd2ec45`. FM4 checks runs `42440683223` and `42440681971` passed; the engine suite reports 151 tests passed, 0 failed.
+- Matching Android APK run `42440681946` passed automated tests, Android project setup, Gradle debug APK build and artifact upload.
+- These are automated CI and package-build results only. No install or runtime test has been performed on the HONOR 400 Pro. The new engine remains shadow-only; legacy career results and saves remain authoritative. PR #1 remains unmerged.
+- Historical “next” notes in earlier sections describe the state at the time they were written. Subsequent sections record completion of live crosses, cross-originated clearances and second-ball handling; they should not be read as current outstanding gaps.
+
+**Next:** run a deterministic cohort audit of second-ball contests across both teams, both attacking directions, varied aerial/pace ratings and pressure distances. Reconcile contest outcomes with ball ownership, event metadata, possession and counter-transition state. If the engine acceptance gates remain clean, begin the shared UI system and match-screen redesign, then continue through squad, transfers, tactics and the remaining career screens. Keep Shadow Mode and legacy result/save authority unchanged.
