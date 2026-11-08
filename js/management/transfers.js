@@ -124,9 +124,10 @@
     if (!Array.isArray(x.players)) return fail('INVALID_PLAYERS', 'قائمة اللاعبين غير صالحة.');
     const player = findPlayer(x.players, x.playerId);
     if (!player) return fail('PLAYER_NOT_FOUND', 'اللاعب غير موجود.');
-    if (!Number.isInteger(x.fromClubId) || !Number.isInteger(x.toClubId) || x.fromClubId === x.toClubId) {
-      return fail('INVALID_CLUBS', 'الأندية المحددة للإعارة غير صالحة.');
+    if (!Number.isInteger(x.fromClubId) || !Number.isInteger(x.toClubId) || x.fromClubId <= 0 || x.toClubId <= 0 || x.fromClubId === x.toClubId) {
+      return fail('INVALID_CLUBS', 'الأندية المحددة للإعارة غير صالحة؛ يجب أن تكون أندية فعلية وليست سوق اللاعبين الأحرار.');
     }
+    if (x.loans !== undefined && !Array.isArray(x.loans)) return fail('INVALID_LOANS', 'سجل الإعارات غير صالح.');
     if (player.clubId !== x.fromClubId) return fail('OWNER_MISMATCH', 'النادي المُعير لا يملك اللاعب حالياً.');
     if (!Number.isInteger(x.season) || x.season < 1) return fail('INVALID_SEASON', 'الموسم المحدد غير صالح.');
     if (!Number.isInteger(x.durationSeasons) || x.durationSeasons < 1 || x.durationSeasons > 2) {
