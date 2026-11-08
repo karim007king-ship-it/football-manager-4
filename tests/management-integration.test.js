@@ -27,3 +27,12 @@ test('old career saves are migrated with an empty loans collection', () => {
 test('sales return players to the free-agent pool without requiring an existing free agent', () => {
   assert.match(html, /buyerClubId:0/);
 });
+
+test('loan management UI is connected to squad, save state and season-end return', () => {
+  assert.match(html, /data-loan-player/);
+  assert.match(html, /function loanPlayer\(/);
+  assert.match(html, /FM4TransferSystem\.createLoan\(/);
+  assert.match(html, /FM4TransferSystem\.returnLoansAtSeasonEnd\(/);
+  assert.match(html, /t=='loans'/);
+  assert.match(html, /loans:\[\]/);
+});
