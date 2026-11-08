@@ -26,7 +26,7 @@ function createMatch({teams,seed=1}={}){
   })};
  });
  const random=makeRandom(seed),kick=normalized[0].players.find(p=>!keeper(p.role)&&p.active)||normalized[0].players[0];
- return {minute:0,score:[0,0],possession:[0,0],shots:[0,0],shotsOnTarget:[0,0],passes:[0,0],completedPasses:[0,0],tackles:[0,0],teams:normalized,ball:{x:kick.x,y:kick.y,team:0,playerId:kick.id},events:[],random};
+ return {minute:0,score:[0,0],possession:[0,0],shots:[0,0],shotsOnTarget:[0,0],passes:[0,0],completedPasses:[0,0],tackles:[0,0],teams:normalized,ball:{x:kick.x,y:kick.y,team:0,playerId:kick.id},events:[],eventSequence:0,random};
 }
 const active=t=>t.players.filter(p=>p.active);
 function manpowerProfile(team,mentality='balanced'){
@@ -168,7 +168,16 @@ function defensiveCoverTarget(carrier,player,teamId,rank){
   y:clamp(carrier.y+(50-carrier.y)*.55,3,97)
  };
 }
-function addEvent(s,e){s.events.push(e);if(s.events.length>300)s.events.shift();}
+function addEvent(s,e){
+ // Stable, deterministic IDs let the timeline, monitor and save layer refer
+ // to the same incident after serialization and restore.
+ if(!Number.isInteger(s.eventSequence)||s.eventSequence<0)s.eventSequence=0;
+ const sequence=++s.eventSequence;
+ const event={...e,id:e.id==null?'fm4-event-'+sequence:String(e.id)};
+ s.events.push(event);
+ if(s.events.length>300)s.events.shift();
+ return event;
+}
 function pointSegmentDistance(point,a,b){
  const dx=b.x-a.x,dy=b.y-a.y,len2=dx*dx+dy*dy;
  if(!len2)return distance(point,a);
