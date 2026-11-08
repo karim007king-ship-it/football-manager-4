@@ -49,3 +49,21 @@ test('sponsor signing, renewals, player loans and outgoing player sales use the 
   assert.match(html, /:loan-in:'\+id,'loan-expense'/);
   assert.match(html, /:offer-sale:'\+p\.id,'transfer-income'/);
 });
+
+test('player purchases, negotiated transfers and player sales are posted through the finance ledger', () => {
+  assert.match(html, /:transfer-buy:'\+id,'transfer-expense'/);
+  assert.match(html, /:negotiation:'\+id\+':fee','transfer-expense'/);
+  assert.match(html, /:negotiation:'\+id\+':bonus','signing-bonus'/);
+  assert.match(html, /:transfer-sale:'\+id,'transfer-income'/);
+  assert.doesNotMatch(html, /G\.players=result\.players;G\.budget=result\.budget;let signed=/);
+});
+
+test('training facility upgrades and management objectives use idempotent ledger events', () => {
+  assert.match(html, /:training-facility:'\+T\.fac,'facility-investment'/);
+  assert.match(html, /:management-objective:'\+i,'management-prize'/);
+});
+
+test('cup champion and runner-up prizes use distinct ledger event IDs', () => {
+  assert.match(html, /:cup:champion','cup-prize'/);
+  assert.match(html, /:cup:runner-up','cup-prize'/);
+});
