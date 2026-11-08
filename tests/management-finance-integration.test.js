@@ -13,7 +13,7 @@ test('season finalization is guarded against duplicate execution', () => {
 });
 
 test('legacy careers without a season completion marker remain eligible for finalization', () => {
-  assert.ok(html.includes("if(G.lastCompletedSeason===G.season)"));
+  assert.ok(html.includes("if(G.round<14||G.lastCompletedSeason===G.season)"));
   assert.equal(html.includes("if(!G.lastCompletedSeason)"), false);
 });
 
