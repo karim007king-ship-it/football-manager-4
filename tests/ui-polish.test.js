@@ -48,3 +48,16 @@ test('live match screen has a structured scoreboard, telemetry and tactical stri
   assert.match(css, /body\.match-live #sb \.match-live-card/);
   assert.match(css, /body\.match-live #ctl\{\s*position:sticky/);
 });
+
+test('match event timeline separates minute stamps and preserves accessible log semantics', () => {
+  const html = read('index.html');
+  const css = read('ui-polish.css');
+
+  assert.match(html, /id="console" role="log" aria-live="polite"/);
+  assert.match(html, /function matchLogNode\(entry\)/);
+  assert.match(html, /match-event-time/);
+  assert.match(html, /restoreMatchLog\(\)[\s\S]{0,180}matchLogNode\(entry\)/);
+  assert.match(css, /\.match-event-time/);
+  assert.match(css, /\.ll\.log-goal/);
+  assert.match(css, /\.ll\.log-bad/);
+});
