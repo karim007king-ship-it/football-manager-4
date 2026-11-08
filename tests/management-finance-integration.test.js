@@ -58,6 +58,11 @@ test('player purchases, negotiated transfers and player sales are posted through
   assert.doesNotMatch(html, /G\.players=result\.players;G\.budget=result\.budget;let signed=/);
 });
 
+test('management objective reward is not reported as paid when ledger posting fails', () => {
+  assert.match(html, /paid=financePost\('s'\+G\.season\+':management-objective:'\+i/);
+  assert.match(html, /paid\?' \(\+'\+money\(o\.rw\)\+'\)':ok\?' \(تعذّر تسجيل المكافأة\)'/);
+});
+
 test('training facility upgrades and management objectives use idempotent ledger events', () => {
   assert.match(html, /:training-facility:'\+T\.fac,'facility-investment'/);
   assert.match(html, /:management-objective:'\+i,'management-prize'/);
