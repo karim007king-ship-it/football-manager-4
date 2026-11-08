@@ -389,4 +389,4 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - Preserved the existing teamS, strength, luPick, luSet and luAuto selection logic. Same-position replacement, injured-player exclusion, saved custom lineup and automatic lineup remain unchanged. No match-engine or result logic changed.
 - Added regression tests for the pitch structure, player action wiring, bench derivation and existing replacement constraints.
 
-**Verification:** awaiting FM4 checks and Android APK build for this lineup pass. No real-device runtime claim.
+**Verification:** FM4 checks run `42476140014` and `42476144160` passed on commit `13aff4233ee7119a0cc462cbb6e36a30fc258661`; Android automated tests also passed (160/160). The matching APK job reached Gradle but failed while downloading Gradle 8.2.1 because the wrapper's default 10-second network timeout expired; this was an infrastructure download timeout, not a compile error. Follow-up CI commit `6f35c534e21b18af7844376a7780a51c87481c61` raises the wrapper download timeout to 120 seconds. Re-run pending. No real-device runtime claim.
