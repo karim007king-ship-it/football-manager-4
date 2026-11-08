@@ -128,3 +128,13 @@ test('unfinished negotiations expire cleanly at season rollover', () => {
   assert.equal(result.negotiations[2].status, 'completed');
   assert.equal(result.negotiations[3].status, 'pending');
 });
+
+test('computed wage is used when a player has no stored wage field', () => {
+  const ctx = setup(), player = { ...ctx.player };
+  delete player.wg;
+  const created = Negotiations.createOffer({ player, buyerClubId: 1, budget: 1000000, fee: 100000, weeklyWage: 2000, contractYears: 3 });
+  const club = Negotiations.evaluateClubOffer({ offer: created.offer, player, fee: 120000, marketValue: 100000 });
+  const result = Negotiations.evaluatePlayerContract({ offer: club.offer, player, currentWage: 2000, weeklyWage: 1800, contractYears: 3 });
+  assert.equal(result.decision, 'countered');
+  assert.ok(result.demandedWage > 1800);
+});
