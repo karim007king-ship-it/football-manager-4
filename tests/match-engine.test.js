@@ -850,3 +850,22 @@ test('overhit passes resolve touchline, goal-kick and corner restarts in both di
  assert.ok(awayCorner.events.at(-1).playerId);
  assert.throws(()=>resolvePassBoundary(homeGoalKick,{x:1,y:1},{x:1,y:1},0),/length/);
 });
+
+
+test('engine events receive unique stable IDs and preserve their sequence across snapshot restore',()=>{
+ const uninterrupted=create(20261108);
+ stepMatch(uninterrupted);
+ for(let i=0;i<36;i++)stepMatch(uninterrupted);
+ const saved=JSON.parse(JSON.stringify({...uninterrupted,randomState:uninterrupted.random.state,random:undefined}));
+ const restored={...saved,random:restoreRandom(saved.randomState)};
+ delete restored.randomState;
+ assert.equal(restored.eventSequence,uninterrupted.eventSequence);
+ assert.ok(restored.events.length>0);
+ assert.ok(restored.events.every(e=>/^fm4-event-\\d+$/.test(e.id)));
+ assert.equal(new Set(restored.events.map(e=>e.id)).size,restored.events.length);
+ for(let i=0;i<53;i++){stepMatch(uninterrupted);stepMatch(restored);}
+ const stripRandom=({random,...state})=>state;
+ assert.deepEqual(stripRandom(restored),stripRandom(uninterrupted));
+ assert.equal(restored.random.state,uninterrupted.random.state);
+ assert.equal(restored.eventSequence,uninterrupted.eventSequence);
+});
