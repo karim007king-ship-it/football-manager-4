@@ -183,7 +183,7 @@ td .bdg{margin-left:6px}.sbm .bdg{margin:0 4px}
   <div class="cbar"><i id="cbar"></i></div>
 </div>
 <div id="sb"></div>
-<div id="console"></div>
+<div id="console" role="log" aria-live="polite" aria-relevant="additions" aria-label="أحداث المباراة"></div>
 <div id="ctl"><div class="grid">
 <button class="cb" id="bp" onclick="togPause()">⏸ إيقاف</button>
 <button class="cb" onclick="subMenu()">🔄 تبديل (<span id="sl">5</span>)</button>
@@ -673,8 +673,29 @@ function sell(id){let p=G.players.find(x=>x.id==id),sq=G.players.filter(x=>x.clu
   ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{G.budget+=pr;p.clubId=0;save();go('squad')})}
 function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem(MATCH_KEY)}catch(e){}G=null;M=null;shadowMonitor=null;busy=false;go('home')};f?d():ask('مسح كل التقدم وبدء لعبة جديدة؟',d)}
 
-function log(t,c){if(M){if(!Array.isArray(M.sessionLog))M.sessionLog=[];M.sessionLog.push({text:String(t),className:c||''});if(M.sessionLog.length>150)M.sessionLog.shift()}snd.hear(t);let d=document.createElement('div');d.className='ll '+(c||'');d.innerText=t;let k=$('console');k.appendChild(d);k.scrollTop=k.scrollHeight}
-function restoreMatchLog(){let k=$('console');if(!Array.isArray(M?.sessionLog))return;M.sessionLog.forEach(x=>{let d=document.createElement('div');d.className='ll '+(x.className||'');d.innerText=String(x.text??'');k.appendChild(d)});k.scrollTop=k.scrollHeight}
+function matchLogNode(entry){
+ const text=String(entry.text??''),node=document.createElement('div');
+ node.className='ll '+(entry.className||'');
+ const timed=text.match(/^\\[(\\d+(?:\\+\\d+)?)\\]\\s*([\\s\\S]*)$/);
+ if(timed){
+  node.classList.add('has-time');
+  const stamp=document.createElement('span');stamp.className='match-event-time';stamp.textContent=timed[1]+'′';
+  const body=document.createElement('span');body.className='match-event-body';body.textContent=timed[2];
+  node.append(stamp,body);
+ }else{
+  const body=document.createElement('span');body.className='match-event-body';body.textContent=text;node.appendChild(body);
+ }
+ return node;
+}
+function log(t,c){
+ const text=String(t),entry={text,className:c||''};
+ if(M){if(!Array.isArray(M.sessionLog))M.sessionLog=[];M.sessionLog.push(entry);if(M.sessionLog.length>150)M.sessionLog.shift()}
+ snd.hear(text);const k=$('console');k.appendChild(matchLogNode(entry));k.scrollTop=k.scrollHeight;
+}
+function restoreMatchLog(){
+ const k=$('console');if(!Array.isArray(M?.sessionLog))return;
+ M.sessionLog.forEach(entry=>k.appendChild(matchLogNode(entry)));k.scrollTop=k.scrollHeight;
+}
 
 let MN=[];
 const tm=()=>`[${M.min>90&&!M.et?'90+'+(M.min-90):M.min}']`;
