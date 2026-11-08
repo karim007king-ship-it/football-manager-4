@@ -522,7 +522,7 @@ function financeHtml(seasonFilter='current',categoryFilter='all'){
   if(!seasons.includes(G.season))seasons.unshift(G.season);
   const selectedSeason=seasonFilter==='all'?'all':Number(seasonFilter==='current'?G.season:seasonFilter);
   const entries=history.filter(x=>(selectedSeason==='all'||x.season===selectedSeason)&&(categoryFilter==='all'||x.category===categoryFilter)).slice().sort((a,b)=>b.season-a.season||b.round-a.round);
-  const summary=selectedSeason==='all'?history.reduce((acc,x)=>{if(x.amount>0)acc.income+=x.amount;else acc.expenses-=x.amount;acc.count++;return acc},{income:0,expenses:0,count:0}):FM4FinanceLedger.summarize(history,selectedSeason);
+  const summary=entries.reduce((acc,x)=>{if(x.amount>0)acc.income+=x.amount;else acc.expenses-=x.amount;acc.count++;return acc},{income:0,expenses:0,count:0});
   const income=summary.income||0,expenses=summary.expenses||0,net=income-expenses;
   const categories=[...new Set(history.map(x=>x.category).filter(Boolean))].sort();
   const seasonOptions='<option value="current" '+(selectedSeason===G.season?'selected':'')+'>الموسم الحالي ('+G.season+')</option><option value="all" '+(selectedSeason==='all'?'selected':'')+'>كل المواسم</option>'+seasons.filter(x=>x!==G.season).map(x=>'<option value="'+x+'" '+(selectedSeason===x?'selected':'')+'>الموسم '+x+'</option>').join('');
