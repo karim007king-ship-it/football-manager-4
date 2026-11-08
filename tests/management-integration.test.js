@@ -45,3 +45,8 @@ test('incoming loans expose club and player selection with a budget guard', () =
   assert.match(html, /toClubId:G\.uid/);
   assert.match(html, /G\.budget-=terms\.fee/);
 });
+
+test('borrowed players keep their contract with the owning club during season rollover', () => {
+  assert.match(html, /borrowedIds=new Set\(\(G\.loans\|\|\[\]\)\.filter\(l=>l\.status==='active'&&l\.toClubId===U&&l\.fromClubId!==U\)/);
+  assert.match(html, /sq\(\)\.filter\(p=>!borrowedIds\.has\(p\.id\)\)/);
+});
