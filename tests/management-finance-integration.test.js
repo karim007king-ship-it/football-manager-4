@@ -4,6 +4,57 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const financeLedger = require('../js/management/finance-ledger');
+
+test('finance batch replay is identified and does not change the balance twice', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  const entries = [
+    { eventId: 's1:r1:gate', category: 'match-income', description: 'Gate', amount: 100 },
+    { eventId: 's1:r1:cost', category: 'operating-expense', description: 'Costs', amount: -50 }
+  ];
+  const first = financeLedger.applyBatchToCareer(career, entries, { season: 1, round: 1 });
+  assert.equal(first.ok, true);
+  assert.equal(first.duplicate, false);
+  assert.equal(career.budget, 1050);
+  const replay = financeLedger.applyBatchToCareer(career, entries, { season: 1, round: 1 });
+  assert.equal(replay.ok, true);
+  assert.equal(replay.duplicate, true);
+  assert.equal(career.budget, 1050);
+  assert.equal(career.financeHistory.length, 2);
+});
+
+test('finance batch with both replayed and new entries is not marked as a full duplicate', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  const first = financeLedger.applyBatchToCareer(career, [
+    { eventId: 's1:r1:gate', category: 'match-income', description: 'Gate', amount: 100 }
+  ], { season: 1, round: 1 });
+  assert.equal(first.ok, true);
+  const mixed = financeLedger.applyBatchToCareer(career, [
+    { eventId: 's1:r1:gate', category: 'match-income', description: 'Gate', amount: 100 },
+    { eventId: 's1:r1:cost', category: 'operating-expense', description: 'Costs', amount: -50 }
+  ], { season: 1, round: 1 });
+  assert.equal(mixed.ok, true);
+  assert.equal(mixed.duplicate, false);
+  assert.equal(career.budget, 1050);
+  assert.equal(career.financeHistory.length, 2);
+});
+
+test('conflicting finance batch replay rolls back every pending entry', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  financeLedger.applyBatchToCareer(career, [
+    { eventId: 's1:r1:gate', category: 'match-income', description: 'Gate', amount: 100 }
+  ], { season: 1, round: 1 });
+  const beforeBudget = career.budget;
+  const beforeHistory = JSON.stringify(career.financeHistory);
+  const conflict = financeLedger.applyBatchToCareer(career, [
+    { eventId: 's1:r1:new', category: 'match-income', description: 'New income', amount: 200 },
+    { eventId: 's1:r1:gate', category: 'match-income', description: 'Gate changed', amount: 150 }
+  ], { season: 1, round: 1 });
+  assert.equal(conflict.ok, false);
+  assert.equal(conflict.code, 'EVENT_ID_CONFLICT');
+  assert.equal(career.budget, beforeBudget);
+  assert.equal(JSON.stringify(career.financeHistory), beforeHistory);
+});
 
 test('finance ledger loads before the game controller', () => {
   const ledger = html.indexOf('<script src="js/management/finance-ledger.js"></script>');
