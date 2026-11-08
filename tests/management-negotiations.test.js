@@ -57,6 +57,13 @@ test('seller counters a credible but insufficient offer', () => {
   assert.equal(Negotiations.submitCounterOffer({ offer: result.offer, fee: 100000, budget: 1000000 }).offer.status, 'pending');
 });
 
+test('exact counter threshold is accepted without floating-point over-rounding', () => {
+  const ctx = setup(), created = makeOffer(ctx);
+  const result = Negotiations.evaluateClubOffer({ offer: created.offer, player: ctx.player, fee: 112000, marketValue: 100000 });
+  assert.equal(result.decision, 'accepted');
+  assert.equal(result.offer.fee, 112000);
+});
+
 test('seller rejects an offer below the minimum threshold', () => {
   const ctx = setup(), created = makeOffer(ctx);
   const result = Negotiations.evaluateClubOffer({ offer: created.offer, player: ctx.player, fee: 70000, marketValue: 100000 });
