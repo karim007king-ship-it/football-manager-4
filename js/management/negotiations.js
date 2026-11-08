@@ -46,8 +46,9 @@
       ['pending', 'countered', 'club_accepted', 'player_countered', 'player_accepted'].includes(n.status)
     );
     if (existing) return fail('NEGOTIATION_ALREADY_ACTIVE', 'توجد مفاوضات نشطة بالفعل حول هذا اللاعب.');
+    const sequence = (Array.isArray(x.negotiations) ? x.negotiations.length : 0) + 1;
     const offer = {
-      id: 'neg:' + String(x.player.id) + ':' + String(x.season || 1) + ':' + String(x.buyerClubId),
+      id: 'neg:' + String(x.player.id) + ':' + String(x.season || 1) + ':' + String(x.buyerClubId) + ':' + sequence,
       playerId: x.player.id,
       sellerClubId: x.player.clubId,
       buyerClubId: x.buyerClubId,
