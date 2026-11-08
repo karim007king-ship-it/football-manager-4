@@ -801,8 +801,14 @@ function answerClubCounter(id,fee){
 }
 function showPlayerContract(offer){
   const p=G.players.find(x=>x.id===offer.playerId);if(!p)return say('❌ اللاعب لم يعد متاحاً.');
-  const base=wageOf(p),wages=[1,1.15,1.3].map(r=>Math.ceil(base*r/100)*100);
-  menu('النادي وافق. تفاوض الآن مع '+p.name+' على الراتب الأسبوعي',wages.map((w,i)=>({l:'راتب '+money(w)+' • عقد 3 مواسم'+(i===2?' • فرصة قبول أعلى':''),fn:()=>submitPlayerTerms(offer.id,w,3,0)})),true);
+  menu('النادي وافق. اختر مدة عقد اللاعب '+p.name,[2,3,4,5].map(years=>({l:'عقد '+years+' مواسم',fn:()=>showPlayerWageTerms(offer.id,years)})),true);
+}
+function showPlayerWageTerms(id,years){
+  const offer=(G.negotiations||[]).find(x=>x.id===id),p=offer&&G.players.find(x=>x.id===offer.playerId);
+  if(!offer||!p)return say('❌ انتهت صلاحية المفاوضات.');
+  const base=wageOf(p),wages=[1,1.15,1.3].map(r=>Math.ceil(base*r/100)*100),items=[];
+  wages.forEach((w,i)=>[0,w*4].forEach(bonus=>items.push({l:'راتب '+money(w)+' أسبوعياً • مكافأة توقيع '+money(bonus),fn:()=>submitPlayerTerms(id,w,years,bonus)})));
+  menu('حدد الراتب ومكافأة التوقيع • '+years+' مواسم',items,true);
 }
 function submitPlayerTerms(id,weeklyWage,contractYears,signingBonus){
   const offer=(G.negotiations||[]).find(x=>x.id===id),p=offer&&G.players.find(x=>x.id===offer.playerId);
