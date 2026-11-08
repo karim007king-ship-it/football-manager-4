@@ -51,5 +51,6 @@ test('game startup resumes a validated active match and checkpoints only safe st
  assert.match(html,/window\.onload=\(\)=>\{load\(\);if\(G&&restoreMatchSession\(\)\)return/);
  assert.match(html,/clearMatchSession\(\);busy=false;M=null;shadowMonitor=null/);
  assert.match(html,/function restoreMatchLog\(\)[\s\S]{0,500}M\.sessionLog\.forEach/);
- assert.match(html,/M\.sessionLog\.push\(\{text:String\(t\),className:c\|\|''\}\)/);
+ assert.match(html,/const text=String\(t\),entry=\{text,className:c\|\|''\}/);
+ assert.match(html,/M\.sessionLog\.push\(entry\)/);
 });
