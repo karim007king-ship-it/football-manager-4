@@ -103,6 +103,18 @@ test('season-end return restores original club and keeps completed loan history'
   assert.equal(done.loans[0].returnedSeason, 5);
 });
 
+test('sale rejects invalid budget and unknown destination club', () => {
+  const players = roster();
+  const base = { players, playerId: '1-8', sellerClubId: 1, buyerClubId: 3, fee: 1000, budget: 5000 };
+  assert.equal(Transfers.validateSale({ ...base, budget: NaN }).code, 'INVALID_BUDGET');
+  assert.equal(Transfers.validateSale({ ...base, buyerClubId: 99 }).code, 'BUYER_NOT_FOUND');
+});
+
+test('season-end loan recovery rejects broken active loan references', () => {
+  const result = Transfers.returnLoansAtSeasonEnd({ players: roster(), loans: [{ playerId: 'missing', fromClubId: 2, endSeason: 1, status: 'active' }], season: 1 });
+  assert.equal(result.code, 'INVALID_ACTIVE_LOAN');
+});
+
 test('invalid money, wage share and player references fail safely', () => {
   const players = roster();
   assert.equal(Transfers.validatePurchase({ players, playerId: '2-8', buyerClubId: 1, sellerClubId: 2, fee: -1, budget: 10, contractYears: 2, weeklyWage: 10 }).code, 'INVALID_FEE');
