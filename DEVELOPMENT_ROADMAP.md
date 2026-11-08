@@ -390,3 +390,13 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - Added regression tests for the pitch structure, player action wiring, bench derivation and existing replacement constraints.
 
 **Verification:** FM4 checks run `42476140014` and `42476144160` passed on commit `13aff4233ee7119a0cc462cbb6e36a30fc258661`; Android automated tests also passed (160/160). The matching APK job reached Gradle but failed while downloading Gradle 8.2.1 because the wrapper's default 10-second network timeout expired; this was an infrastructure download timeout, not a compile error. Follow-up CI commit `6f35c534e21b18af7844376a7780a51c87481c61` raises the wrapper download timeout to 120 seconds. Re-run pending. No real-device runtime claim.
+
+## 18. Tactical hub redesign — 2026-11-08
+
+- Replaced the compact tactics list with a dedicated Arabic RTL tactical dashboard: current style, formation selection, team strength and attack/defence indicators.
+- Formation controls display the actual defender/midfielder/forward counts from the existing formation definitions. The pitch summary reflects the selected formation without introducing new player ratings or match calculations.
+- Added lineup diagnostics from the existing selected XI: missing player count, injured starters and players assigned outside their natural position. The warnings link directly to lineup management.
+- Reused the existing `setT` and `setF` state updates and save path. The tactical engine, team-strength formulas, match simulation and legacy career result authority were not changed.
+- Added responsive styles and source-level regression tests for the selected style/formation controls, accessible pressed states, data-backed warnings and persistence callbacks.
+
+**Verification:** CI is running on the current branch head. Do not treat this screen as verified until the FM4 checks and APK workflow complete. No real-device runtime test has been performed.
