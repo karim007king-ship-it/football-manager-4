@@ -43,10 +43,10 @@ test('academy, stadium and marketing investments are recorded as expenses', () =
 });
 
 test('sponsor signing, renewals, player loans and outgoing player sales use the ledger', () => {
-  assert.match(html, /:sponsor-signing:'\+i,'sponsor-signing-income'/);
+  assert.match(html, /:r'\+G\.round\+':sponsor-signing:'\+i,'sponsor-signing-income'/);
   assert.match(html, /:renewal:'\+p\.id\+':'.*'signing-bonus'/);
-  assert.match(html, /:loan-out:'\+id,'loan-income'/);
-  assert.match(html, /:loan-in:'\+id,'loan-expense'/);
+  assert.match(html, /:r'\+\(G\.round\+1\)\+':loan-out:'\+id,'loan-income'/);
+  assert.match(html, /:r'\+\(G\.round\+1\)\+':loan-in:'\+id,'loan-expense'/);
   assert.match(html, /:offer-sale:'\+p\.id,'transfer-income'/);
 });
 
