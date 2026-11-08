@@ -45,6 +45,8 @@ test('season summary separates income, expenses and net movement', () => {
   const otherSeason = Finance.recordTransaction({ history: second.history, eventId: 's4:gate', season: 4, round: 1, category: 'match', description: 'Gate', amount: 30000, balanceBefore: 220000 });
   const summary = Finance.summarize(otherSeason.history, 3);
   assert.deepEqual({ count: summary.count, income: summary.income, expenses: summary.expenses, net: summary.net }, { count: 2, income: 200000, expenses: 80000, net: 120000 });
+  assert.equal(summary.openingBalance, 100000);
+  assert.equal(summary.closingBalance, 220000);
   assert.equal(Finance.summarize(otherSeason.history, 4).count, 1);
 });
 
