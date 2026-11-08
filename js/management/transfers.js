@@ -132,6 +132,7 @@
     if (!Number.isInteger(x.durationSeasons) || x.durationSeasons < 1 || x.durationSeasons > 2) {
       return fail('INVALID_LOAN_DURATION', 'مدة الإعارة يجب أن تكون موسماً أو موسمين.');
     }
+    if (Number.isInteger(player.cy) && player.cy < x.durationSeasons) return fail('CONTRACT_TOO_SHORT', 'مدة عقد اللاعب لا تغطي مدة الإعارة المطلوبة.');
     if (!validMoney(x.loanFee)) return fail('INVALID_LOAN_FEE', 'رسوم الإعارة غير صالحة.');
     if (!Number.isInteger(x.wageSharePct) || x.wageSharePct < 0 || x.wageSharePct > 100) {
       return fail('INVALID_WAGE_SHARE', 'نسبة تحمّل الراتب يجب أن تكون بين 0 و100.');
