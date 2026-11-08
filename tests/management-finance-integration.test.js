@@ -173,9 +173,10 @@ test('finance screen loads the isolated planner and exposes a non-mutating decis
 });
 
 test('finance forecast keeps player wages, academy and stadium commitments separate', () => {
-  assert.match(html, /weeklyAcademy=ACW\[AC\(\)\.lv\]\|\|0,weeklyStadium=SDU\[SD\(\)\.cap\]\|\|0/);
-  assert.match(html, /weeklyCommitments:\{wages:weeklyWages,academy:weeklyAcademy,stadium:weeklyStadium\}/);
+  assert.match(html, /weeklyAcademy=ACW\[AC\(\)\.lv\]\|\|0,weeklyStadium=SDU\[SD\(\)\.cap\]\|\|0,weeklyTraining=\(INT\[TR\(\)\.lv\]\|\|INT\[1\]\)\.c/);
+  assert.match(html, /weeklyCommitments:\{wages:weeklyWages,academy:weeklyAcademy,stadium:weeklyStadium,other:weeklyTraining\}/);
   assert.match(html, /planning\.weeklyCommitments\.academy/);
   assert.match(html, /planning\.weeklyCommitments\.stadium/);
-  assert.match(html, /weeklyCommitments:\{wages:weekly,academy,stadium\}/);
+  assert.match(html, /planning\.weeklyCommitments\.other/);
+  assert.match(html, /weeklyCommitments:\{wages:weekly,academy,stadium,other:training\}/);
 });
