@@ -740,8 +740,8 @@ function go(t){
     l.map(p=>{let on=T.ind.includes(p.id);return `<div class="row"><span style="flex:1">[${POS[p.pos]}] ${p.name} <span class="dim">${p.age}س</span><br><span class="hl">${p.ovr}</span><span class="dim"> / إمكانات ${pot(p)}</span><div style="height:4px;background:#2a3a4a;border-radius:3px;margin-top:3px"><div style="height:4px;width:${Math.min(100,p.xp||0)}%;background:var(--pr);border-radius:3px"></div></div></span><button class="mini" style="background:${on?'var(--gold);color:#000':'#555'}" onclick="trInd('${p.id}')">${on?'فردي ✔':'فردي'}</button></div>`}).join('');
   }else if(t=='loans'){
      const loans=G.loans||[],active=loans.filter(x=>x.status==='active'),history=loans.filter(x=>x.status!=='active');
-     const card=x=>{const p=G.players.find(y=>y.id===x.playerId),from=C(x.fromClubId),to=C(x.toClubId);return '<div class="row"><span><b>'+uiEsc(p?p.name:'لاعب غير موجود')+'</b><br><span class="dim">'+uiEsc(from.name)+' ← '+uiEsc(to.name)+' • الموسم '+x.startSeason+'–'+x.endSeason+'<br>رسوم '+money(x.loanFee)+' • تحمّل الراتب '+x.wageSharePct+'%</span></span><span class="hl">'+(x.status==='active'?'نشطة':'مكتملة')+'</span></div>'};
-     c.innerHTML='<h2 class="title">🔁 إدارة الإعارات</h2><p class="dim">تنتقل ملكية التسجيل مؤقتاً إلى النادي المستعير، ويعود اللاعب تلقائياً عند نهاية مدة الاتفاق.</p><h3 class="title">الإعارات النشطة ('+active.length+')</h3>'+(active.map(card).join('')||'<p class="dim">لا توجد إعارات نشطة.</p>')+'<h3 class="title" style="margin-top:18px">السجل السابق</h3>'+(history.slice().reverse().map(card).join('')||'<p class="dim">لا توجد إعارات سابقة.</p>')+'<button class="action-btn" onclick="go(&quot;squad&quot;)">العودة إلى الفريق</button>';
+     const card=x=>{const p=G.players.find(y=>y.id===x.playerId),from=C(x.fromClubId),to=C(x.toClubId);return '<div class="row"><span><b>'+uiEsc(p?p.name:'لاعب غير موجود')+'</b><br><span class="dim">'+uiEsc(from.name)+' ← '+uiEsc(to.name)+' • الموسم '+x.startSeason+'–'+x.endSeason+'<br>رسوم '+money(x.loanFee)+' • نسبة الراتب '+x.wageSharePct+'%</span></span><span class="hl">'+(x.status==='active'?'نشطة':'مكتملة')+'</span></div>'};
+     c.innerHTML='<h2 class="title">🔁 إدارة الإعارات</h2><p class="dim">تنتقل ملكية التسجيل مؤقتاً إلى النادي المستعير، ويعود اللاعب تلقائياً عند نهاية مدة الاتفاق. رسوم الإعارة تضاف لميزانيتك. نسبة الراتب تحفظ في الاتفاق، ولا تدخل بعد في محاسبة الأندية المنافسة.</p><h3 class="title">الإعارات النشطة ('+active.length+')</h3>'+(active.map(card).join('')||'<p class="dim">لا توجد إعارات نشطة.</p>')+'<h3 class="title" style="margin-top:18px">السجل السابق</h3>'+(history.slice().reverse().map(card).join('')||'<p class="dim">لا توجد إعارات سابقة.</p>')+'<button class="action-btn" onclick="go(&quot;squad&quot;)">العودة إلى الفريق</button>';
   }else if(t=='market'){
     let l=G.players.filter(p=>p.clubId==0).sort((a,b)=>b.ovr-a.ovr);
     c.innerHTML=`<h2 class="title">سوق الانتقالات</h2><p class="dim">يتجدد كل جولتين • فريقك ${mine().length}/26</p>`+l.map(p=>
@@ -770,17 +770,17 @@ function loanTerms(id,toClubId){
   const p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
   const remainingContract=cy(p);const base=val(p),fee1=Math.round(base*.05/1000)*1000,fee2=Math.round(base*.08/1000)*1000;
   const choices=[
-    {durationSeasons:1,wageSharePct:50,fee:fee1,label:'موسم واحد • تحمّل 50% من الراتب • رسوم '+money(fee1)},
-    {durationSeasons:1,wageSharePct:75,fee:fee1,label:'موسم واحد • تحمّل 75% من الراتب • رسوم '+money(fee1)},
-    {durationSeasons:2,wageSharePct:50,fee:fee2,label:'موسمان • تحمّل 50% من الراتب • رسوم '+money(fee2)},
-    {durationSeasons:2,wageSharePct:75,fee:fee2,label:'موسمان • تحمّل 75% من الراتب • رسوم '+money(fee2)}
+    {durationSeasons:1,wageSharePct:50,fee:fee1,label:'موسم واحد • نسبة راتب 50% • رسوم '+money(fee1)},
+    {durationSeasons:1,wageSharePct:75,fee:fee1,label:'موسم واحد • نسبة راتب 75% • رسوم '+money(fee1)},
+    {durationSeasons:2,wageSharePct:50,fee:fee2,label:'موسمان • نسبة راتب 50% • رسوم '+money(fee2)},
+    {durationSeasons:2,wageSharePct:75,fee:fee2,label:'موسمان • نسبة راتب 75% • رسوم '+money(fee2)}
   ];
   menu('شروط إعارة '+p.name+' • العقد المتبقي '+remainingContract+' موسم',choices.filter(x=>x.durationSeasons<=remainingContract).map(x=>({l:x.label,fn:()=>confirmLoan(id,toClubId,x)})),true);
 }
 function confirmLoan(id,toClubId,terms){
   const p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
   const club=C(toClubId);
-  ask('إعارة '+uiEsc(p.name)+' إلى '+uiEsc(club.name)+'؟<br>المدة: '+terms.durationSeasons+' موسم<br>رسوم الإعارة: '+money(terms.fee)+'<br>النادي المستعير يتحمل '+terms.wageSharePct+'% من الراتب الأسبوعي.',()=>{
+  ask('إعارة '+uiEsc(p.name)+' إلى '+uiEsc(club.name)+'؟<br>المدة: '+terms.durationSeasons+' موسم<br>رسوم الإعارة: '+money(terms.fee)+'<br>نسبة الراتب المسجلة في الاتفاق '+terms.wageSharePct+'%.',()=>{
     const result=FM4TransferSystem.createLoan({players:G.players,loans:G.loans||[],playerId:id,fromClubId:G.uid,toClubId,season:G.season,durationSeasons:terms.durationSeasons,loanFee:terms.fee,wageSharePct:terms.wageSharePct});
     if(!result.ok)return transferError(result);
     G.players=result.players;G.loans=result.loans;G.budget+=terms.fee;
