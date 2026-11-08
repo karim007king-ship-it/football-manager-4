@@ -100,6 +100,30 @@ test('loan protects both clubs roster and goalkeeper minimums', () => {
   assert.equal(Transfers.validateLoan({ ...base, players: full, playerId: '2-8' }).code, 'BUYER_SQUAD_FULL');
 });
 
+test('re-loaning a player in the same season preserves unique loan history IDs', () => {
+  const players = roster();
+  const first = Transfers.createLoan({ players, loans: [], playerId: '2-8', fromClubId: 2, toClubId: 1, season: 4, durationSeasons: 1, loanFee: 1000, wageSharePct: 50 });
+  const returned = Transfers.returnLoansAtSeasonEnd({ players: first.players, loans: first.loans, season: 4 });
+  assert.equal(returned.ok, true);
+  const second = Transfers.createLoan({ players: returned.players, loans: returned.loans, playerId: '2-8', fromClubId: 2, toClubId: 1, season: 4, durationSeasons: 1, loanFee: 2000, wageSharePct: 75 });
+  assert.equal(second.ok, true);
+  assert.notEqual(second.loan.id, first.loan.id);
+  assert.equal(second.loan.id, first.loan.id + ':2');
+  assert.equal(second.loans.length, 2);
+});
+
+test('season-end return rejects multiple active loans for one player without mutating input', () => {
+  const players = roster().map(p => p.id === '2-8' ? { ...p, clubId: 1 } : p);
+  const loans = [
+    { id: 'loan-a', playerId: '2-8', fromClubId: 2, toClubId: 1, endSeason: 2, status: 'active' },
+    { id: 'loan-b', playerId: '2-8', fromClubId: 3, toClubId: 1, endSeason: 2, status: 'active' }
+  ];
+  const result = Transfers.returnLoansAtSeasonEnd({ players, loans, season: 2 });
+  assert.equal(result.code, 'DUPLICATE_ACTIVE_PLAYER_LOAN');
+  assert.equal(players.find(p => p.id === '2-8').clubId, 1);
+  assert.deepEqual(loans.map(x => x.status), ['active', 'active']);
+});
+
 test('season-end return restores original club and keeps completed loan history', () => {
   const players = roster().map(p => p.id === '2-8' ? { ...p, clubId: 1 } : p);
   const loans = [{ id: 'loan:2-8:4:1', playerId: '2-8', fromClubId: 2, toClubId: 1, startSeason: 4, endSeason: 5, loanFee: 40000, wageSharePct: 75, status: 'active' }];
