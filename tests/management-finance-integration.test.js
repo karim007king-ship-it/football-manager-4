@@ -126,7 +126,7 @@ test('match settlement posts all income and operating costs atomically', () => {
   assert.match(html, /function financePostBatch\(entries\)/);
   assert.match(html, /const settlement=\[\{eventId:financePrefix\+'match-gate'/);
   assert.match(html, /if\(financePostBatch\(settlement\)\)/);
-  assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance batch:'/);
+  assert.match(html, /FM4FinanceLedger\.applyBatchToCareer\(G,entries,\{season:G\.season,round:G\.round\+1\}\)/);\n  assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance batch:'/);
 });
 
 test('duplicate ledger replay cannot repeat non-financial side effects', () => {
