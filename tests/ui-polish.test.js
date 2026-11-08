@@ -127,9 +127,9 @@ test('squad screen renders player cards, safe sale controls and working position
  const html=read('index.html');
  const css=read('ui-polish.css');
  assert.match(html,/class="squad-summary"/);
- assert.match(html,/class="squad-player \\$\{starter\?/);
+ assert.ok(html.includes('class="squad-player ${starter?'));
  assert.match(html,/data-squad-filter="ALL"/);
- assert.match(html,/data-squad-group="\\$\{pos\}"/);
+ assert.ok(html.includes('data-squad-group="${pos}"'));
  assert.match(html,/c\.querySelectorAll\('\[data-squad-filter\]'\)\.forEach/);
  assert.match(html,/group\.hidden=filter!=='ALL'&&group\.dataset\.squadGroup!==filter/);
  assert.match(html,/c\.querySelectorAll\('\[data-sell-player\]'\)\.forEach/);
