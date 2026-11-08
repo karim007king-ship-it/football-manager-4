@@ -48,6 +48,8 @@ test('monitor records supported legacy incidents once without changing match sim
  assert.equal(state.events.length,types.length);
  assert.deepEqual(state.events.map(e=>e.type),types);
  assert.ok(state.events.every(e=>e.source==='legacy'&&e.minute===12));
+ assert.deepEqual(state.events.map(e=>e.id),types.map((_,i)=>'legacy-legacy-test-'+i));
+ assert.equal(new Set(state.events.map(e=>e.id)).size,types.length);
  assert.equal(state.minute,before.minute);
  assert.deepEqual(state.score,before.score);
  assert.deepEqual(state.possession,before.possession);
