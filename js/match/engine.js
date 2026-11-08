@@ -384,8 +384,8 @@ function resolveClearanceSecondBall(state,defendingTeam,attackingTeamId,outlet){
   if(keeper(player.role))continue;
   const d=distance(player,landing);
   if(d>18)continue;
-  const skill=team.id===defendingTeamId?Number(player.defending??50)*.002:Number(player.passing??50)*.002;
-  candidates.push({teamId:team.id,player,score:d-Number(player.pace??50)*.01-skill});
+  const aerialScore=aerialContestSkill(player);
+  candidates.push({teamId:team.id,player,score:d-aerialScore});
  }}
  candidates.sort((a,b)=>a.score-b.score||a.teamId-b.teamId||String(a.player.id).localeCompare(String(b.player.id)));
  const winner=candidates[0];
