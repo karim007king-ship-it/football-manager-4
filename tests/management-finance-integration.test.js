@@ -146,4 +146,6 @@ test('finance reports compare income, expenses and net movement across seasons',
   assert.match(html, /📅 مقارنة المواسم/);
   assert.match(html, /الإيرادات '\+money\(x\.income\)/);
   assert.match(html, /المصروفات '\+money\(x\.expenses\)/);
+  assert.match(html, /رصيد بداية الموسم/);
+  assert.match(html, /رصيد نهاية الموسم/);
 });
