@@ -15,6 +15,10 @@ function live(home=true){
 test('shadow monitor snapshot restores events, deduplication and deterministic continuation',()=>{
  const m=live(),first=Monitor.create({match:m,seed:712}),event={eventId:'persisted-legacy-event',type:'corner',teamId:0,minute:0};
  Monitor.advance(first,m,13);
+ const generated=first.shadow.state.events.filter(e=>e.source!=='legacy');
+ assert.ok(generated.length>0);
+ assert.ok(generated.every(e=>/^fm4-event-\\d+$/.test(e.id)));
+ assert.equal(new Set(generated.map(e=>e.id)).size,generated.length);
  first.shadow.state.actionCount=10;
  first.shadow.state.transition={team:1,expiresAtAction:13};
  assert.equal(Monitor.recordLegacyEvent(first,event),true);
@@ -23,6 +27,8 @@ test('shadow monitor snapshot restores events, deduplication and deterministic c
  first.shadow.state.events.push({type:'clearance',minute:13,team:1,playerId:'outlet-7',from:'def-2',to:'outlet-7',x:55,y:32,secondBall:{contested:true,outcome:'lost',team:0,playerId:'press-9',x:55,y:32}});
  const stored=JSON.parse(JSON.stringify(Monitor.serialize(first)));
  const restored=Monitor.restore(stored);
+ assert.equal(restored.shadow.state.eventSequence,first.shadow.state.eventSequence);
+ assert.deepEqual(restored.shadow.state.events.filter(e=>e.source!=='legacy').map(e=>e.id),generated.map(e=>e.id));
  assert.deepEqual(restored.shadow.state.events.find(e=>e.type==='clearance').secondBall,{contested:true,outcome:'lost',team:0,playerId:'press-9',x:55,y:32});
  assert.match(Monitor.render(restored,m),/الخصم يستعيد الكرة الثانية/);
  assert.equal(restored.shadow.state.actionCount,first.shadow.state.actionCount);
