@@ -87,10 +87,10 @@ test('renewal rejects players outside the club and avoids offering renewals beyo
 test('contracts dashboard breaks down weekly operating costs and remaining season commitments', () => {
   assert.match(html, /const academyWeekly=ACW\[AC\(\)\.lv\]\|\|0,stadiumWeekly=SDU\[SD\(\)\.cap\]\|\|0,trainingWeekly=\(INT\[TR\(\)\.lv\]\|\|INT\[1\]\)\.c,weeklyCommitments=tot\+academyWeekly\+stadiumWeekly\+trainingWeekly/);
   assert.match(html, /const remainingRounds=Math\.max\(0,14-G\.round\),remainingCommitments=weeklyCommitments\*remainingRounds/);
-  assert.match(html, /رواتب اللاعبين \/ أسبوع/);
-  assert.match(html, /الأكاديمية \/ أسبوع/);
-  assert.match(html, /صيانة الاستاد \/ أسبوع/);
-  assert.match(html, /التدريب \/ أسبوع/);
+  assert.match(html, /رواتب اللاعبين أسبوعياً/);
+  assert.match(html, /الأكاديمية أسبوعياً/);
+  assert.match(html, /صيانة الاستاد أسبوعياً/);
+  assert.match(html, /التدريب أسبوعياً/);
   assert.match(html, /الالتزامات المقدّرة حتى نهاية الموسم/);
   assert.match(html, /لا يشمل إيرادات المباريات أو الرعاية أو الكأس أو المكافآت/);
 });
