@@ -106,3 +106,20 @@ test('shared choice modal is safe, accessible and keyboard-operable',()=>{
  assert.match(css,/\.match-menu-option:focus-visible/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
+test('lineup screen renders an accessible tactical pitch and separate bench without changing selection rules',()=>{
+ const html=read('index.html');
+ const css=read('ui-polish.css');
+ assert.match(html,/function uiEsc\\(value\\)/);
+ assert.match(html,/class="lineup-pitch"/);
+ assert.match(html,/class="lineup-line lineup-line-\\$\\{pos\\.toLowerCase\\(\\)\\}"/);
+ assert.match(html,/data-position="\\$\\{pos\\}" data-player-id="\\$\\{uiEsc\\(p\\.id\\)\\}"/);
+ assert.match(html,/c\\.querySelectorAll\\('\\.lineup-player'\\)\\.forEach/);
+ assert.match(html,/luPick\\(button\\.dataset\\.position,button\\.dataset\\.playerId\\)/);
+ assert.match(html,/const bench=mine\\(\\)\\.filter\\(p=>!S\\.xi\\.includes\\(p\\)\\)/);
+ assert.match(html,/function luPick\\(pos,yid\\)[\\s\\S]{0,360}p\\.pos==pos&&!p\\.inj&&!S\\.xi\\.includes\\(p\\)/);
+ assert.match(html,/function luAuto\\(\\)\\{G\\.lu=null;save\\(\\);go\\('lineup'\\)\\}/);
+ assert.match(css,/\\.lineup-pitch/);
+ assert.match(css,/\\.lineup-player:focus-visible/);
+ assert.match(css,/\\.lineup-bench/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+});
