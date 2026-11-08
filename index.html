@@ -718,16 +718,16 @@ function go(t){
     let l=mine().sort((a,b)=>cy(a)-cy(b)||b.ovr-a.ovr),tot=l.reduce((s,p)=>s+wg(p),0);
     const academyWeekly=ACW[AC().lv]||0,stadiumWeekly=SDU[SD().cap]||0,weeklyCommitments=tot+academyWeekly+stadiumWeekly;
     const remainingRounds=Math.max(0,14-G.round),remainingCommitments=weeklyCommitments*remainingRounds;
-    c.innerHTML=\`<button class="action-btn" style="margin:0 0 8px;background:#2c3b4e" onclick="go('squad')">⬅️ العودة للتشكيلة</button><h2 class="title">📝 العقود والرواتب</h2>
-    <div class="row"><span>رواتب اللاعبين / أسبوع</span><span class="loss">\${money(tot)}</span></div>
-    <div class="row"><span>الأكاديمية / أسبوع</span><span>\${money(academyWeekly)}</span></div>
-    <div class="row"><span>صيانة الاستاد / أسبوع</span><span>\${money(stadiumWeekly)}</span></div>
-    <div class="row"><b>إجمالي الالتزامات التشغيلية / أسبوع</b><b class="loss">\${money(weeklyCommitments)}</b></div>
-    <div class="row"><span>الجولات المتبقية في الدوري</span><span class="hl">\${remainingRounds} / 14</span></div>
-    <div class="row"><b>الالتزامات المقدّرة حتى نهاية الموسم</b><b class="loss">\${money(remainingCommitments)}</b></div>
+    c.innerHTML=`<button class="action-btn" style="margin:0 0 8px;background:#2c3b4e" onclick="go('squad')">⬅️ العودة للتشكيلة</button><h2 class="title">📝 العقود والرواتب</h2>
+    <div class="row"><span>رواتب اللاعبين / أسبوع</span><span class="loss">${money(tot)}</span></div>
+    <div class="row"><span>الأكاديمية / أسبوع</span><span>${money(academyWeekly)}</span></div>
+    <div class="row"><span>صيانة الاستاد / أسبوع</span><span>${money(stadiumWeekly)}</span></div>
+    <div class="row"><b>إجمالي الالتزامات التشغيلية / أسبوع</b><b class="loss">${money(weeklyCommitments)}</b></div>
+    <div class="row"><span>الجولات المتبقية في الدوري</span><span class="hl">${remainingRounds} / 14</span></div>
+    <div class="row"><b>الالتزامات المقدّرة حتى نهاية الموسم</b><b class="loss">${money(remainingCommitments)}</b></div>
     <p class="dim">التقدير يفترض ثبات الرواتب ومستوى الأكاديمية وسعة الاستاد حتى نهاية الدوري، ولا يشمل إيرادات المباريات أو الرعاية أو الكأس أو المكافآت. إنه تقدير للمصاريف المتبقية وليس توقعاً مؤكداً للعجز.</p>
-    <p class="dim">من ينتهي عقده نهاية الموسم يغادر مجاناً. المعنويات العالية تسهّل التجديد، والمساومة قد تُغضب اللاعب. الراتب ثابت حتى التجديد، فاللاعب المتطور يصبح صفقة رابحة.</p>\`+
-    l.map(p=>\`<div class="row"><span>[\${POS[p.pos]}] \${p.name}<br><span class="dim">\${p.ovr} • عمر \${p.age} • معنويات \${p.morale}% • \${money(wg(p))}/أسبوع</span></span><span class="\${cy(p)<=1?'loss':'hl'}">\${cy(p)<=1?'⚠️ ينتهي هذا الموسم':cy(p)+' مواسم'}</span><button class="mini" onclick="renew('\${p.id}')">تجديد</button></div>\`).join('');
+    <p class="dim">من ينتهي عقده نهاية الموسم يغادر مجاناً. المعنويات العالية تسهّل التجديد، والمساومة قد تُغضب اللاعب. الراتب ثابت حتى التجديد، فاللاعب المتطور يصبح صفقة رابحة.</p>`+
+    l.map(p=>`<div class="row"><span>[${POS[p.pos]}] ${p.name}<br><span class="dim">${p.ovr} • عمر ${p.age} • معنويات ${p.morale}% • ${money(wg(p))}/أسبوع</span></span><span class="${cy(p)<=1?'loss':'hl'}">${cy(p)<=1?'⚠️ ينتهي هذا الموسم':cy(p)+' مواسم'}</span><button class="mini" onclick="renew('${p.id}')">تجديد</button></div>`).join('');
   }else if(t=='stats'){
     let all=G.players.filter(p=>p.st&&p.clubId>0&&C(p.clubId).dv==C(U).dv),cn=p=>C(p.clubId).name,me=mine().sort((a,b)=>ST(b).g*3+ST(b).a*2-ST(a).g*3-ST(a).a*2||b.ovr-a.ovr),
     sc=all.filter(p=>p.st.g>0).sort((a,b)=>b.st.g-a.st.g||b.st.a-a.st.a).slice(0,8),as=all.filter(p=>p.st.a>0).sort((a,b)=>b.st.a-a.st.a||b.st.g-a.st.g).slice(0,5),
