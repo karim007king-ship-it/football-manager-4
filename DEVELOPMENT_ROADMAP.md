@@ -347,3 +347,13 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - Historical “next” notes in earlier sections describe the state at the time they were written. Subsequent sections record completion of live crosses, cross-originated clearances and second-ball handling; they should not be read as current outstanding gaps.
 
 **Next:** run a deterministic cohort audit of second-ball contests across both teams, both attacking directions, varied aerial/pace ratings and pressure distances. Reconcile contest outcomes with ball ownership, event metadata, possession and counter-transition state. If the engine acceptance gates remain clean, begin the shared UI system and match-screen redesign, then continue through squad, transfers, tactics and the remaining career screens. Keep Shadow Mode and legacy result/save authority unchanged.
+
+## 14. Deterministic second-ball cohort audit — 2026-11-08
+
+- Added a 1,000-case deterministic matrix across both defending sides, five aerial ratings per side, two pace ratings per side and five pressure distances.
+- The audit verifies the strict 14-unit pressure cutoff, aerial/pace ranking, deterministic tie-breaks, winning player and team, ball ownership, retained/lost metadata, and counter-transition state.
+- Verified code commit: `deb02967b8a846c40bf41bb95c089c408167f591`. FM4 checks runs `42441136286` passed with 152 tests passed and 0 failed.
+- Matching Android APK run `42441136297` passed automated tests, Gradle debug build and artifact upload. Artifact: [debug APK](https://github.com/karim007king-ship-it/football-manager-4/actions/runs/42441136297/artifacts/13601354458).
+- This cohort validates the isolated second-ball resolver and its state transitions; it does not replace full-match event/possession integration checks or a real-device test. The engine remains shadow-only and legacy career results/saves remain authoritative.
+
+**Next:** audit live-match second-ball event metadata against actual ball ownership, possession totals and counter-transition expiry over deterministic full-match seeds. Once those integration checks are clean, start the shared UI design system and redesign the match screen before applying the same standards to the remaining club and career screens.
