@@ -17,6 +17,7 @@
   const fail = (code, message) => ({ ok: false, code, message });
   const money = value => Number.isSafeInteger(value) && value >= 0;
   const round1000 = value => Math.ceil(value / 1000 - 1e-10 * Math.max(1, Math.abs(value / 1000))) * 1000;
+  const atLeastRatio = (amount, value, ratio) => { const threshold = value * ratio; return amount + 1e-10 * Math.max(1, Math.abs(threshold)) >= threshold; };
   const rulesWith = rules => ({ ...RULES, ...(rules || {}) });
 
   function validateOffer(x) {
@@ -71,12 +72,12 @@
     const value = Number.isSafeInteger(x.marketValue) && x.marketValue > 0 ? x.marketValue : 0;
     if (!value) return fail('INVALID_MARKET_VALUE', 'القيمة السوقية للاعب غير صالحة.');
     const next = { ...offer, fee: x.fee, clubRounds: (offer.clubRounds || 0) + 1 };
-    if (x.fee >= value * r.acceptOfferRatio) {
+    if (atLeastRatio(x.fee, value, r.acceptOfferRatio)) {
       next.status = 'club_accepted';
       next.counterFee = null;
       return { ok: true, offer: next, decision: 'accepted', message: 'وافق النادي على قيمة الانتقال.' };
     }
-    if (x.fee >= value * r.minOfferRatio && next.clubRounds <= r.maxClubRounds) {
+    if (atLeastRatio(x.fee, value, r.minOfferRatio) && next.clubRounds <= r.maxClubRounds) {
       next.status = 'countered';
       next.counterFee = Math.max(x.fee, round1000(value * r.acceptOfferRatio));
       return { ok: true, offer: next, decision: 'countered', message: 'قدم النادي عرضاً مضاداً.' };
