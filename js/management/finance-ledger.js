@@ -48,10 +48,10 @@
     const state = career || {};
     const x = input || {};
     if (!Number.isSafeInteger(state.budget)) return fail('INVALID_CAREER_BUDGET', 'ميزانية المسيرة غير صالحة.');
-    if (!Array.isArray(state.financeHistory)) state.financeHistory = [];
-    const existing = state.financeHistory.find(item => item && item.id === x.eventId);
+    const history = Array.isArray(state.financeHistory) ? state.financeHistory : [];
+    const existing = history.find(item => item && item.id === x.eventId);
     if (existing) return { ok: true, duplicate: true, transaction: { ...existing }, balanceAfter: state.budget };
-    const result = recordTransaction({ ...x, history: state.financeHistory, balanceBefore: state.budget });
+    const result = recordTransaction({ ...x, history, balanceBefore: state.budget });
     if (!result.ok) return result;
     state.financeHistory = result.history;
     state.budget = result.balanceAfter;
@@ -63,8 +63,9 @@
     const entries = history.filter(item => item && item.season === season);
     const income = entries.reduce((sum, item) => item.amount > 0 ? sum + item.amount : sum, 0);
     const expenses = entries.reduce((sum, item) => item.amount < 0 ? sum - item.amount : sum, 0);
-    if (!Number.isSafeInteger(income) || !Number.isSafeInteger(expenses)) return fail('SUMMARY_OVERFLOW', 'إجمالي الحركات يتجاوز النطاق المالي الآمن.');
-    return { ok: true, season, count: entries.length, income, expenses, net: income - expenses, entries: entries.map(item => ({ ...item })) };
+    const net = income - expenses;
+    if (!Number.isSafeInteger(income) || !Number.isSafeInteger(expenses) || !Number.isSafeInteger(net)) return fail('SUMMARY_OVERFLOW', 'إجمالي الحركات يتجاوز النطاق المالي الآمن.');
+    return { ok: true, season, count: entries.length, income, expenses, net, entries: entries.map(item => ({ ...item })) };
   }
 
   return Object.freeze({ recordTransaction, applyToCareer, summarize });
