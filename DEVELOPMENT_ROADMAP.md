@@ -369,3 +369,14 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - Artifact: [debug APK](https://github.com/karim007king-ship-it/football-manager-4/actions/runs/42442240828/artifacts/13602700838). No installation or runtime test on the HONOR 400 Pro is implied.
 
 **Next:** refine the match event timeline and tactical/substitution controls, then add dedicated half-time, extra-time, penalty and full-time presentation states. Preserve existing gameplay behavior and shadow/legacy authority while the presentation layer is redesigned.
+
+
+## 16. Accessible tactical and substitution choice menus — 2026-11-08
+
+- Reworked the shared choice modal used by substitutions, tactical instructions, player ratings and other in-game choices. Option labels are now inserted with DOM `textContent` rather than interpolated into HTML, preventing player/team text from becoming executable markup.
+- Added dialog semantics (`role=dialog`, `aria-modal`, labelled heading), predictable focus placement, keyboard Tab containment, Escape-to-close when cancellation is permitted, and restoration of focus to the control that opened the menu.
+- Added a consistent dark match-night menu treatment with larger touch targets, scrollable option lists, visible keyboard focus, reduced-motion support and an explicit empty-state message.
+- Preserved the existing menu callbacks, cancellation rules, match hold/resume behavior, skip-match default selection and save behavior. No match engine, result, substitution eligibility or tactical effect logic was changed.
+- Added source-level regression coverage for safe text insertion, dialog semantics, keyboard behavior and responsive menu styling.
+
+**Verification:** awaiting the dedicated FM4 checks and matching Android APK build for this commit. This UI pass is not yet accepted until those workflows pass; no real-device behavior is implied.
