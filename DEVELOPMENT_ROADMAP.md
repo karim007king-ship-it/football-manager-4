@@ -357,3 +357,15 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - This cohort validates the isolated second-ball resolver and its state transitions; it does not replace full-match event/possession integration checks or a real-device test. The engine remains shadow-only and legacy career results/saves remain authoritative.
 
 **Next:** audit live-match second-ball event metadata against actual ball ownership, possession totals and counter-transition expiry over deterministic full-match seeds. Once those integration checks are clean, start the shared UI design system and redesign the match screen before applying the same standards to the remaining club and career screens.
+
+## 15. Live match screen — scoreboard and control pass — 2026-11-08
+
+- Replaced the compressed one-line scoreboard with a structured Arabic RTL match header showing competition, minute, match state, team badges, home/away labels and score.
+- Added compact live KPI cards for shots, shots on target, possession and active player count, with explicit “your team / opponent” ordering.
+- Added a tactical context strip for mentality, pressing, tempo, play direction and weather using existing match state only; no new match-result logic was introduced.
+- Made the match control area sticky near the bottom with safe-area spacing and thumb-sized controls, and added a small-screen two-column KPI layout.
+- Added UI regression coverage for the scoreboard structure, telemetry, tactical strip and sticky control behavior.
+- Verified commit `c77c9a1002bebc683ea1506ae200eb017bcbcd9a`: FM4 checks run `42442240806` passed with 154 tests, 0 failures. Android APK run `42442240828` passed automated tests, Gradle debug build and artifact upload.
+- Artifact: [debug APK](https://github.com/karim007king-ship-it/football-manager-4/actions/runs/42442240828/artifacts/13602700838). No installation or runtime test on the HONOR 400 Pro is implied.
+
+**Next:** refine the match event timeline and tactical/substitution controls, then add dedicated half-time, extra-time, penalty and full-time presentation states. Preserve existing gameplay behavior and shadow/legacy authority while the presentation layer is redesigned.
