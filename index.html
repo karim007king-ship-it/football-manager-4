@@ -813,7 +813,7 @@ function showPlayerWageTerms(id,years){
 function submitPlayerTerms(id,weeklyWage,contractYears,signingBonus){
   const offer=(G.negotiations||[]).find(x=>x.id===id),p=offer&&G.players.find(x=>x.id===offer.playerId);
   if(!offer||!p)return say('❌ انتهت صلاحية المفاوضات.');
-  const result=FM4NegotiationSystem.evaluatePlayerContract({offer,player:p,weeklyWage,contractYears,signingBonus});
+  const result=FM4NegotiationSystem.evaluatePlayerContract({offer,player:p,weeklyWage,contractYears,signingBonus,budget:G.budget});
   if(!result.ok)return transferError(result);
   G.negotiations=G.negotiations.map(x=>x.id===id?result.offer:x);save();
   if(result.decision==='rejected')return say('❌ رفض اللاعب العرض المالي.');
