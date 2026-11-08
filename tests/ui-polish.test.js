@@ -154,7 +154,7 @@ test('tactics hub exposes saved play style, formations and data-backed lineup wa
  assert.match(html,/aria-pressed="\$\{G\.tactic==k\}"/);
  assert.match(html,/aria-pressed="\$\{G\.form==k\}"/);
  assert.match(html,/const injured=s\.xi\.filter\(p=>p\.inj\)/);
- assert.match(html,/const outOfPosition=s\.xi\.filter\(p=>s\.sl\[p\.id\]!==p\.pos\)/);
+ assert.match(html,/,outOfPosition=s\.xi\.filter\(p=>s\.sl\[p\.id\]!==p\.pos\)/);
  assert.match(html,/c\.querySelectorAll\('\[data-tactic-choice\]'\)\.forEach/);
  assert.match(html,/setT\(button\.dataset\.tacticChoice\)/);
  assert.match(html,/setF\(button\.dataset\.formationChoice\)/);
