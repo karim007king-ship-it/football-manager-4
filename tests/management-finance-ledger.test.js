@@ -91,3 +91,52 @@ test('career posting rejects a reused event ID with a different amount', () => {
   assert.equal(career.budget, 600);
   assert.equal(career.financeHistory.length, 1);
 });
+
+test('atomic batch posts multiple finance entries together', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  const result = Finance.applyBatchToCareer(career, [
+    { eventId: 's1:r1:gate', category: 'match', description: 'Gate income', amount: 500 },
+    { eventId: 's1:r1:wages', category: 'wages', description: 'Weekly wages', amount: -200 }
+  ], { season: 1, round: 1 });
+  assert.equal(result.ok, true);
+  assert.equal(career.budget, 1300);
+  assert.deepEqual(career.financeHistory.map(x => x.id), ['s1:r1:gate', 's1:r1:wages']);
+  assert.equal(career.financeHistory[1].balanceBefore, 1500);
+});
+
+test('atomic batch rolls back every entry when a later entry fails', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  const before = structuredClone(career);
+  const result = Finance.applyBatchToCareer(career, [
+    { eventId: 's1:r1:gate', category: 'match', description: 'Gate income', amount: 500 },
+    { eventId: 's1:r1:bad', category: 'wages', description: 'Invalid wages', amount: 0 }
+  ], { season: 1, round: 1 });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'INVALID_AMOUNT');
+  assert.equal(result.failedIndex, 1);
+  assert.deepEqual(career, before);
+});
+
+test('atomic batch replay does not duplicate entries or change the balance', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  const entries = [
+    { eventId: 's1:r1:gate', category: 'match', description: 'Gate income', amount: 500 },
+    { eventId: 's1:r1:wages', category: 'wages', description: 'Weekly wages', amount: -200 }
+  ];
+  assert.equal(Finance.applyBatchToCareer(career, entries, { season: 1, round: 1 }).ok, true);
+  const replay = Finance.applyBatchToCareer(career, entries, { season: 1, round: 1 });
+  assert.equal(replay.ok, true);
+  assert.equal(career.budget, 1300);
+  assert.equal(career.financeHistory.length, 2);
+});
+
+test('atomic batch rejects an invalid period without mutating career state', () => {
+  const career = { budget: 1000, financeHistory: [] };
+  const before = structuredClone(career);
+  const result = Finance.applyBatchToCareer(career, [
+    { eventId: 's1:r1:gate', category: 'match', description: 'Gate income', amount: 500 }
+  ], { season: 0, round: 1 });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'INVALID_PERIOD');
+  assert.deepEqual(career, before);
+});
