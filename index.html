@@ -203,6 +203,7 @@ td .bdg{margin-left:6px}.sbm .bdg{margin:0 4px}
 </div>
 <div id="modal"><div id="mbox"><div id="mtxt"></div><div class="btns"><button id="myes" style="background:var(--pr)">حسناً</button><button id="mno" type="button" style="background:#555">رجوع</button></div></div></div>
 
+<script src="js/management/transfers.js"></script>
 <script src="js/match/engine.js"></script>
 <script src="js/match/adapter.js"></script>
 <script src="js/match/live-bridge.js"></script>
@@ -509,8 +510,8 @@ function newGame(uid){
   G.cn=1;if(uid>8)G.sd={cap:0,tp:1,fans:45,mk:0};G.players.forEach(p=>{if(p.clubId==uid)p.cy=R(2,4)});refreshMarket();genObj();newCup();save();go('home')}
 
 let saveWarn=false;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
-function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2)G=o}}catch(e){}}
+function save(){try{if(G&&!Array.isArray(G.loans))G.loans=[];localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
+function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2){G=o;if(!Array.isArray(G.loans))G.loans=[]}}}catch(e){}}
 
 function strength(cid,tac,form,noLu){
   let ps=G.players.filter(p=>p.clubId==cid),f=FORM[form],xi=[],sl={},sum=0,mor=0,miss=[],lu=(cid==G.uid&&!noLu)?G.lu:null,rk=p=>lu?(lu.p.includes(p.id)?-1:lu.b.includes(p.id)?1:0):0,ord=(a,b)=>(a.inj?1:0)-(b.inj?1:0)||rk(a)-rk(b)||b.ovr-a.ovr;
@@ -746,15 +747,14 @@ function go(t){
 function setT(t){G.tactic=t;save();go('tactics')}
 function setF(f){G.form=f;save();go('tactics')}
 function sign(i){if(G.sponsor)return;let s=SP[i];G.sponsor={n:s.n,w:s.w,k:s.k};G.budget+=s.b;save();go('home')}
-function buy(id){let p=G.players.find(x=>x.id==id),n=G.players.filter(x=>x.clubId==G.uid).length,v=val(p);
-  if(n>=26)return say('❌ التشكيلة ممتلئة (26 لاعباً).');
-  if(G.budget<v)return say('❌ ميزانيتك لا تكفي!');
-  G.budget-=v;p.clubId=G.uid;p.morale=70;p.cy=3;p.wg=wageOf(p);save();say('✅ تم شراء '+p.name);go('market')}
-function sell(id){let p=G.players.find(x=>x.id==id),sq=G.players.filter(x=>x.clubId==G.uid);
-  if(sq.length<=14)return say('❌ لا يمكن النزول تحت 14 لاعباً.');
-  if(p.pos=='GK'&&sq.filter(x=>x.pos=='GK').length<=1)return say('❌ تحتاج حارسين على الأقل.');
-  let pr=Math.round(val(p)*.85);
-  ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{G.budget+=pr;p.clubId=0;save();go('squad')})}
+function transferError(result){return say('❌ '+(result&&result.message?result.message:'تعذّر تنفيذ الصفقة.'))}
+function buy(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
+  let result=FM4TransferSystem.completePurchase({players:G.players,playerId:id,buyerClubId:G.uid,sellerClubId:p.clubId,fee:val(p),budget:G.budget,contractYears:3,weeklyWage:wageOf(p),season:G.season,loans:G.loans||[]});
+  if(!result.ok)return transferError(result);
+  G.players=result.players;G.budget=result.budget;let signed=G.players.find(x=>x.id==id);signed.morale=70;save();say('✅ تم شراء '+signed.name+' بعقد 3 مواسم');go('market')}
+function sell(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');let pr=Math.round(val(p)*.85);
+  ask(\`بيع \${p.name} بمبلغ \${money(pr)}؟\`,()=>{let result=FM4TransferSystem.completeSale({players:G.players,playerId:id,sellerClubId:G.uid,buyerClubId:0,fee:pr,budget:G.budget,season:G.season,loans:G.loans||[]});
+    if(!result.ok)return transferError(result);G.players=result.players;G.budget=result.budget;save();say('✅ تم بيع '+p.name);go('squad')})}
 function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem(MATCH_KEY)}catch(e){}G=null;M=null;shadowMonitor=null;busy=false;go('home')};f?d():ask('مسح كل التقدم وبدء لعبة جديدة؟',d)}
 
 function matchLogNode(entry){
