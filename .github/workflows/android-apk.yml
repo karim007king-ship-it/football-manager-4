@@ -51,6 +51,9 @@ jobs:
           npx cap add android
           npx cap sync android
 
+          # Gradle Wrapper's default 10s download timeout is too short for fresh CI runners.
+          printf '\nnetworkTimeout=120000\n' >> android/gradle/wrapper/gradle-wrapper.properties
+
       - name: Build debug APK
         run: |
           cd android
