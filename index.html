@@ -745,8 +745,9 @@ function go(t){
      c.innerHTML='<h2 class="title">🔁 إدارة الإعارات</h2><p class="dim">تنتقل ملكية التسجيل مؤقتاً إلى النادي المستعير، ويعود اللاعب تلقائياً عند نهاية مدة الاتفاق. رسوم الإعارة تُضاف عند إعارة لاعب منك وتُخصم عند استعارة لاعب لك. نسبة الراتب تحفظ في الاتفاق، ولا تدخل بعد في محاسبة الأندية المنافسة.</p><button class="action-btn gold" onclick="loanInStart()">➕ استعارة لاعب إلى فريقك</button><h3 class="title">الإعارات النشطة ('+active.length+')</h3>'+(active.map(card).join('')||'<p class="dim">لا توجد إعارات نشطة.</p>')+'<h3 class="title" style="margin-top:18px">السجل السابق</h3>'+(history.slice().reverse().map(card).join('')||'<p class="dim">لا توجد إعارات سابقة.</p>')+'<button class="action-btn" onclick="go(&quot;squad&quot;)">العودة إلى الفريق</button>';
   }else if(t=='market'){
     let l=G.players.filter(p=>p.clubId==0).sort((a,b)=>b.ovr-a.ovr);
+    let activeNegotiations=(G.negotiations||[]).filter(n=>['countered','club_accepted','player_countered'].includes(n.status)).slice(-6).reverse();
     let targets=G.players.filter(p=>p.clubId>0&&p.clubId!==G.uid&&C(p.clubId)&&C(p.clubId).dv===C(G.uid).dv&&!((G.loans||[]).some(x=>x.playerId===p.id&&x.status==='active'))).sort((a,b)=>b.ovr-a.ovr).slice(0,24);
-    c.innerHTML=`<h2 class="title">سوق الانتقالات</h2><p class="dim">اللاعبون الأحرار • فريقك ${mine().length}/26</p>`+l.map(p=>
+    c.innerHTML=`<h2 class="title">سوق الانتقالات</h2><p class="dim">اللاعبون الأحرار • فريقك ${mine().length}/26</p>`+negotiationRows()+l.map(p=>
       `<div class="row"><span>[${POS[p.pos]}] ${uiEsc(p.name)}<br><span class="dim">عمر ${p.age} • إمكانات ${pot(p)} • راتب ${money(wageOf(p))}</span></span><span class="hl">${p.ovr}</span><span>${money(val(p))}</span><button class="mini" onclick="buy('${p.id}')">شراء</button></div>`).join('')+
       `<h3 class="title" style="margin-top:18px">لاعبون من أندية الدرجة نفسها</h3><p class="dim">ابدأ بعرض انتقال، ثم تفاوض مع النادي على الرسوم ومع اللاعب على الراتب والعقد ومكافأة التوقيع.</p>`+
       targets.map(p=>`<div class="row"><span>[${POS[p.pos]}] ${uiEsc(p.name)}<br><span class="dim">${uiEsc(C(p.clubId).name)} • عمر ${p.age} • راتب ${money(wageOf(p))}</span></span><span class="hl">${p.ovr}</span><span>${money(val(p))}</span><button class="mini" onclick="startNegotiation('${p.id}')">تفاوض</button></div>`).join('')+
@@ -762,6 +763,10 @@ function buy(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ الل�
   let result=FM4TransferSystem.completePurchase({players:G.players,playerId:id,buyerClubId:G.uid,sellerClubId:p.clubId,fee:val(p),budget:G.budget,contractYears:3,weeklyWage:wageOf(p),season:G.season,loans:G.loans||[]});
   if(!result.ok)return transferError(result);
   G.players=result.players;G.budget=result.budget;let signed=G.players.find(x=>x.id==id);signed.morale=70;save();say('✅ تم شراء '+signed.name+' بعقد 3 مواسم');go('market')}
+function negotiationRows(){
+  const active=(G.negotiations||[]).filter(n=>['countered','club_accepted','player_countered'].includes(n.status)).slice(-6).reverse();
+  return active.length?'<h3 class="title">مفاوضات تحتاج متابعة</h3>'+active.map(n=>{const p=G.players.find(x=>x.id===n.playerId);return p?'<div class="row"><span>'+uiEsc(p.name)+'<br><span class="dim">'+(n.status==='countered'?'عرض مضاد من النادي':n.status==='club_accepted'?'موافقة النادي • بانتظار عقد اللاعب':'طلب راتب مضاد من اللاعب')+'</span></span><button class="mini" onclick="resumeNegotiation(\''+uiEsc(n.id)+'\')">متابعة</button></div>':''}).join(''):'';
+}
 function startNegotiation(id){
   const p=G.players.find(x=>x.id==id&&x.clubId>0&&x.clubId!==G.uid);
   if(!p)return say('❌ اللاعب لم يعد متاحاً للتفاوض.');
@@ -786,7 +791,8 @@ function showClubCounter(offer){
   const fee=offer.counterFee;
   menu('عرض مضاد من '+C(offer.sellerClubId).name+' • '+money(fee),[
     {l:'قبول قيمة النادي '+money(fee),fn:()=>answerClubCounter(offer.id,fee)},
-    {l:'تقديم عرض أعلى '+money(Math.ceil(fee*1.05/1000)*1000),fn:()=>answerClubCounter(offer.id,Math.ceil(fee*1.05/1000)*1000)}
+    {l:'تقديم عرض أعلى '+money(Math.ceil(fee*1.05/1000)*1000),fn:()=>answerClubCounter(offer.id,Math.ceil(fee*1.05/1000)*1000)},
+    {l:'رفض العرض وإنهاء المفاوضات',fn:()=>rejectNegotiation(offer.id)}
   ],true);
 }
 function answerClubCounter(id,fee){
@@ -819,11 +825,27 @@ function submitPlayerTerms(id,weeklyWage,contractYears,signingBonus){
   if(!result.ok)return transferError(result);
   G.negotiations=G.negotiations.map(x=>x.id===id?result.offer:x);save();
   if(result.decision==='rejected')return say('❌ رفض اللاعب العرض المالي.');
-  if(result.decision==='countered'){
-    ask('طلب اللاعب راتباً أسبوعياً قدره '+money(result.demandedWage)+'. هل تقبل؟',()=>acceptPlayerCounter(id));
-    return;
-  }
+  if(result.decision==='countered')return showPlayerCounter(result.offer,result.demandedWage);
   finalizeNegotiatedTransfer(id);
+}
+function showPlayerCounter(offer,demandedWage){
+  menu('طلب اللاعب راتباً أسبوعياً قدره '+money(demandedWage),[
+    {l:'قبول راتب اللاعب',fn:()=>acceptPlayerCounter(offer.id)},
+    {l:'رفض العرض وإنهاء المفاوضات',fn:()=>rejectNegotiation(offer.id)}
+  ],true);
+}
+function rejectNegotiation(id){
+  G.negotiations=(G.negotiations||[]).map(x=>x.id===id?{...x,status:'rejected',rejectedSeason:G.season}:x);
+  save();say('تم إنهاء المفاوضات دون إتمام الصفقة.');
+}
+function resumeNegotiation(id){
+  const offer=(G.negotiations||[]).find(x=>x.id===id),p=offer&&G.players.find(x=>x.id===offer.playerId);
+  if(!offer||!p)return say('❌ لم تعد المفاوضات صالحة.');
+  if(p.clubId!==offer.sellerClubId)return say('❌ تغيرت ملكية اللاعب؛ انتهت صلاحية العرض.');
+  if(offer.status==='countered')return showClubCounter(offer);
+  if(offer.status==='club_accepted')return showPlayerContract(offer);
+  if(offer.status==='player_countered')return showPlayerCounter(offer,offer.counterWage);
+  say('لا توجد خطوة معلقة لهذه المفاوضات.');
 }
 function acceptPlayerCounter(id){
   const offer=(G.negotiations||[]).find(x=>x.id===id);
