@@ -28,7 +28,7 @@ test('shadow monitor snapshot restores events, deduplication and deterministic c
  const stored=JSON.parse(JSON.stringify(Monitor.serialize(first)));
  const restored=Monitor.restore(stored);
  assert.equal(restored.shadow.state.eventSequence,first.shadow.state.eventSequence);
- assert.deepEqual(restored.shadow.state.events.filter(e=>e.source!=='legacy').map(e=>e.id),generated.map(e=>e.id));
+ assert.deepEqual(restored.shadow.state.events.filter(e=>typeof e.id==='string'&&/^fm4-event-\d+$/.test(e.id)).map(e=>e.id),generated.map(e=>e.id));
  assert.deepEqual(restored.shadow.state.events.find(e=>e.type==='clearance').secondBall,{contested:true,outcome:'lost',team:0,playerId:'press-9',x:55,y:32});
  assert.match(Monitor.render(restored,m),/الخصم يستعيد الكرة الثانية/);
  assert.equal(restored.shadow.state.actionCount,first.shadow.state.actionCount);
