@@ -201,7 +201,7 @@ td .bdg{margin-left:6px}.sbm .bdg{margin:0 4px}
   <button class="nav-btn" data-tab="table" onclick="go('table')"><span>🏆</span>الترتيب</button>
   <button class="nav-btn" data-tab="market" onclick="go('market')"><span>💼</span>السوق</button>
 </div>
-<div id="modal"><div id="mbox"><div id="mtxt"></div><div class="btns"><button id="myes" style="background:var(--pr)">حسناً</button><button id="mno" style="background:#555">إلغاء</button></div></div></div>
+<div id="modal"><div id="mbox"><div id="mtxt"></div><div class="btns"><button id="myes" style="background:var(--pr)">حسناً</button><button id="mno" type="button" style="background:#555">رجوع</button></div></div></div>
 
 <script src="js/match/engine.js"></script>
 <script src="js/match/adapter.js"></script>
@@ -702,11 +702,43 @@ const tm=()=>`[${M.min>90&&!M.et?'90+'+(M.min-90):M.min}']`;
 const lbl=x=>`[${POS[x.pos]}] ${x.name} • ${x.ovr}`;
 const bench=pos=>G.players.filter(x=>x.clubId==G.uid&&!x.inj&&!M.xi.includes(x)&&!M.out.has(x.id)).sort((a,b)=>(b.pos==pos)-(a.pos==pos)||b.ovr-a.ovr);
 let MNd=false;
-function menu(title,items,cancel){if(M&&M.skip){if(!cancel&&items.length)(items.find(x=>x.dflt)||items[0]).fn();return}MNd=!cancel;if(M)M.hold=true;MN=items;
-  $('mtxt').innerHTML='<b>'+title+'</b>'+items.map((x,i)=>`<button class="cb" style="width:100%;margin-top:6px" onclick="menuPick(${i})">${x.l}</button>`).join('');
-  $('modal').style.display='flex';$('myes').style.display='none';$('mno').style.display=cancel?'block':'none';$('mno').onclick=closeM}
-function closeM(){$('modal').style.display='none';MN=[];if(M)M.hold=false}
-function menuPick(i){let f=MN[i].fn;closeM();f();saveMatchSession()}
+let menuReturnFocus=null,menuCanCancel=false;
+function menu(title,items,cancel){
+  if(M&&M.skip){if(!cancel&&items.length)(items.find(x=>x.dflt)||items[0]).fn();return}
+  MNd=!cancel;menuCanCancel=!!cancel;if(M)M.hold=true;MN=items;
+  const modal=$('modal'),content=$('mtxt'),heading=document.createElement('h2');
+  menuReturnFocus=document.activeElement;
+  content.replaceChildren();heading.className='match-menu-title';heading.id='match-menu-heading';heading.textContent=String(title);
+  content.appendChild(heading);
+  const list=document.createElement('div');list.className='match-menu-list';list.setAttribute('role','group');list.setAttribute('aria-labelledby','match-menu-heading');
+  if(!items.length){const empty=document.createElement('p');empty.className='match-menu-empty';empty.textContent='لا توجد خيارات متاحة حالياً';list.appendChild(empty)}
+  items.forEach((item,index)=>{
+    const button=document.createElement('button');button.type='button';button.className='cb match-menu-option';button.textContent=String(item.l??'خيار');
+    button.setAttribute('data-menu-index',String(index));button.addEventListener('click',()=>menuPick(index));list.appendChild(button);
+  });
+  content.appendChild(list);
+  modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','match-menu-heading');
+  modal.style.display='flex';$('myes').style.display='none';$('mno').style.display=cancel?'block':'none';
+  $('mno').textContent='رجوع';$('mno').onclick=closeM;
+  modal.onkeydown=e=>{
+    if(e.key==='Escape'&&menuCanCancel){e.preventDefault();closeM();return}
+    if(e.key!=='Tab')return;
+    const focusable=[...content.querySelectorAll('button:not(:disabled)'),...($('mno').style.display==='none'?[]:[$('mno')])];
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  };
+  modal.onclick=e=>{if(e.target===modal&&menuCanCancel)closeM()};
+  const first=content.querySelector('button');if(first)first.focus();else $('mno').focus();
+}
+function closeM(){
+  $('modal').style.display='none';$('modal').onclick=null;$('modal').onkeydown=null;MN=[];
+  if(M)M.hold=false;
+  if(menuReturnFocus&&typeof menuReturnFocus.focus==='function')menuReturnFocus.focus();
+  menuReturnFocus=null;
+}
+function menuPick(i){if(!MN[i])return;let f=MN[i].fn;closeM();f();saveMatchSession()}
 
 function startMatch(cup){
   if(busy)return;if(!cup&&G.cup&&G.cup.due)return say('عليك لعب مباراة الكأس أولاً 🏆');
