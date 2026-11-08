@@ -786,6 +786,31 @@ test('cross-originated clearances resolve pressured second balls for either winn
  run(1,false);
 });
 
+test('cross aerial contests use the aerial attribute rather than unrelated technical skills in both directions',()=>{
+ for(const attackingTeam of [0,1]){
+  const state=create(1600+attackingTeam),defendingTeam=1-attackingTeam;
+  const attack=state.teams[attackingTeam],defend=state.teams[defendingTeam];
+  const carrier=attack.players.find(p=>p.role==='LW');
+  const receiver=attack.players.find(p=>p.role==='ST');
+  const defender=defend.players.find(p=>p.role==='DF');
+  const farX=attackingTeam===0?2:98;
+  for(const teamState of state.teams)for(const player of teamState.players){player.x=farX;player.y=5;}
+  carrier.x=attackingTeam===0?40:60;carrier.y=20;
+  receiver.x=50;receiver.y=50;receiver.aerial=20;receiver.pace=50;receiver.passing=99;receiver.shooting=99;
+  defender.x=50;defender.y=50;defender.aerial=95;defender.pace=50;defender.defending=20;
+  const defensiveWin=resolveCrossContest(state,carrier,receiver,attackingTeam);
+  assert.equal(defensiveWin.type,'interception','the stronger aerial player should win at equal distance');
+  assert.equal(defensiveWin.team,defendingTeam);
+
+  receiver.aerial=95;receiver.passing=20;receiver.shooting=20;
+  defender.aerial=20;defender.defending=99;
+  const attackingWin=resolveCrossContest(state,carrier,receiver,attackingTeam);
+  assert.equal(attackingWin.type,'cross','the stronger aerial receiver should win despite lower technical skills');
+  assert.equal(attackingWin.outcome,'completed');
+  assert.equal(attackingWin.team,attackingTeam);
+ }
+});
+
 test('completed crosses create a one-action mirrored shooting opportunity inside the box',()=>{
  const home=create(1501),homeCarrier=home.teams[0].players[8],homeReceiver=home.teams[0].players[9];
  homeCarrier.x=78;homeCarrier.y=12;homeReceiver.x=84;homeReceiver.y=50;
