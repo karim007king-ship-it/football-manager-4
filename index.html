@@ -676,7 +676,7 @@ function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY);localStorage.r
 function matchLogNode(entry){
  const text=String(entry.text??''),node=document.createElement('div');
  node.className='ll '+(entry.className||'');
- const timed=text.match(/^\\[(\\d+(?:\\+\\d+)?)\\]\\s*([\\s\\S]*)$/);
+ const timed=text.match(/^\[(\d+(?:\+\d+)?)\]\s*([\s\S]*)$/);
  if(timed){
   node.classList.add('has-time');
   const stamp=document.createElement('span');stamp.className='match-event-time';stamp.textContent=timed[1]+'′';
