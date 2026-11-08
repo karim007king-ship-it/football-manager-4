@@ -9,6 +9,30 @@ function team(name,side){
 }
 const create=(seed=23)=>createMatch({teams:[team('Home',0),team('Away',1)],seed});
 
+test('normalizes malformed aerial and pace inputs without NaN or out-of-range ratings',()=>{
+ const home=team('Malformed',0);
+ home.players[1].aerial='not-a-number';home.players[1].pace='fast';
+ home.players[2].aerial='   ';home.players[3].aerial=150;home.players[4].aerial=-5;
+ const state=createMatch({teams:[home,team('Valid',1)],seed:912});
+ const players=state.teams[0].players;
+ assert.equal(players[1].aerial,69,'invalid explicit aerial data should fall back to defending plus the role prior');
+ assert.equal(players[1].pace,60,'invalid pace should use the safe default');
+ assert.equal(players[2].aerial,69,'blank aerial data should use the role-aware fallback');
+ assert.equal(players[3].aerial,100,'aerial ratings must clamp at 100');
+ assert.equal(players[4].aerial,1,'aerial ratings must clamp at 1');
+ for(const player of players){
+  assert.ok(Number.isFinite(player.aerial));
+  assert.ok(Number.isFinite(player.pace));
+ }
+});
+test('raw malformed aerial-contest inputs use finite defaults instead of poisoning winner ordering',()=>{
+ const outlet={id:'outlet-safe',role:'CM',active:true,x:50,y:50,pace:'bad',aerial:'bad'};
+ const press={id:'press-safe',role:'ST',active:true,x:50,y:50,pace:'bad',aerial:80};
+ const state={teams:[{id:0,players:[outlet]},{id:1,players:[press]}],ball:{x:50,y:50,team:0,playerId:outlet.id},actionCount:1,transition:null};
+ const event=resolveClearanceSecondBall(state,state.teams[0],1,outlet);
+ assert.equal(event.outcome,'lost');
+ assert.equal(state.ball.playerId,press.id);
+});
 test('classifies through balls, crosses, cutbacks and switches from pitch context',()=>{
  const team={players:[]};
  assert.equal(classifyPassPattern({x:55,y:50},{x:67,y:51},team,0,9),'through_ball');
