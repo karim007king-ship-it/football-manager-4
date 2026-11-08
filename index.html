@@ -611,15 +611,33 @@ function go(t){
     }));
     c.querySelectorAll('[data-sell-player]').forEach(button=>button.addEventListener('click',()=>sell(button.dataset.sellPlayer)));
   }else if(t=='tactics'){
-    let s=teamS(U);
-    c.innerHTML=`<h2 class="title">التكتيك والخطط</h2>
-    <div class="row"><span>قوة التشكيلة الأساسية:</span><span class="hl">${s.pw.toFixed(1)}</span></div>
-    <div class="row"><span>هجوم / دفاع:</span><span>${s.a.toFixed(1)} / ${s.d.toFixed(1)}</span></div>
-    ${s.xi.length<11?'<div class="row loss">⚠️ لاعبون ناقصون في بعض المراكز</div>':''}
-    <p class="dim">الأسلوب</p><div class="grid">${Object.keys(TAC).map(k=>`<button class="cb ${G.tactic==k?'sel':''}" onclick="setT('${k}')">${TAC[k]}</button>`).join('')}</div>
-    <p class="dim">الخطة</p><div class="grid">${Object.keys(FORM).map(k=>`<button class="cb ${G.form==k?'sel':''}" onclick="setF('${k}')">${k}</button>`).join('')}</div>
-    <p class="dim">الهجومي يرفع الهجوم ويضعف الدفاع، والدفاعي العكس.</p>
-    <button class="action-btn gold" onclick="go('lineup')">👥 اختيار التشكيلة الأساسية${G.lu&&G.lu.p.length?' (مخصّصة)':''}</button>`;
+    const s=teamS(U),formation=FORM[G.form]||FORM['4-4-2'];
+    const injured=s.xi.filter(p=>p.inj),outOfPosition=s.xi.filter(p=>s.sl[p.id]!==p.pos);
+    const missing=Math.max(0,11-s.xi.length);
+    const warnings=[];
+    if(missing)warnings.push('ينقص التشكيل '+missing+' لاعباً لإكمال 11 لاعباً');
+    if(injured.length)warnings.push(injured.length+' لاعباً مصاباً ضمن التشكيلة');
+    if(outOfPosition.length)warnings.push(outOfPosition.length+' لاعباً خارج مركزه الطبيعي');
+    c.innerHTML=`<div class="tactics-heading"><div><h2 class="title">🎯 مركز التكتيك</h2><p class="dim">إدارة أسلوب اللعب والخطة قبل المباراة</p></div><span class="tactics-current">${TAC[G.tactic]||TAC.balanced}</span></div>
+      <section class="tactics-strength" aria-label="مؤشرات قوة التشكيلة">
+        <div class="tactics-strength-main"><small>قوة التشكيلة الأساسية</small><b>${s.pw.toFixed(1)}</b><span>من تقييم اللاعبين الحالي</span></div>
+        <div class="tactics-strength-side"><div><span>⚔️ الهجوم</span><b>${s.a.toFixed(1)}</b></div><div><span>🛡️ الدفاع</span><b>${s.d.toFixed(1)}</b></div></div>
+      </section>
+      <section class="tactics-section"><header><b>أسلوب اللعب</b><small>اختر توجه الفريق</small></header>
+        <div class="tactics-style-grid">${Object.keys(TAC).map(k=>`<button type="button" class="tactics-style ${G.tactic==k?'active':''}" data-tactic-choice="${k}" aria-pressed="${G.tactic==k}"><b>${k==='attacking'?'⚔️':k==='defensive'?'🛡️':'⚖️'} ${TAC[k]}</b><small>${k==='attacking'?'زيادة القوة الهجومية مقابل تراجع دفاعي':k==='defensive'?'تعزيز الدفاع مقابل تراجع هجومي':'توازن بين الهجوم والدفاع'}</small></button>`).join('')}</div>
+      </section>
+      <section class="tactics-section"><header><b>الخطة الأساسية</b><small>توزيع اللاعبين حسب المراكز</small></header>
+        <div class="tactics-formation-grid">${Object.keys(FORM).map(k=>`<button type="button" class="tactics-formation ${G.form==k?'active':''}" data-formation-choice="${k}" aria-pressed="${G.form==k}"><b>${k}</b><span>${FORM[k][1]} دفاع • ${FORM[k][2]} وسط • ${FORM[k][3]} هجوم</span></button>`).join('')}</div>
+        <div class="tactics-shape" aria-label="توزيع الخطة المختارة">
+          <span class="tactics-shape-goal">🥅</span><div class="tactics-shape-row"><b>${formation[3]}</b><span>هجوم</span></div><div class="tactics-shape-row"><b>${formation[2]}</b><span>وسط</span></div><div class="tactics-shape-row"><b>${formation[1]}</b><span>دفاع</span></div><div class="tactics-shape-row"><b>1</b><span>حارس</span></div>
+        </div>
+      </section>
+      ${warnings.length?`<section class="tactics-warnings" role="status"><b>⚠️ تنبيهات التشكيلة</b><ul>${warnings.map(w=>`<li>${w}</li>`).join('')}</ul><button type="button" class="action-btn" data-open-lineup>مراجعة التشكيلة</button></section>':`<p class="tactics-ready">✓ التشكيلة الحالية مكتملة ولا تظهر إصابات أو مراكز غير مطابقة.</p>`}
+      <button type="button" class="action-btn gold tactics-lineup-action" data-open-lineup>👥 إدارة التشكيلة الأساسية${G.lu&&G.lu.p.length?' • مخصّصة':''}</button>
+      <p class="tactics-footnote">المؤشرات مبنية على بيانات الفريق الحالية. تغيير الخطة أو الأسلوب يحفظ اختيارك، ولا يغيّر نتيجة مباراة سابقة.</p>`;
+    c.querySelectorAll('[data-tactic-choice]').forEach(button=>button.addEventListener('click',()=>setT(button.dataset.tacticChoice)));
+    c.querySelectorAll('[data-formation-choice]').forEach(button=>button.addEventListener('click',()=>setF(button.dataset.formationChoice)));
+    c.querySelectorAll('[data-open-lineup]').forEach(button=>button.addEventListener('click',()=>go('lineup')));
   }else if(t=='table'){
     const tb=dv=>{let d=C(U).dv,l=table(dv),n=l.length;return `<h2 class="title">${DVN[dv]}${dv==d?' (دوريك)':''}</h2><table><tr><th>#</th><th>الفريق</th><th>لعب</th><th>ف</th><th>ت</th><th>خ</th><th>فارق</th><th>نقاط</th></tr>`+
       l.map((x,i)=>`<tr class="${x.id==U?'me':''}" style="${dv==1&&i>=n-2?'border-right:3px solid var(--red)':dv==2&&i<2?'border-right:3px solid var(--pr)':''}"><td>${i+1}</td><td>${badge(x,18)}${x.name}</td><td>${x.p}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${x.gf-x.ga}</td><td>${x.pts}</td></tr>`).join('')+'</table>'};
