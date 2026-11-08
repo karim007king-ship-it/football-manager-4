@@ -285,6 +285,12 @@ test('cup advancement commits round logs only after the prize is confirmed and a
 });
 
 
+test('loan dashboard explains that wage shares are allocated between both clubs', () => {
+  assert.match(html, /تُحتسب حصة كل نادٍ من الراتب أسبوعياً حسب الاتفاق/);
+  assert.match(html, /النادي المستعير يدفع النسبة المحددة، والنادي الأصلي يدفع الباقي/);
+  assert.doesNotMatch(html, /نسبة الراتب تحفظ في الاتفاق، ولا تدخل بعد في محاسبة الأندية المنافسة/);
+});
+
 test('weekly payroll and finance forecasts apply active loan wage shares', () => {
   assert.match(html, /function clubWeeklyWages\(clubId\)\{const result=FM4TransferSystem\.calculateWeeklyWageCommitment/);
   assert.match(html, /let wk=clubWeeklyWages\(U\)\+ACW/);
