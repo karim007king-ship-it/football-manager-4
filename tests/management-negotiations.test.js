@@ -165,3 +165,53 @@ test('computed wage is used when a player has no stored wage field', () => {
   assert.equal(result.decision, 'countered');
   assert.ok(result.demandedWage > 2000);
 });
+
+
+test('counter submission rejects corrupted signing bonuses and unsafe totals', () => {
+  const ctx = setup(), created = makeOffer(ctx);
+  const counter = { ...created.offer, status: 'countered', counterFee: 120000 };
+  assert.equal(Negotiations.submitCounterOffer({
+    offer: { ...counter, signingBonus: -1 }, fee: 100000, budget: 1000000
+  }).code, 'INVALID_MONEY');
+  assert.equal(Negotiations.submitCounterOffer({
+    offer: { ...counter, signingBonus: Number.MAX_SAFE_INTEGER }, fee: 1, budget: Number.MAX_SAFE_INTEGER
+  }).code, 'BUDGET_OVERFLOW');
+});
+
+test('player counter acceptance rejects invalid saved transfer costs', () => {
+  const ctx = setup(), created = makeOffer(ctx);
+  const counter = {
+    ...created.offer, status: 'player_countered', counterWage: 3000
+  };
+  assert.equal(Negotiations.acceptPlayerCounter({
+    offer: { ...counter, signingBonus: -500 }, budget: 1000000
+  }).code, 'INVALID_CONTRACT_MONEY');
+  assert.equal(Negotiations.acceptPlayerCounter({
+    offer: { ...counter, fee: Number.MAX_SAFE_INTEGER, signingBonus: 1 }, budget: Number.MAX_SAFE_INTEGER
+  }).code, 'INVALID_CONTRACT_MONEY');
+});
+
+test('finalization rejects corrupted bonus, overflow and invalid contract terms without changing state', () => {
+  const ctx = setup(), created = makeOffer(ctx);
+  const complete = {
+    ...created.offer, status: 'player_accepted', fee: 120000,
+    weeklyWage: 3000, contractYears: 3
+  };
+  const originalBudget = 1000000;
+  const badBonus = Negotiations.finalizeDeal({
+    offer: { ...complete, signingBonus: -1 }, players: ctx.players,
+    budget: originalBudget, transferSystem: Transfers
+  });
+  assert.equal(badBonus.code, 'INVALID_CONTRACT_MONEY');
+  const overflow = Negotiations.finalizeDeal({
+    offer: { ...complete, fee: Number.MAX_SAFE_INTEGER, signingBonus: 1 },
+    players: ctx.players, budget: Number.MAX_SAFE_INTEGER, transferSystem: Transfers
+  });
+  assert.equal(overflow.code, 'BUDGET_OVERFLOW');
+  const badYears = Negotiations.finalizeDeal({
+    offer: { ...complete, contractYears: 0 }, players: ctx.players,
+    budget: originalBudget, transferSystem: Transfers
+  });
+  assert.equal(badYears.code, 'INVALID_CONTRACT_MONEY');
+  assert.equal(ctx.players.find(p => p.id === '2-8').clubId, 2);
+});
