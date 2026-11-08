@@ -151,7 +151,11 @@
     const x = input || {};
     const check = validateLoan(x);
     if (!check.ok) return check;
-    const loanId = 'loan:' + String(x.playerId) + ':' + x.season + ':' + x.toClubId;
+    const loanIdBase = 'loan:' + String(x.playerId) + ':' + x.season + ':' + x.toClubId;
+    let loanId = loanIdBase, loanSequence = 2;
+    while ((x.loans || []).some(existing => existing && existing.id === loanId)) {
+      loanId = loanIdBase + ':' + loanSequence++;
+    }
     const loan = {
       id: loanId,
       playerId: x.playerId,
@@ -177,7 +181,12 @@
       return fail('INVALID_RETURN_INPUT', 'بيانات إرجاع الإعارات غير مكتملة.');
     }
     const activeDue = x.loans.filter(l => l.status === 'active' && l.endSeason <= x.season);
-    if (activeDue.some(l => !x.players.some(p => p.id === l.playerId) || !Number.isInteger(l.fromClubId))) {
+    const activePlayerIds = new Set();
+    for (const loan of x.loans.filter(l => l.status === 'active')) {
+      if (activePlayerIds.has(loan.playerId)) return fail('DUPLICATE_ACTIVE_PLAYER_LOAN', 'يوجد أكثر من سجل إعارة نشط للاعب نفسه؛ أُوقف الإرجاع لتجنب تغيير النادي الأصلي بصورة خاطئة.');
+      activePlayerIds.add(loan.playerId);
+    }
+    if (activeDue.some(l => !x.players.some(p => p.id === l.playerId) || !Number.isInteger(l.fromClubId) || l.fromClubId <= 0)) {
       return fail('INVALID_ACTIVE_LOAN', 'تعذر إرجاع الإعارة بسبب سجل لاعب أو نادٍ غير صالح.');
     }
     const due = new Set(activeDue.map(l => l.playerId));
