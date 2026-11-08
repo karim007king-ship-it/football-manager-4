@@ -64,6 +64,19 @@ test('seller counters a credible but insufficient offer', () => {
   assert.equal(Negotiations.submitCounterOffer({ offer: result.offer, fee: 100000, budget: 1000000 }).offer.status, 'pending');
 });
 
+test('club counter can be accepted on the final negotiation round', () => {
+  const ctx = setup(), created = makeOffer(ctx);
+  const counter = Negotiations.evaluateClubOffer({ offer: created.offer, player: ctx.player, fee: 90000, marketValue: 100000 });
+  const finalCounter = { ...counter.offer, clubRounds: Negotiations.RULES.maxClubRounds };
+  const accepted = Negotiations.acceptClubCounter({ offer: finalCounter, player: ctx.player, budget: 1000000 });
+  assert.equal(accepted.ok, true);
+  assert.equal(accepted.offer.status, 'club_accepted');
+  assert.equal(accepted.offer.fee, finalCounter.counterFee);
+  assert.equal(accepted.offer.counterFee, null);
+  assert.equal(Negotiations.acceptClubCounter({ offer: finalCounter, player: ctx.player, budget: 1000 }).code, 'INSUFFICIENT_BUDGET');
+  assert.equal(Negotiations.acceptClubCounter({ offer: finalCounter, player: { ...ctx.player, clubId: 3 }, budget: 1000000 }).code, 'STALE_NEGOTIATION');
+});
+
 test('exact counter threshold is accepted without floating-point over-rounding', () => {
   const ctx = setup(), created = makeOffer(ctx);
   const result = Negotiations.evaluateClubOffer({ offer: created.offer, player: ctx.player, fee: 112000, marketValue: 100000 });
