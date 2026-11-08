@@ -164,3 +164,10 @@ test('finance dashboard identifies the largest income and expense categories', (
   assert.match(html, /أكبر مصدر دخل/);
   assert.match(html, /أكبر بند مصروف/);
 });
+
+test('finance screen loads the isolated planner and exposes a non-mutating decision simulation', () => {
+  assert.match(html, /<script src="js\/management\/finance-planner\.js"><\/script>/);
+  assert.match(html, /FM4FinancePlanner\.forecast\(\{budget:G\.budget,weeksRemaining/);
+  assert.match(html, /function financeScenario\(\)/);
+  assert.match(html, /محاكاة فقط: لم تتغير الميزانية أو المعاملات المسجلة/);
+});
