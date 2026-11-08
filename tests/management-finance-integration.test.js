@@ -8,7 +8,7 @@ const financeLedger = require('../js/management/finance-ledger');
 
 test('season finalization is guarded against duplicate execution', () => {
   assert.ok(html.includes("function endSeason(){"));
-  assert.ok(html.includes("if(G.lastCompletedSeason===G.season)"));
+  assert.ok(html.includes("if(G.round<14||G.lastCompletedSeason===G.season)"));
   assert.ok(html.includes("G.lastCompletedSeason=G.season;G.season++;G.round=0"));
 });
 
