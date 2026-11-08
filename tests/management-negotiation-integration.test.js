@@ -66,3 +66,16 @@ test('renewal UI delegates signing to the validated contract domain rules', () =
   assert.match(html, /if\(!result\.ok\)return say\('❌ '\+result\.message\)/);
   assert.match(html, /G\.budget=result\.budget;Object\.assign\(p,result\.player\)/);
 });
+
+
+test('home dashboard surfaces expiring and upcoming contracts with a direct contracts action', () => {
+  assert.match(html, /function expRow\(\)\{let l=G\.players\.filter\(p=>p\.clubId==G\.uid\),urgent=l\.filter\(p=>cy\(p\)<=1\)\.length,soon=l\.filter\(p=>cy\(p\)==2\)\.length/);
+  assert.match(html, /تنتهي هذا الموسم/);
+  assert.match(html, /خلال موسمين/);
+  assert.match(html, /onclick="go\('contracts'\)">إدارة العقود/);
+});
+
+test('renewal rejects players outside the club and avoids offering renewals beyond the five-season cap', () => {
+  assert.match(html, /function renew\(id\)\{let p=G\.players\.find\(x=>x\.id==id\);if\(!p\|\|p\.clubId!==G\.uid\)/);
+  assert.match(html, /if\(cy\(p\)>=5\)return say/);
+});
