@@ -505,7 +505,7 @@ function refreshMarket(){G.players=G.players.filter(p=>p.clubId!==0);
 function newGame(uid){
   G={v:2,uid,season:1,round:0,budget:uid>8?4000000:8000000,conf:70,tactic:'balanced',form:'4-4-2',sponsor:null,
     date:new Date(2026,7,1).getTime(),clubs:ALL.map((c,i)=>({id:i+1,name:c[0],ovr:c[1],dv:c[2],pts:0,p:0,w:0,d:0,l:0,gf:0,ga:0})),
-    players:[],fix:[],news:[]};G.fix=mkFix();
+    players:[],fix:[],news:[],loans:[]};G.fix=mkFix();
   G.clubs.forEach(c=>LAY.forEach(pos=>G.players.push(mkPlayer(c.id,pos,c.ovr))));
   G.cn=1;if(uid>8)G.sd={cap:0,tp:1,fans:45,mk:0};G.players.forEach(p=>{if(p.clubId==uid)p.cy=R(2,4)});refreshMarket();genObj();newCup();save();go('home')}
 
@@ -588,7 +588,7 @@ function go(t){
             </div>
             ${p.pos==='GK'?'<div class="squad-keeper">🧤 رد الفعل '+(p.gkReflexes??p.ovr)+' • الإمساك '+(p.gkHandling??p.ovr)+' • التمركز '+(p.gkPositioning??p.ovr)+' • الانفراد '+(p.gkOneOnOne??p.ovr)+' • التوزيع '+(p.gkDistribution??p.ovr)+'</div>':''}
             <div class="squad-player-footer"><span>القيمة <b>${money(val(p))}</b></span><span>الراتب <b>${money(wg(p))}/أسبوع</b></span></div>
-            <button type="button" class="squad-sell" data-sell-player="${uiEsc(p.id)}">بيع اللاعب</button>
+            <div class="squad-player-actions"><button type="button" class="squad-sell" data-sell-player="${uiEsc(p.id)}">بيع اللاعب</button><button type="button" class="squad-sell" data-loan-player="${uiEsc(p.id)}">إعارة</button></div>
           </article>`;
         }).join('')}</div>
       </section>`;
@@ -597,7 +597,7 @@ function go(t){
       <div class="squad-summary"><div><small>عدد اللاعبين</small><b>${l.length}/26</b></div><div><small>التشكيلة الأساسية</small><b>${xi.length}/11</b></div><div><small>الأجور الأسبوعية</small><b>${money(totalWage)}</b></div></div>
       <div class="squad-shortcuts">
         <button class="action-btn" onclick="go('lineup')">👥 التشكيلة الأساسية</button><button class="action-btn" onclick="go('stats')">📊 الإحصائيات والجوائز</button>
-        <button class="action-btn" onclick="go('contracts')">📝 العقود والرواتب</button><button class="action-btn" onclick="go('academy')">🎓 أكاديمية الشباب</button>
+        <button class="action-btn" onclick="go('contracts')">📝 العقود والرواتب</button><button class="action-btn" onclick="go('loans')">🔁 الإعارات</button><button class="action-btn" onclick="go('academy')">🎓 أكاديمية الشباب</button>
         <button class="action-btn" onclick="traitHelp()">🧬 صفات اللاعبين</button><button class="action-btn" onclick="storyList()">📖 قصص المواسم</button>
       </div>
       <div class="squad-filters" role="group" aria-label="تصفية اللاعبين حسب المركز">
@@ -611,6 +611,7 @@ function go(t){
       c.querySelectorAll('[data-squad-group]').forEach(group=>group.hidden=filter!=='ALL'&&group.dataset.squadGroup!==filter);
     }));
     c.querySelectorAll('[data-sell-player]').forEach(button=>button.addEventListener('click',()=>sell(button.dataset.sellPlayer)));
+     c.querySelectorAll('[data-loan-player]').forEach(button=>button.addEventListener('click',()=>loanPlayer(button.dataset.loanPlayer)));
   }else if(t=='tactics'){
     const s=teamS(U),formation=FORM[G.form]||FORM['4-4-2'];
     const injured=s.xi.filter(p=>p.inj),outOfPosition=s.xi.filter(p=>s.sl[p.id]!==p.pos);
@@ -737,6 +738,10 @@ function go(t){
     <div class="row"><span>🏗️ المنشآت: ${T.fac}/3 (+${T.fac*15}%)</span>${T.fac<3?`<button class="mini" onclick="upFac()">ترقية ${money(FAC[T.fac])}</button>`:'<span class="hl">أقصى مستوى</span>'}</div>
     <div class="row dim"><span>التدريب الفردي ${T.ind.length}/3 (×1.8) • المكثف يرفع خطر الإصابة ويخفض المعنويات • الكبار يتطورون ببطء</span></div>`+
     l.map(p=>{let on=T.ind.includes(p.id);return `<div class="row"><span style="flex:1">[${POS[p.pos]}] ${p.name} <span class="dim">${p.age}س</span><br><span class="hl">${p.ovr}</span><span class="dim"> / إمكانات ${pot(p)}</span><div style="height:4px;background:#2a3a4a;border-radius:3px;margin-top:3px"><div style="height:4px;width:${Math.min(100,p.xp||0)}%;background:var(--pr);border-radius:3px"></div></div></span><button class="mini" style="background:${on?'var(--gold);color:#000':'#555'}" onclick="trInd('${p.id}')">${on?'فردي ✔':'فردي'}</button></div>`}).join('');
+  }else if(t=='loans'){
+     const loans=G.loans||[],active=loans.filter(x=>x.status==='active'),history=loans.filter(x=>x.status!=='active');
+     const card=x=>{const p=G.players.find(y=>y.id===x.playerId),from=C(x.fromClubId),to=C(x.toClubId);return '<div class="row"><span><b>'+uiEsc(p?p.name:'لاعب غير موجود')+'</b><br><span class="dim">'+uiEsc(from.name)+' ← '+uiEsc(to.name)+' • الموسم '+x.startSeason+'–'+x.endSeason+'<br>رسوم '+money(x.loanFee)+' • تحمّل الراتب '+x.wageSharePct+'%</span></span><span class="hl">'+(x.status==='active'?'نشطة':'مكتملة')+'</span></div>'};
+     c.innerHTML='<h2 class="title">🔁 إدارة الإعارات</h2><p class="dim">تنتقل ملكية التسجيل مؤقتاً إلى النادي المستعير، ويعود اللاعب تلقائياً عند نهاية مدة الاتفاق.</p><h3 class="title">الإعارات النشطة ('+active.length+')</h3>'+(active.map(card).join('')||'<p class="dim">لا توجد إعارات نشطة.</p>')+'<h3 class="title" style="margin-top:18px">السجل السابق</h3>'+(history.slice().reverse().map(card).join('')||'<p class="dim">لا توجد إعارات سابقة.</p>')+'<button class="action-btn" onclick="go(&quot;squad&quot;)">العودة إلى الفريق</button>';
   }else if(t=='market'){
     let l=G.players.filter(p=>p.clubId==0).sort((a,b)=>b.ovr-a.ovr);
     c.innerHTML=`<h2 class="title">سوق الانتقالات</h2><p class="dim">يتجدد كل جولتين • فريقك ${mine().length}/26</p>`+l.map(p=>
@@ -755,6 +760,34 @@ function buy(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ الل�
 function sell(id){let p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');let pr=Math.round(val(p)*.85);
   ask(`بيع ${p.name} بمبلغ ${money(pr)}؟`,()=>{let result=FM4TransferSystem.completeSale({players:G.players,playerId:id,sellerClubId:G.uid,buyerClubId:0,fee:pr,budget:G.budget,season:G.season,loans:G.loans||[]});
     if(!result.ok)return transferError(result);G.players=result.players;G.budget=result.budget;save();say('✅ تم بيع '+p.name);go('squad')})}
+function loanPlayer(id){
+  const p=G.players.find(x=>x.id==id&&x.clubId==G.uid);if(!p)return say('❌ اللاعب غير موجود في فريقك.');
+  if((G.loans||[]).some(x=>x.playerId===id&&x.status==='active'))return say('❌ اللاعب مرتبط بإعارة نشطة بالفعل.');
+  const clubs=G.clubs.filter(x=>x.id!==G.uid);
+  menu('اختيار النادي المستعير للاعب '+p.name,clubs.map(c=>({l:c.name+' • '+DVN[c.dv],fn:()=>loanTerms(id,c.id)})),true);
+}
+function loanTerms(id,toClubId){
+  const p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
+  const base=val(p),fee1=Math.round(base*.05/1000)*1000,fee2=Math.round(base*.08/1000)*1000;
+  const choices=[
+    {durationSeasons:1,wageSharePct:50,fee:fee1,label:'موسم واحد • تحمّل 50% من الراتب • رسوم '+money(fee1)},
+    {durationSeasons:1,wageSharePct:75,fee:fee1,label:'موسم واحد • تحمّل 75% من الراتب • رسوم '+money(fee1)},
+    {durationSeasons:2,wageSharePct:50,fee:fee2,label:'موسمان • تحمّل 50% من الراتب • رسوم '+money(fee2)},
+    {durationSeasons:2,wageSharePct:75,fee:fee2,label:'موسمان • تحمّل 75% من الراتب • رسوم '+money(fee2)}
+  ];
+  menu('شروط إعارة '+p.name,choices.map(x=>({l:x.label,fn:()=>confirmLoan(id,toClubId,x)})),true);
+}
+function confirmLoan(id,toClubId,terms){
+  const p=G.players.find(x=>x.id==id);if(!p)return say('❌ اللاعب غير موجود.');
+  const club=C(toClubId);
+  ask('إعارة '+uiEsc(p.name)+' إلى '+uiEsc(club.name)+'؟<br>المدة: '+terms.durationSeasons+' موسم<br>رسوم الإعارة: '+money(terms.fee)+'<br>النادي المستعير يتحمل '+terms.wageSharePct+'% من الراتب الأسبوعي.',()=>{
+    const result=FM4TransferSystem.createLoan({players:G.players,loans:G.loans||[],playerId:id,fromClubId:G.uid,toClubId,season:G.season,durationSeasons:terms.durationSeasons,loanFee:terms.fee,wageSharePct:terms.wageSharePct});
+    if(!result.ok)return transferError(result);
+    G.players=result.players;G.loans=result.loans;G.budget+=terms.fee;
+    G.news.push('🔁 تمت إعارة '+p.name+' إلى '+club.name+' لمدة '+terms.durationSeasons+' موسم');
+    save();say('✅ تمت الإعارة بنجاح.');go('loans');
+  });
+}
 function resetGame(f){let d=()=>{try{localStorage.removeItem(KEY);localStorage.removeItem(MATCH_KEY)}catch(e){}G=null;M=null;shadowMonitor=null;busy=false;go('home')};f?d():ask('مسح كل التقدم وبدء لعبة جديدة؟',d)}
 
 function matchLogNode(entry){
@@ -1295,6 +1328,8 @@ function endSeason(){
   G.players.forEach(p=>{if(p.clubId<=0)return;p.age++;
     p.ovr=cl(p.ovr+(p.age<24?R(0,3):p.age<30?R(-1,1):-R(0,3)),40,92);p.morale=70;p.inj=0;
     if(p.age>=36){let c=C(p.clubId);Object.assign(p,mkPlayer(p.clubId,p.pos,Math.max(50,c.ovr-12),true),{id:p.id,pot:undefined,xp:0,cy:3,wg:undefined})}});
+  const loanReturn=FM4TransferSystem.returnLoansAtSeasonEnd({players:G.players,loans:G.loans||[],season:G.season});
+  if(loanReturn.ok){G.players=loanReturn.players;G.loans=loanReturn.loans;if(loanReturn.returnedPlayerIds.length)G.news.push('🔁 عودة '+loanReturn.returnedPlayerIds.length+' لاعباً من الإعارة بعد نهاية الموسم');}
   G.season++;G.round=0;G.fix=mkFix();
   G.clubs.forEach(c=>Object.assign(c,{pts:0,p:0,w:0,d:0,l:0,gf:0,ga:0}));
   aiRefresh();genObj();newCup();msg+='<br><br>تقدم عمر اللاعبين وتغيرت مستوياتهم.<br>🎯 وصلت أهداف جديدة من الإدارة للموسم القادم.';
