@@ -379,4 +379,14 @@ The following sequence is the release-oriented plan. A phase is not considered c
 - Preserved the existing menu callbacks, cancellation rules, match hold/resume behavior, skip-match default selection and save behavior. No match engine, result, substitution eligibility or tactical effect logic was changed.
 - Added source-level regression coverage for safe text insertion, dialog semantics, keyboard behavior and responsive menu styling.
 
-**Verification:** awaiting the dedicated FM4 checks and matching Android APK build for this commit. This UI pass is not yet accepted until those workflows pass; no real-device behavior is implied.
+**Verification:** FM4 checks run `42474108652` passed with 158 tests and 0 failures on branch HEAD `be64296553ddb085ae255de54a5dc0d528067c10`. Android APK run `42474102524` passed automated tests (158/158), Capacitor Android project generation, Gradle debug build (`BUILD SUCCESSFUL`) and artifact upload (`13614434029`, 3,466,835 bytes). The APK was built from commit `d12a198505a8baba892f36586332bac92df16d81`, which contains the menu implementation; the later `be64296` commit only updates roadmap documentation. No HONOR 400 Pro installation/runtime test is implied.
+
+## 17. Tactical lineup and bench presentation — 2026-11-08
+
+- Replaced the plain starter list with a responsive pitch board that groups the current XI by goalkeeper, defence, midfield and attack according to the active formation.
+- Added a compact team-strength summary, formation label, starter count, visible position-fit and injury warnings, and a separate bench list.
+- Player tiles use accessible buttons and event listeners rather than inline player-selection handlers; displayed names and identifiers are escaped before insertion into the screen.
+- Preserved the existing teamS, strength, luPick, luSet and luAuto selection logic. Same-position replacement, injured-player exclusion, saved custom lineup and automatic lineup remain unchanged. No match-engine or result logic changed.
+- Added regression tests for the pitch structure, player action wiring, bench derivation and existing replacement constraints.
+
+**Verification:** awaiting FM4 checks and Android APK build for this lineup pass. No real-device runtime claim.
