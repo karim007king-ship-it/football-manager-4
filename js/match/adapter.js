@@ -41,6 +41,7 @@ function estimateSkills(p,role){
  const passBoost=/^(CM|DM|CDM|AM|CAM|LM|RM)$/.test(role)?6:0;
  const shotBoost=/^(ST|CF|LW|RW|AM|CAM)$/.test(role)?8:0;
  const defendBoost=/^(CB|LB|RB|LWB|RWB|DM|CDM)$/.test(role)?8:0;
+ const aerialBoost=/^(CB)$/.test(role)?8:/^(ST|CF)$/.test(role)?6:/^(LB|RB|LWB|RWB|DM|CDM)$/.test(role)?4:/^(LW|RW|LM|RM)$/.test(role)?2:0;
  const isKeeper=role==='GK';
  const keeperValue=(key,offset=0)=>round((p[key]??(o+offset))+mood-penalty);
  const reflexes=keeperValue('gkReflexes');
@@ -51,6 +52,7 @@ function estimateSkills(p,role){
  const keeperComposite=round(reflexes*.28+handling*.20+positioning*.22+oneOnOne*.20+distribution*.10);
  return{
   pace:round(o+paceBoost+mood-penalty),
+  aerial:round(p.aerial??(o+aerialBoost+mood-penalty)),
   goalkeeping:isKeeper?keeperComposite:35,
   ...(isKeeper?{gkReflexes:reflexes,gkHandling:handling,gkPositioning:positioning,gkOneOnOne:oneOnOne,gkDistribution:distribution}:{}),
   passing:round(o+passBoost+mood-penalty),
