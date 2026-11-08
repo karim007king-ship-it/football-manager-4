@@ -17,7 +17,7 @@ test('shadow monitor snapshot restores events, deduplication and deterministic c
  Monitor.advance(first,m,13);
  const generated=first.shadow.state.events.filter(e=>e.source!=='legacy');
  assert.ok(generated.length>0);
- assert.ok(generated.every(e=>/^fm4-event-\\d+$/.test(e.id)));
+ assert.ok(generated.every(e=>/^fm4-event-\d+$/.test(e.id)));
  assert.equal(new Set(generated.map(e=>e.id)).size,generated.length);
  first.shadow.state.actionCount=10;
  first.shadow.state.transition={team:1,expiresAtAction:13};
