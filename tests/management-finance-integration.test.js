@@ -254,3 +254,12 @@ test('finance forecast keeps player wages, academy and stadium commitments separ
   assert.match(html, /planning\.weeklyCommitments\.other/);
   assert.match(html, /weeklyCommitments:\{wages:weekly,academy,stadium,other:training\}/);
 });
+
+test('cup advancement commits round logs only after the prize is confirmed and accepts an already-recorded prize', () => {
+  assert.match(html, /function financePostRecorded\(eventId,category,description,amount\)/);
+  assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance ledger:'/);
+  assert.match(html, /function cupAdvance\(ur\)\{let c=G\.cup;if\(!c\|\|c\.done\)return;let U=G\.uid,ws=\[\],roundLogs=\[\]/);
+  assert.match(html, /financePostRecorded\('s'\+G\.season\+':cup:champion'/);
+  assert.match(html, /financePostRecorded\('s'\+G\.season\+':cup:runner-up'/);
+  assert.match(html, /c\.lg\.push\(\.\.\.roundLogs\);c\.due=false;c\.s\+\+/);
+});
