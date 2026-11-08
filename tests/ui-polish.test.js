@@ -61,3 +61,22 @@ test('match event timeline separates minute stamps and preserves accessible log 
   assert.match(css, /\.ll\.log-goal/);
   assert.match(css, /\.ll\.log-bad/);
 });
+
+test('match presentation exposes explicit halftime, extra-time, penalty and full-time states',()=>{
+ const html=read('index.html');
+ const css=read('ui-polish.css');
+ for(const state of ['live','halftime','extratime','penalties','fulltime']){
+  assert.match(html,new RegExp('match-state-'+state));
+ }
+ assert.match(html,/match-live-phase-banner/);
+ assert.match(html,/role="status" aria-live="polite"/);
+ assert.match(html,/استراحة بين الشوطين/);
+ assert.match(html,/وقت إضافي/);
+ assert.match(html,/ركلات الترجيح/);
+ assert.match(html,/صافرة النهاية/);
+ assert.match(css,/\.match-state-halftime/);
+ assert.match(css,/\.match-state-extratime/);
+ assert.match(css,/\.match-state-penalties/);
+ assert.match(css,/\.match-state-fulltime/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+});
