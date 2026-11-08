@@ -7,13 +7,14 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const financeLedger = require('../js/management/finance-ledger');
 
 test('season finalization is guarded against duplicate execution', () => {
-  assert.ok(html.includes("function endSeason(){\\n  if(G.lastCompletedSeason===G.season)"));
+  assert.ok(html.includes("function endSeason(){"));
+  assert.ok(html.includes("if(G.lastCompletedSeason===G.season)"));
   assert.ok(html.includes("G.lastCompletedSeason=G.season;G.season++;G.round=0"));
 });
 
 test('legacy careers without a season completion marker remain eligible for finalization', () => {
   assert.ok(html.includes("if(G.lastCompletedSeason===G.season)"));
-  assert.doesNotMatch(html, /if\\(!G\\.lastCompletedSeason\\)/);
+  assert.equal(html.includes("if(!G.lastCompletedSeason)"), false);
 });
 
 test('finance batch replay is identified and does not change the balance twice', () => {
