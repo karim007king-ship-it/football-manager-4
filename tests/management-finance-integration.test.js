@@ -67,3 +67,28 @@ test('cup champion and runner-up prizes use distinct ledger event IDs', () => {
   assert.match(html, /:cup:champion','cup-prize'/);
   assert.match(html, /:cup:runner-up','cup-prize'/);
 });
+
+
+test('finance dashboard is reachable and displays real ledger metrics and transaction details', () => {
+  assert.match(html, /data-tab="finance" onclick="go\('finance'\)"/);
+  assert.match(html, /function financeHtml\(seasonFilter='current',categoryFilter='all'\)/);
+  assert.match(html, /FM4FinanceLedger\.summarize/);
+  assert.match(html, /الرصيد الحالي/);
+  assert.match(html, /إجمالي الإيرادات/);
+  assert.match(html, /إجمالي المصروفات/);
+  assert.match(html, /الرصيد بعد الحركة/);
+  assert.match(html, /financeRender\(this\.value/);
+  assert.match(html, /categoryFilter===x/);
+});
+
+test('finance dashboard filters its displayed totals and transactions by season and category', () => {
+  assert.match(html, /history\.filter\(x=>\(selectedSeason==='all'\|\|x\.season===selectedSeason\)&&\(categoryFilter==='all'\|\|x\.category===categoryFilter\)\)/);
+  assert.match(html, /const summary=entries\.reduce/);
+  assert.match(html, /entries\.map\(x=>/);
+});
+
+test('all remaining non-initial budget changes are represented in the ledger', () => {
+  assert.match(html, /disciplinary-income/);
+  assert.match(html, /career-budget-adjustment/);
+  assert.doesNotMatch(html, /G\.budget\s*\+=\s*20000/);
+});
