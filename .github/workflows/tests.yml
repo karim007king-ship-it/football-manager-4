@@ -2,7 +2,7 @@ name: FM4 checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/**"]
   pull_request:
     branches: [main]
 

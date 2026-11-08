@@ -1,0 +1,66 @@
+name: FM4 Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["fix/match-engine-v2"]
+    paths:
+      - "index.html"
+      - "ui-polish.css"
+      - "manifest.json"
+      - "sw.js"
+      - "js/**"
+      - "tests/**"
+      - "package.json"
+      - "capacitor.config.json"
+      - ".github/workflows/android-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Prepare web files
+        run: |
+          mkdir -p www
+          cp index.html manifest.json sw.js ui-polish.css www/
+          cp -R js www/
+          cp match-preview.html www/
+
+      - name: Install Capacitor
+        run: npm install
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Add Android project
+        run: |
+          npx cap add android
+          npx cap sync android
+
+          # Gradle Wrapper's default 10s download timeout is too short for fresh CI runners.
+          printf '\nnetworkTimeout=120000\n' >> android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: football-manager-4-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
