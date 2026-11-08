@@ -19,6 +19,12 @@ test('market purchase and sale use validated transfer transactions', () => {
   assert.match(html, /if\s*\(!result\.ok\)\s*return transferError\(result\)/);
 });
 
+test('final club counter acceptance is wired to the negotiation system', () => {
+  assert.match(html, /function acceptClubCounter\(/);
+  assert.match(html, /FM4NegotiationSystem\.acceptClubCounter\(/);
+  assert.match(html, /offer\.clubRounds\|\|0\)<FM4NegotiationSystem\.RULES\.maxClubRounds/);
+});
+
 test('old career saves are migrated with an empty loans collection', () => {
   assert.match(html, /if\(!Array\.isArray\(G\.loans\)\)G\.loans=\[\]/);
   assert.match(html, /if\(G&&!Array\.isArray\(G\.loans\)\)G\.loans=\[\]/);
