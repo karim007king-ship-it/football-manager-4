@@ -103,7 +103,7 @@
     if (!offer || offer.status !== 'club_accepted' || !player || offer.playerId !== player.id) return fail('CLUB_NOT_ACCEPTED', 'يجب موافقة النادي البائع أولاً.');
     if (!money(x.weeklyWage) || !money(x.signingBonus || 0)) return fail('INVALID_CONTRACT_MONEY', 'الراتب أو مكافأة التوقيع غير صالح.');
     if (!Number.isInteger(x.contractYears) || x.contractYears < 1 || x.contractYears > 5) return fail('INVALID_CONTRACT_LENGTH', 'مدة العقد يجب أن تكون بين موسم وخمسة مواسم.');
-    const currentWage = money(player.wg) ? player.wg : 0;
+    const currentWage = money(x.currentWage) ? x.currentWage : money(player.wg) ? player.wg : 0;
     const skillPremium = Math.max(0, (Number(player.ovr) || 0) - 60) * 0.012;
     const demand = Math.max(currentWage, Math.ceil(currentWage * (1.08 + skillPremium)));
     const next = { ...offer, weeklyWage: x.weeklyWage, signingBonus: x.signingBonus || 0, contractYears: x.contractYears };
