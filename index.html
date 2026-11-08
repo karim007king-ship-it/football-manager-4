@@ -1522,7 +1522,7 @@ function endSeason(){
       if(loan.status!=='active')return loan;
       const player=G.players.find(p=>p.id===loan.playerId);
       const duplicate=duplicateLoanPlayers.has(loan.playerId);
-      const invalid=!player||!Number.isInteger(loan.fromClubId)||loan.fromClubId<=0||!Number.isInteger(loan.toClubId)||loan.toClubId<=0||loan.fromClubId===loan.toClubId||player.clubId!==loan.toClubId||!Number.isInteger(loan.wageSharePct)||loan.wageSharePct<0||loan.wageSharePct>100;
+      const invalid=!player||!Number.isInteger(loan.fromClubId)||loan.fromClubId<=0||!Number.isInteger(loan.toClubId)||loan.toClubId<=0||loan.fromClubId===loan.toClubId||player.clubId!==loan.toClubId||!Number.isInteger(loan.endSeason)||loan.endSeason<1||!Number.isInteger(loan.wageSharePct)||loan.wageSharePct<0||loan.wageSharePct>100;
       if(!duplicate&&!invalid)return loan;
       return {...loan,status:'suspended',suspendedSeason:G.season,suspensionReason:duplicate?'duplicate-active-player':'invalid-active-loan'};
     });
