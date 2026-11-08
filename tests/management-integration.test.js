@@ -36,3 +36,12 @@ test('loan management UI is connected to squad, save state and season-end return
   assert.match(html, /t=='loans'/);
   assert.match(html, /loans:\[\]/);
 });
+
+test('incoming loans expose club and player selection with a budget guard', () => {
+  assert.match(html, /function loanInStart\(/);
+  assert.match(html, /function loanInClub\(/);
+  assert.match(html, /function confirmLoanIn\(/);
+  assert.match(html, /if\(G\.budget<terms\.fee\)/);
+  assert.match(html, /toClubId:G\.uid/);
+  assert.match(html, /G\.budget-=terms\.fee/);
+});
