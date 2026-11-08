@@ -317,9 +317,9 @@ function awards(){let all=G.players.filter(p=>p.clubId>0&&p.st&&C(p.clubId).dv==
 const wageOf=p=>Math.round(Math.pow(Math.max(1,p.ovr-55),1.6)*45/100)*100;
 const wg=p=>p.wg||(p.wg=wageOf(p));
 const cy=p=>p.cy===undefined?(p.cy=R(1,3)):p.cy;
-function expRow(){let n=G.players.filter(p=>p.clubId==G.uid&&cy(p)<=1).length;return n?`<div class="row"><span>📝 عقود تنتهي هذا الموسم:</span><span class="loss">${n} لاعبين</span></div>`:''}
+function expRow(){let l=G.players.filter(p=>p.clubId==G.uid),urgent=l.filter(p=>cy(p)<=1).length,soon=l.filter(p=>cy(p)==2).length;if(!urgent&&!soon)return '';return `<div class="row"><span>📝 متابعة العقود: <span class="loss">${urgent} تنتهي هذا الموسم</span>${soon?` • <span class="hl">${soon} خلال موسمين</span>`:''}</span><button class="mini" onclick="go('contracts')">إدارة العقود</button></div>`}
 function demand(p,y){return Math.round(wageOf(p)*1.1*(p.morale<50?1.2:p.morale>80?.95:1)*(y==1?1.1:y==3?.95:1)*(p.age>=32&&y==3?1.15:1)/100)*100}
-function renew(id){let p=G.players.find(x=>x.id==id);if(p.rf==G.season)return say('😠 '+p.name+' يرفض التفاوض هذا الموسم.');
+function renew(id){let p=G.players.find(x=>x.id==id);if(!p||p.clubId!==G.uid)return say('❌ اللاعب لم يعد ضمن فريقك.');if(cy(p)>=5)return say('ℹ️ '+p.name+' لديه عقد بالمدة القصوى (5 مواسم).');if(p.rf==G.season)return say('😠 '+p.name+' يرفض التفاوض هذا الموسم.');
   menu('📝 تمديد عقد '+p.name+' — اختر مدة التمديد',[1,2,3].map(y=>({l:`${y} ${y==1?'موسم':'مواسم'} — يطلب ${money(demand(p,y))}/أسبوع`,fn:()=>offer(p,y)})),true)}
 function offer(p,y){let d=demand(p,y),b=d*4,lo=Math.round(d*.85/100)*100;
   menu(`${p.name} — ${y} ${y==1?'موسم':'مواسم'} (مكافأة توقيع ${money(b)})`,[
