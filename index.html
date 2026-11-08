@@ -326,8 +326,9 @@ function offer(p,y){let d=demand(p,y),b=d*4,lo=Math.round(d*.85/100)*100;
     {l:`✅ قبول طلبه: ${money(d)}/أسبوع`,fn:()=>signC(p,y,d,b)},
     {l:`🤝 مساومة: ${money(lo)}/أسبوع (مخاطرة)`,fn:()=>{if(Math.random()<cl(.5+(p.morale-60)/100,.15,.85))signC(p,y,lo,b);
       else{p.rf=G.season;p.morale=cl(p.morale-8,30,100);save();say('😠 '+p.name+' رفض العرض وانزعج!');go('contracts')}}}],true)}
-function signC(p,y,w,b){if(G.budget<b)return say('❌ ميزانيتك لا تكفي لمكافأة التوقيع ('+money(b)+').');
-  G.budget-=b;p.cy=Math.min(5,cy(p)+y);p.wg=w;p.rf=0;p.morale=cl(p.morale+6,30,100);save();say('✅ جُدّد عقد '+p.name+': تمديد '+y+(y==1?' موسم':' مواسم')+' (متبقٍ '+p.cy+')');go('contracts')}
+function signC(p,y,w,b){const result=FM4NegotiationSystem.completeRenewal({player:p,clubId:G.uid,currentYears:cy(p),addYears:y,weeklyWage:w,signingBonus:b,budget:G.budget});
+  if(!result.ok)return say('❌ '+result.message);
+  G.budget=result.budget;Object.assign(p,result.player);p.morale=cl(p.morale+6,30,100);save();say('✅ جُدّد عقد '+p.name+': تمديد '+y+(y==1?' موسم':' مواسم')+' (متبقٍ '+p.cy+')');go('contracts')}
 function contractsEnd(){let U=G.uid,gone=[],add=[],h='',sq=()=>G.players.filter(p=>p.clubId==U),loaned=()=> (G.loans||[]).filter(l=>l.status==='active'&&l.fromClubId===U).map(l=>G.players.find(p=>p.id===l.playerId)).filter(p=>p&&p.clubId!==U),borrowedIds=new Set((G.loans||[]).filter(l=>l.status==='active'&&l.toClubId===U&&l.fromClubId!==U).map(l=>l.playerId));
   [...sq().filter(p=>!borrowedIds.has(p.id)),...loaned()].forEach(p=>{p.cy=cy(p)-1;if(p.cy<=0){gone.push(p);if(p.clubId===U){p.clubId=0;p.wg=0;p.cy=0}else p.loanContractExpired=true}});
   while(sq().length<16||sq().filter(p=>p.pos=='GK').length<2){let gk=sq().filter(p=>p.pos=='GK').length<2,n=mkPlayer(U,gk?'GK':pick(['DEF','MID','FWD']),52,true);n.cy=3;G.players.push(n);add.push(n)}
