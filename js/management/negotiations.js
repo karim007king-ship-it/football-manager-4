@@ -78,7 +78,7 @@
     }
     if (x.fee >= value * r.minOfferRatio && next.clubRounds <= r.maxClubRounds) {
       next.status = 'countered';
-      next.counterFee = Math.max(x.fee, round1000(value * r.counterOfferRatio));
+      next.counterFee = Math.max(x.fee, round1000(value * r.acceptOfferRatio));
       return { ok: true, offer: next, decision: 'countered', message: 'قدم النادي عرضاً مضاداً.' };
     }
     next.status = 'rejected';
