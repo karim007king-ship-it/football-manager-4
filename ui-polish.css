@@ -200,3 +200,38 @@ body.match-live #ctl .grid{margin:0}
  body.match-live #sb .match-live-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
  body.match-live #sb .match-live-stat span{font-size:9px}
 }
+
+/* Match timeline v2 — readable timestamps and incident severity */
+body.match-live #console{direction:rtl;text-align:right}
+body.match-live #console .ll{
+ display:block;padding:7px 5px;margin:0;border-bottom:1px solid #ffffff10;
+ color:#d9e2e8;font-size:12px;line-height:1.55;overflow-wrap:anywhere;
+}
+body.match-live #console .ll.has-time{
+ display:grid;grid-template-columns:36px minmax(0,1fr);align-items:start;gap:8px;
+}
+body.match-live #console .match-event-time{
+ display:inline-flex;align-items:center;justify-content:center;min-height:21px;
+ padding:2px 4px;border-radius:6px;background:#ffffff0c;border:1px solid #ffffff12;
+ color:#e7c66f;font-size:10px;font-weight:800;direction:ltr;
+ font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+body.match-live #console .match-event-body{
+ min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;
+}
+body.match-live #console .ll.log-goal{
+ margin:3px 0;padding:8px;border:1px solid #d9ac4b40;
+ border-inline-start:3px solid #f2b632;border-radius:8px;background:#8c6b1c1c;
+ color:#ffe6a2;font-weight:700;
+}
+body.match-live #console .ll.log-bad{
+ border-inline-start:3px solid #e35b62;background:#8c27301a;color:#ffc3c7;
+}
+body.match-live #console .ll.log-info{color:#b8d7ec}
+body.match-live #console .ll:not(.has-time) .match-event-body{display:block}
+body.match-live #ctl .cb:focus-visible{
+ outline:2px solid #f2c65f;outline-offset:2px;
+}
+body.match-live #ctl #bp{background:linear-gradient(145deg,#267a50,#17452f);border-color:#54bd8155}
+body.match-live #ctl #bs{background:linear-gradient(145deg,#876721,#514018);border-color:#d7ad4c55}
+body.match-live #ctl .cb:disabled{filter:grayscale(.65);opacity:.42}
