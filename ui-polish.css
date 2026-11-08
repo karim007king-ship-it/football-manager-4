@@ -261,3 +261,17 @@ body.match-live #sb .match-state-penalties .match-live-state,
 body.match-live #sb .match-state-fulltime .match-live-state{font-weight:900}
 @keyframes fm4-penalty-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
 @media(prefers-reduced-motion:reduce){body.match-live #sb .match-state-penalties .match-live-phase-banner{animation:none}}
+/* Accessible tactical, substitution and player-choice menus */
+#modal{z-index:40;backdrop-filter:blur(7px);background:#03080dc9}
+#mbox{padding:16px;border:1px solid #ffffff24;background:linear-gradient(155deg,#1b2d3e,#0c1721);box-shadow:0 18px 54px #000c}
+#mtxt{min-width:0}
+.match-menu-title{margin:0 0 12px;padding:0 2px 11px;border-bottom:1px solid #ffffff1a;color:#f3ca67;font-size:17px;line-height:1.5}
+.match-menu-list{display:grid;gap:8px;max-height:min(58dvh,490px);overflow-y:auto;padding:2px 2px 5px;overscroll-behavior:contain}
+#mbox .match-menu-option{width:100%;min-height:48px;margin:0;padding:10px 12px;display:flex;align-items:center;justify-content:flex-start;gap:8px;text-align:right;white-space:normal;overflow-wrap:anywhere;line-height:1.5;border:1px solid #ffffff18;border-radius:10px;background:linear-gradient(145deg,#263c50,#142333);color:#edf3f6;font-size:13px;font-weight:700;transition:border-color .15s,background .15s,transform .1s}
+#mbox .match-menu-option:active{transform:scale(.99);border-color:#f2c65f;background:#304b60}
+#mbox .match-menu-option:focus-visible,#mbox .btns button:focus-visible{outline:2px solid #f2c65f;outline-offset:2px}
+.match-menu-empty{margin:0;padding:18px 8px;text-align:center;color:#aebfca;background:#ffffff08;border:1px dashed #ffffff20;border-radius:10px}
+#mbox .btns{margin-top:10px}
+#mbox .btns button{min-height:44px;border:1px solid #ffffff20;border-radius:10px;font-weight:800}
+@media(max-width:380px){#mbox{padding:12px}.match-menu-title{font-size:15px}.match-menu-list{max-height:56dvh}#mbox .match-menu-option{min-height:46px;padding:9px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){#mbox .match-menu-option{transition:none}}
