@@ -52,8 +52,8 @@ test('sponsor signing, renewals, player loans and outgoing player sales use the 
 
 test('player purchases, negotiated transfers and player sales are posted through the finance ledger', () => {
   assert.match(html, /:transfer-buy:'\+id,'transfer-expense'/);
-  assert.match(html, /eventId:'s'\\+G\\.season\\+':negotiation:'\\+id\\+':fee',season:G\\.season,round:G\\.round\\+1,category:'transfer-expense'/);
-  assert.match(html, /eventId:'s'\\+G\\.season\\+':negotiation:'\\+id\\+':bonus',season:G\\.season,round:G\\.round\\+1,category:'signing-bonus'/);
+  assert.match(html, /eventId:'s'\+G\.season\+':negotiation:'\+id\+':fee',season:G\.season,round:G\.round\+1,category:'transfer-expense'/);
+  assert.match(html, /eventId:'s'\+G\.season\+':negotiation:'\+id\+':bonus',season:G\.season,round:G\.round\+1,category:'signing-bonus'/);
   assert.match(html, /:transfer-sale:'\+id,'transfer-income'/);
   assert.doesNotMatch(html, /G\.players=result\.players;G\.budget=result\.budget;let signed=/);
 });
