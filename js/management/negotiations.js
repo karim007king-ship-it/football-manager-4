@@ -67,7 +67,7 @@
     const x = input || {};
     const offer = x.offer;
     const player = x.player;
-    if (!offer || !player || offer.playerId !== player.id || offer.sellerClubId !== player.clubId) return fail('STALE_NEGOTIATION', 'تغيرت ملكية اللاعب أو لم تعد بيانات المفاوضات صالحة.');
+    if (!offer || offer.status !== 'pending' || !player || offer.playerId !== player.id || offer.sellerClubId !== player.clubId) return fail('STALE_NEGOTIATION', 'تغيرت ملكية اللاعب أو لم تعد بيانات المفاوضات صالحة.');
     if (!money(x.fee)) return fail('INVALID_FEE', 'قيمة العرض غير صالحة.');
     const r = rulesWith(x.rules);
     const value = Number.isSafeInteger(x.marketValue) && x.marketValue > 0 ? x.marketValue : 0;
