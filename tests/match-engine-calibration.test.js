@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {createMatch,simulateMatch}=require('../js/match/engine');
+const {createMatch,simulateMatch,resolveClearanceSecondBall}=require('../js/match/engine');
 const {createMatchFromGame}=require('../js/match/adapter');
 
 function engineTeam(name,side){
@@ -81,4 +81,49 @@ test('higher-rated teams gain a scoring edge regardless of home or away side',()
   }
   assert.ok((strongGoals-weakGoals)/games>.2,'higher-rated side should score more: '+homeOvr+' vs '+awayOvr);
  }
+});
+
+test('1000-case second-ball cohort preserves aerial ranking, pressure cutoff, ownership and transitions',()=>{
+ const ratings=[20,40,60,80,95],paces=[35,65],distances=[0,5,10,14,14.001];
+ let cases=0,contested=0,uncontested=0,defendingWins=0,attackingWins=0;
+ const skill=(aerial,pace)=>(aerial-50)*.025+pace*.006;
+ for(const defendingId of [0,1]){
+  const attackingId=1-defendingId;
+  for(const defenderAerial of ratings)for(const attackerAerial of ratings){
+   for(const defenderPace of paces)for(const attackerPace of paces)for(const pressureDistance of distances){
+    const outlet={id:'outlet',role:'CM',active:true,x:50,y:50,aerial:defenderAerial,pace:defenderPace};
+    const press={id:'press',role:'ST',active:true,x:50+pressureDistance,y:50,aerial:attackerAerial,pace:attackerPace};
+    const state={teams:[{id:0,players:[]},{id:1,players:[]}],ball:{x:50,y:50,team:defendingId,playerId:outlet.id},actionCount:7,transition:null};
+    state.teams[defendingId].players.push(outlet);
+    state.teams[attackingId].players.push(press);
+    const event=resolveClearanceSecondBall(state,state.teams[defendingId],attackingId,outlet);
+    cases++;
+    if(pressureDistance>14){
+     uncontested++;
+     assert.equal(event,null,'pressure beyond 14 units must not create a second-ball contest');
+     assert.equal(state.ball.team,defendingId);
+     assert.equal(state.ball.playerId,outlet.id);
+     assert.equal(state.transition,null);
+     continue;
+    }
+    contested++;
+    assert.ok(event&&event.contested,'pressure at or inside 14 units must create a contest');
+    const defenderScore=-skill(defenderAerial,defenderPace);
+    const attackerScore=pressureDistance-skill(attackerAerial,attackerPace);
+    const expectedTeam=attackerScore<defenderScore?attackingId:defenderScore<attackerScore?defendingId:Math.min(defendingId,attackingId);
+    const expectedPlayer=expectedTeam===defendingId?outlet:press;
+    assert.equal(event.team,expectedTeam);
+    assert.equal(event.playerId,expectedPlayer.id);
+    assert.equal(event.outcome,expectedTeam===defendingId?'retained':'lost');
+    assert.equal(state.ball.team,expectedTeam);
+    assert.equal(state.ball.playerId,expectedPlayer.id);
+    if(expectedTeam===defendingId){defendingWins++;assert.equal(state.transition.team,defendingId);}
+    else{attackingWins++;assert.equal(state.transition,null);}
+   }
+  }
+ }
+ assert.equal(cases,1000);
+ assert.equal(contested,800);
+ assert.equal(uncontested,200);
+ assert.ok(defendingWins>0&&attackingWins>0,'both sides must win under different skill and pressure combinations');
 });
