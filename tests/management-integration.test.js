@@ -49,7 +49,8 @@ test('incoming loans expose club and player selection with a budget guard', () =
   assert.match(html, /function confirmLoanIn\(/);
   assert.match(html, /if\(G\.budget<terms\.fee\)/);
   assert.match(html, /toClubId:G\.uid/);
-  assert.match(html, /G\.budget-=terms\.fee/);
+  assert.match(html, /financePost\('s'\+G\.season\+':loan-in:'\+id,'loan-expense','رسوم استعارة اللاعب '\+p\.name,-terms\.fee\)/);
+  assert.match(html, /FM4TransferSystem\.createLoan\(\{players:G\.players,loans:G\.loans\|\|\[\],playerId:id,fromClubId,toClubId:G\.uid/);
 });
 
 test('borrowed players keep their contract with the owning club during season rollover', () => {
