@@ -57,6 +57,19 @@ function assertValidState(state, seed, minute) {
         assert.ok(ids.has(event[key]), 'event ' + key + ' must reference a known player');
       }
     }
+    if (event.secondBall) {
+      const secondBall = event.secondBall;
+      assert.equal(event.type, 'clearance');
+      assert.equal(secondBall.contested, true);
+      assert.ok(secondBall.team === 0 || secondBall.team === 1);
+      assert.ok(secondBall.outcome === 'retained' || secondBall.outcome === 'lost');
+      assert.equal(secondBall.outcome, secondBall.team === event.team ? 'retained' : 'lost');
+      assert.ok(ids.has(secondBall.playerId), 'second-ball winner must reference a known player');
+      assert.ok(state.teams[secondBall.team].players.some(player => player.id === secondBall.playerId));
+      assert.ok(Number.isFinite(secondBall.x) && Number.isFinite(secondBall.y));
+      assert.equal(secondBall.x, event.x, 'second-ball metadata must use the clearance landing point');
+      assert.equal(secondBall.y, event.y, 'second-ball metadata must use the clearance landing point');
+    }
   }
 }
 
@@ -72,4 +85,23 @@ test('match state invariants hold through 90 minutes across 60 deterministic see
       assertValidState(state, seed, minute);
     }
   }
+});
+
+test('live-match second-ball metadata reconciles with clearance events across deterministic seeds',()=>{
+ let contested=0;
+ for(let seed=1001;seed<=1120;seed++){
+  const state=createMatch({teams:[squad('Audit-Home-'+seed,0),squad('Audit-Away-'+seed,1)],seed});
+  for(let minute=1;minute<=90;minute++)stepMatch(state);
+  for(const event of state.events){
+   if(!event.secondBall)continue;
+   contested++;
+   const winner=state.teams[event.secondBall.team].players.find(player=>player.id===event.secondBall.playerId);
+   assert.ok(winner,'every second-ball winner must resolve to a player in the owning team');
+   assert.equal(event.secondBall.outcome,event.secondBall.team===event.team?'retained':'lost');
+   assert.equal(event.secondBall.x,event.x);
+   assert.equal(event.secondBall.y,event.y);
+  }
+  assert.equal(state.possession[0]+state.possession[1],90);
+ }
+ assert.ok(contested>0,'the deterministic match cohort must exercise live second-ball events');
 });
