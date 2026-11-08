@@ -123,3 +123,21 @@ test('lineup screen renders an accessible tactical pitch and separate bench with
  assert.match(css,/\.lineup-bench/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
+test('squad screen renders player cards, safe sale controls and working position filters',()=>{
+ const html=read('index.html');
+ const css=read('ui-polish.css');
+ assert.match(html,/class="squad-summary"/);
+ assert.match(html,/class="squad-player \\$\{starter\?/);
+ assert.match(html,/data-squad-filter="ALL"/);
+ assert.match(html,/data-squad-group="\\$\{pos\}"/);
+ assert.match(html,/c\.querySelectorAll\('\[data-squad-filter\]'\)\.forEach/);
+ assert.match(html,/group\.hidden=filter!=='ALL'&&group\.dataset\.squadGroup!==filter/);
+ assert.match(html,/c\.querySelectorAll\('\[data-sell-player\]'\)\.forEach/);
+ assert.match(html,/sell\(button\.dataset\.sellPlayer\)/);
+ assert.match(html,/uiEsc\(p\.name\)/);
+ assert.match(html,/function sell\(id\)/);
+ assert.match(css,/\.squad-grid/);
+ assert.match(css,/\.squad-player\.is-starter/);
+ assert.match(css,/\.squad-filter:focus-visible/);
+ assert.match(css,/max-width:360px/);
+});
