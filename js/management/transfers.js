@@ -23,7 +23,7 @@
 
   function validateSquadMove(players, player, fromClubId, toClubId, rules) {
     const r = rulesWith(rules);
-    if (!players.some(p => p.clubId === toClubId)) return fail('BUYER_NOT_FOUND', 'النادي المشتري غير موجود في قاعدة بيانات المسيرة.');
+    if (toClubId !== 0 && !players.some(p => p.clubId === toClubId)) return fail('BUYER_NOT_FOUND', 'النادي المشتري غير موجود في قاعدة بيانات المسيرة.');
     if (fromClubId !== 0) {
       const from = clubPlayers(players, fromClubId);
       if (from.length - 1 < r.minSquadSize) return fail('SELLER_SQUAD_TOO_SMALL', 'لا يمكن إتمام الصفقة لأنها ستترك النادي البائع بعدد لاعبين أقل من الحد الأدنى.');
