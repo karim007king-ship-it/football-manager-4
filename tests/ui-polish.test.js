@@ -141,3 +141,27 @@ test('squad screen renders player cards, safe sale controls and working position
  assert.match(css,/\.squad-filter:focus-visible/);
  assert.match(css,/max-width:360px/);
 });
+
+test('tactics hub exposes saved play style, formations and data-backed lineup warnings',()=>{
+ const html=read('index.html');
+ const css=read('ui-polish.css');
+ assert.match(html,/const s=teamS\(U\),formation=FORM\[G\.form\]\|\|FORM\['4-4-2'\]/);
+ assert.match(html,/class="tactics-strength"/);
+ assert.match(html,/s\.a\.toFixed\(1\)/);
+ assert.match(html,/s\.d\.toFixed\(1\)/);
+ assert.match(html,/data-tactic-choice="\$\{k\}"/);
+ assert.match(html,/data-formation-choice="\$\{k\}"/);
+ assert.match(html,/aria-pressed="\$\{G\.tactic==k\}"/);
+ assert.match(html,/aria-pressed="\$\{G\.form==k\}"/);
+ assert.match(html,/const injured=s\.xi\.filter\(p=>p\.inj\)/);
+ assert.match(html,/const outOfPosition=s\.xi\.filter\(p=>s\.sl\[p\.id\]!==p\.pos\)/);
+ assert.match(html,/c\.querySelectorAll\('\[data-tactic-choice\]'\)\.forEach/);
+ assert.match(html,/setT\(button\.dataset\.tacticChoice\)/);
+ assert.match(html,/setF\(button\.dataset\.formationChoice\)/);
+ assert.match(html,/function setT\(t\)\{G\.tactic=t;save\(\);go\('tactics'\)\}/);
+ assert.match(html,/function setF\(f\)\{G\.form=f;save\(\);go\('tactics'\)\}/);
+ assert.match(css,/\.tactics-strength/);
+ assert.match(css,/\.tactics-shape/);
+ assert.match(css,/\.tactics-warnings/);
+ assert.match(css,/max-width:360px/);
+});
