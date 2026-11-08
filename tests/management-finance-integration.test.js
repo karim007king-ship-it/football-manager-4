@@ -133,3 +133,17 @@ test('cup and promotion rewards are not claimed before ledger confirmation', () 
   assert.match(html, /if\(c\.s\+1>=3\)\{const inF=c\.pairs\[0\]\.includes\(U\);if\(ws\[0\]===U&&!financePost/);
   assert.match(html, /if\(up\.includes\(uc\)\)\{if\(financePost/);
 });
+
+test('finance reports break down categories for the selected period', () => {
+  assert.match(html, /const reportHistory=history\.filter\(x=>selectedSeason==='all'\|\|x\.season===selectedSeason\)/);
+  assert.match(html, /const categoryTotals=new Map\(\)/);
+  assert.match(html, /📊 تحليل التصنيفات/);
+  assert.match(html, /دخل '\+money\(v\.income\)/);
+});
+
+test('finance reports compare income, expenses and net movement across seasons', () => {
+  assert.match(html, /const seasonReport=seasons\.slice\(\)\.sort\(\(a,b\)=>b-a\)\.map\(season=>FM4FinanceLedger\.summarize\(history,season\)\)/);
+  assert.match(html, /📅 مقارنة المواسم/);
+  assert.match(html, /الإيرادات '\+money\(x\.income\)/);
+  assert.match(html, /المصروفات '\+money\(x\.expenses\)/);
+});
