@@ -94,3 +94,7 @@ test('contracts dashboard breaks down weekly operating costs and remaining seaso
   assert.match(html, /الالتزامات المقدّرة حتى نهاية الموسم/);
   assert.match(html, /لا يشمل إيرادات المباريات أو الرعاية أو الكأس أو المكافآت/);
 });
+
+test('replayed atomic finance settlement is treated as successful instead of a failure', () => {
+  assert.match(html, /function financePostBatch\(entries\).*if\(!result\.ok\).*return false\}return true/);
+});
