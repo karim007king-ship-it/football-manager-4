@@ -314,7 +314,7 @@ function aiGoals(cid,n){let ps=G.players.filter(p=>p.clubId==cid&&p.pos!='GK'),l
 function awards(){let all=G.players.filter(p=>p.clubId>0&&p.st&&C(p.clubId).dv==C(G.uid).dv),U=G.uid,h='<br><br><b>🏅 جوائز الموسم</b>',rec={season:G.season},cn=p=>C(p.clubId)?C(p.clubId).name:'';
   let sc=all.slice().sort((a,b)=>b.st.g-a.st.g)[0],as=all.slice().sort((a,b)=>b.st.a-a.st.a)[0],
   mine=all.filter(p=>p.clubId==U&&p.st.ap>=5).sort((a,b)=>b.st.rs/b.st.ap-a.st.rs/a.st.ap)[0];
-  if(sc&&sc.st.g>0){h+=`<br>🥇 الهداف: ${sc.name} (${cn(sc)}) — ${sc.st.g} هدفاً`;rec.sc=`${sc.name} (${cn(sc)}) ${sc.st.g}`;if(sc.clubId==U){if(financePost('s'+G.season+':award:top-scorer:'+sc.id,'player-award','مكافأة هداف الموسم',150000)){sc.morale=100;h+=' (+150k)'}else h+='<br>⚠️ تعذّر تسجيل مكافأة الهداف'}}
+  if(sc&&sc.st.g>0){h+=`<br>🥇 الهداف: ${sc.name} (${cn(sc)}) — ${sc.st.g} هدفاً`;rec.sc=`${sc.name} (${cn(sc)}) ${sc.st.g}`;if(sc.clubId==U){if(financePostRecorded('s'+G.season+':award:top-scorer:'+sc.id,'player-award','مكافأة هداف الموسم',150000)){sc.morale=100;h+=' (+150k)'}else h+='<br>⚠️ تعذّر تسجيل مكافأة الهداف'}}
   if(as&&as.st.a>0){h+=`<br>🎯 أفضل صانع أهداف: ${as.name} (${cn(as)}) — ${as.st.a}`;rec.as=`${as.name} (${cn(as)}) ${as.st.a}`}
   if(mine){let av=(mine.st.rs/mine.st.ap).toFixed(2);h+=`<br>⭐ أفضل لاعب في فريقك: ${mine.name} (${av})`;rec.mp=`${mine.name} ${av}`;mine.xp=(mine.xp||0)+30}
   (G.aw=G.aw||[]).push(rec);G.players.forEach(p=>{p.st=null});return h}
@@ -503,7 +503,7 @@ function addDiv2(){G.clubs.forEach(c=>{c.dv=1});CL2.forEach((c,i)=>G.clubs.push(
 function promoEnd(){let t1=table(1),t2=table(2),uc=C(G.uid),down=t1.slice(-2),up=t2.slice(0,2);
   let h=`<br><br>🔼 <b>صعدوا للأولى:</b> ${up.map(c=>c.name).join('، ')}<br>🔽 <b>هبطوا للثانية:</b> ${down.map(c=>c.name).join('، ')}`;
   down.forEach(c=>c.dv=2);up.forEach(c=>c.dv=1);
-  if(up.includes(uc)){if(financePost('s'+G.season+':promotion-prize','promotion-income','مكافأة الصعود إلى الدرجة الأولى',500000)){G.conf=cl(G.conf+10,0,100);G.news.push('🔼 صعدت إلى الدرجة الأولى!');h+='<br>🎉 <b>صعد فريقك إلى الدرجة الأولى!</b> +500k و+10% ثقة'}else{G.news.push('تعذّر تسجيل مكافأة الصعود');h+='<br>⚠️ تعذّر تسجيل مكافأة الصعود'}}
+  if(up.includes(uc)){if(financePostRecorded('s'+G.season+':promotion-prize','promotion-income','مكافأة الصعود إلى الدرجة الأولى',500000)){G.conf=cl(G.conf+10,0,100);G.news.push('🔼 صعدت إلى الدرجة الأولى!');h+='<br>🎉 <b>صعد فريقك إلى الدرجة الأولى!</b> +500k و+10% ثقة'}else{G.news.push('تعذّر تسجيل مكافأة الصعود');h+='<br>⚠️ تعذّر تسجيل مكافأة الصعود'}}
   if(down.includes(uc)){G.conf=cl(G.conf-15,0,100);SD().fans=cl(SD().fans-8,10,100);G.news.push('🔽 هبطت إلى الدرجة الثانية');h+='<br>😞 <b>هبط فريقك إلى الدرجة الثانية</b> (-15% ثقة، -8% جماهير)'}
   return h}
 function refreshMarket(){G.players=G.players.filter(p=>p.clubId!==0);
@@ -1532,6 +1532,10 @@ function endSeason(){
     if(!loanPreflight.ok){console.error('FM4 loan recovery:',loanPreflight.code,loanPreflight.message);G.news.push('⚠️ بقيت بعض سجلات الإعارة بحاجة إلى مراجعة يدوية');}
   }
   const negotiationExpiry=FM4NegotiationSystem.expireAtSeasonEnd({negotiations:G.negotiations||[],season:G.season});if(negotiationExpiry.ok){G.negotiations=negotiationExpiry.negotiations;if(negotiationExpiry.expired)G.news.push('⌛ انتهت '+negotiationExpiry.expired+' مفاوضات غير مكتملة مع نهاية الموسم');}
+  const seasonPlayers=G.players.filter(p=>p.clubId>0&&p.st&&C(p.clubId).dv==C(G.uid).dv),topScorer=seasonPlayers.slice().sort((a,b)=>b.st.g-a.st.g)[0];
+  if(topScorer&&topScorer.st.g>0&&topScorer.clubId===G.uid&&!financePostRecorded('s'+G.season+':award:top-scorer:'+topScorer.id,'player-award','مكافأة هداف الموسم',150000)){G.news.push('⚠️ تعذّر تسجيل مكافأة الهداف؛ أُوقف إنهاء الموسم لإعادة المحاولة');return false}
+  const promotedClubs=table(2).slice(0,2);
+  if(promotedClubs.some(c=>c.id===G.uid)&&!financePostRecorded('s'+G.season+':promotion-prize','promotion-income','مكافأة الصعود إلى الدرجة الأولى',500000)){G.news.push('⚠️ تعذّر تسجيل مكافأة الصعود؛ أُوقف إنهاء الموسم لإعادة المحاولة');return false}
   let t=table(),rk=t.findIndex(x=>x.id==G.uid)+1,rw=(rk==1?900000:rk==2?500000:rk==3?250000:50000)*(C(G.uid).dv==2?.5:1);
   if(!financePost('s'+G.season+':league-prize','league-prize','مكافأة مركز الدوري',rw)){G.news.push('⚠️ تعذّر تسجيل مكافأة مركز الدوري؛ أُوقف إنهاء الموسم لإعادة المحاولة');return false}G.conf=cl(G.conf+cl(((G.exp||rk)-rk)*5,-15,15)+(rk<=3?4:0),0,100);
   let msg=`<b>🏁 نهاية الموسم ${G.season}</b><br>البطل: ${t[0].name}<br>مركزك: ${rk}<br>مكافأة: ${money(rw)}`;
