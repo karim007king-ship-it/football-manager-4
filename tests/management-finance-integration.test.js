@@ -166,9 +166,25 @@ test('player purchases, negotiated transfers and player sales are posted through
   assert.doesNotMatch(html, /G\.players=result\.players;G\.budget=result\.budget;let signed=/);
 });
 
-test('management objective reward is not reported as paid when ledger posting fails', () => {
-  assert.match(html, /paid=financePost\('s'\+G\.season\+':management-objective:'\+i/);
-  assert.match(html, /paid\?' \(\+'\+money\(o\.rw\)\+'\)':ok\?' \(تعذّر تسجيل المكافأة\)'/);
+test('management objective rewards are preflighted before season finalization mutates the career', () => {
+  const preflight = html.indexOf('function managementObjectivesPreflight()');
+  const endSeason = html.indexOf('function endSeason(){');
+  const loanMutation = html.indexOf('let loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd', endSeason);
+  assert.ok(preflight >= 0 && endSeason > preflight && loanMutation > endSeason);
+  const guard = html.slice(endSeason, loanMutation);
+  assert.match(guard, /if\(!managementObjectivesPreflight\(\)\)return false/);
+  assert.match(html.slice(preflight, endSeason), /financePostRecordedResult\('s'\+G\.season\+':management-objective:'/);
+  assert.match(html.slice(preflight, endSeason), /تعذّر تسجيل مكافأة هدف الإدارة؛ أُوقف إنهاء الموسم لإعادة المحاولة/);
+});
+
+test('management objective rewards and confidence are applied once across a season retry', () => {
+  const start = html.indexOf('function objEnd()');
+  const end = html.indexOf('function endSeason(){', start);
+  const objective = html.slice(start, end);
+  assert.match(html, /function financePostRecordedResult\(eventId,category,description,amount\)/);
+  assert.match(objective, /financePostRecordedResult\('s'\+G\.season\+':management-objective:'\+i/);
+  assert.match(objective, /G\.managementObjectiveRewards\|\|\(G\.managementObjectiveRewards=\{\}\)/);
+  assert.match(objective, /if\(!applied\[rewardKey\]\)\{applied\[rewardKey\]=true;G\.conf=cl\(G\.conf\+o\.cf,0,100\)\}/);
 });
 
 test('training facility upgrades and management objectives use idempotent ledger events', () => {
