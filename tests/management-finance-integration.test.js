@@ -336,3 +336,9 @@ test('season finalization remains retryable when league prize posting fails', ()
   assert.match(guard, /return false/);
   assert.doesNotMatch(guard, /rw=0/);
 });
+
+test('pending season finalization exposes a retry action instead of opening an invalid round fixture', () => {
+  assert.match(html, /if\(G\.round>=14&&G\.lastCompletedSeason!==G\.season\)\{if\(!endSeason\(\)\)\{/);
+  assert.match(html, /نهاية الموسم معلّقة/);
+  assert.match(html, /إعادة محاولة تسجيل المكافأة وإنهاء الموسم/);
+});
