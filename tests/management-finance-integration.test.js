@@ -329,7 +329,7 @@ test('weekly payroll and finance forecasts apply active loan wage shares', () =>
 
 test('season finalization remains retryable when league prize posting fails', () => {
   const start = html.indexOf("function endSeason(){");
-  const prize = html.indexOf("if(!financePost('s'+G.season+':league-prize'", start);
+  const prize = html.indexOf("if(!financePostRecorded('s'+G.season+':league-prize'", start);
   const seasonAdvance = html.indexOf("G.lastCompletedSeason=G.season;G.season++;G.round=0", start);
   assert.ok(start >= 0 && prize > start && seasonAdvance > prize);
   const guard = html.slice(prize, seasonAdvance);
@@ -342,7 +342,7 @@ test('season awards and promotion rewards are preflighted before finalization ca
   const start = html.indexOf("function endSeason(){");
   const scorer = html.indexOf("topScorer=seasonPlayers", start);
   const promotion = html.indexOf("const promotedClubs=table(2).slice(0,2)", start);
-  const leaguePrize = html.indexOf("if(!financePost('s'+G.season+':league-prize'", start);
+  const leaguePrize = html.indexOf("if(!financePostRecorded('s'+G.season+':league-prize'", start);
   const seasonAdvance = html.indexOf("G.lastCompletedSeason=G.season;G.season++;G.round=0", start);
   assert.ok(start >= 0 && scorer > start && promotion > scorer && leaguePrize > promotion && seasonAdvance > leaguePrize);
   const preflight = html.slice(scorer, leaguePrize);
