@@ -256,7 +256,7 @@ test('match settlement posts all income and operating costs atomically', () => {
 
 test('duplicate ledger replay cannot repeat non-financial side effects', () => {
   assert.match(html, /if\(!result\.ok\)\{console\.error\('FM4 finance ledger:'/);
-  assert.match(html, /return !result\.duplicate\}\nfunction financePostRecorded\(eventId,category,description,amount\)/);
+  assert.match(html, /return !result\.duplicate\}\nfunction financePostRecordedResult\(eventId,category,description,amount\)/);
   assert.match(html, /function financePostRecorded\(eventId,category,description,amount\)[\s\S]*?return true\}\nfunction financePostBatch/);
 });
 
