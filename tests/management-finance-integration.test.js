@@ -19,7 +19,8 @@ test('season finalization quarantines invalid loan records and safely completes 
   const preflight = html.indexOf("let loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd", guard);
   const prize = html.indexOf("league-prize", guard);
   assert.ok(guard >= 0 && preflight > guard && prize > preflight);
-  const recovery = html.slice(preflight, prize);
+  const recoveryEnd = html.indexOf("const negotiationExpiry=", preflight);
+  const recovery = html.slice(preflight, recoveryEnd);
   assert.match(recovery, /const duplicateLoanPlayers=new Set/);
   assert.match(recovery, /status:'suspended'/);
   assert.match(recovery, /suspensionReason:duplicate\?'duplicate-active-player':'invalid-active-loan'/);
