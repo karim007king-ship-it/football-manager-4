@@ -3,6 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const Finance = require('../js/management/finance-ledger');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
@@ -95,6 +96,19 @@ test('contracts dashboard breaks down weekly operating costs and remaining seaso
   assert.match(html, /لا يشمل إيرادات المباريات أو الرعاية أو الكأس أو المكافآت/);
 });
 
-test('replayed atomic finance settlement is treated as successful instead of a failure', () => {
+test('replayed atomic finance settlement is treated as successful without changing the budget twice', () => {
   assert.match(html, /function financePostBatch\(entries\).*if\(!result\.ok\).*return false\}return true/);
+  const career = { budget: 1000, financeHistory: [] };
+  const entries = [
+    { eventId: 's1:r1:gate', category: 'match-income', description: 'Gate income', amount: 500 },
+    { eventId: 's1:r1:wages', category: 'operating-expense', description: 'Weekly costs', amount: -200 }
+  ];
+  const first = Finance.applyBatchToCareer(career, entries, { season: 1, round: 1 });
+  const replay = Finance.applyBatchToCareer(career, entries, { season: 1, round: 1 });
+  assert.equal(first.ok, true);
+  assert.equal(first.duplicate, false);
+  assert.equal(replay.ok, true);
+  assert.equal(replay.duplicate, true);
+  assert.equal(career.budget, 1300);
+  assert.equal(career.financeHistory.length, 2);
 });
