@@ -325,3 +325,14 @@ test('weekly payroll and finance forecasts apply active loan wage shares', () =>
   assert.match(html, /let wages=clubWeeklyWages\(U\)\+ACW/);
   assert.match(html, /حصة النادي المستعير من الراتب/);
 });
+
+test('season finalization remains retryable when league prize posting fails', () => {
+  const start = html.indexOf("function endSeason(){");
+  const prize = html.indexOf("if(!financePost('s'+G.season+':league-prize'", start);
+  const seasonAdvance = html.indexOf("G.lastCompletedSeason=G.season;G.season++;G.round=0", start);
+  assert.ok(start >= 0 && prize > start && seasonAdvance > prize);
+  const guard = html.slice(prize, seasonAdvance);
+  assert.match(guard, /تعذّر تسجيل مكافأة مركز الدوري؛ أُوقف إنهاء الموسم لإعادة المحاولة/);
+  assert.match(guard, /return false/);
+  assert.doesNotMatch(guard, /rw=0/);
+});
