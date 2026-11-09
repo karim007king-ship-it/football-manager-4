@@ -386,3 +386,27 @@ test('pending season finalization exposes a retry action instead of opening an i
   assert.match(html, /نهاية الموسم معلّقة/);
   assert.match(html, /إعادة محاولة تسجيل المكافأة وإنهاء الموسم/);
 });
+
+test('weekly operating payroll is charged once in each distinct round and never twice on replay', () => {
+  const career = { budget: 5000, financeHistory: [] };
+  const settleRound = (round, wages) => financeLedger.applyBatchToCareer(career, [
+    { eventId: `s1:r${round}:weekly-costs`, category: 'operating-expense', description: 'Weekly payroll and facilities', amount: -wages }
+  ], { season: 1, round });
+  const first = settleRound(1, 1200);
+  assert.equal(first.ok, true);
+  assert.equal(first.duplicate, false);
+  assert.equal(career.budget, 3800);
+  const firstReplay = settleRound(1, 1200);
+  assert.equal(firstReplay.ok, true);
+  assert.equal(firstReplay.duplicate, true);
+  assert.equal(career.budget, 3800);
+  const second = settleRound(2, 1250);
+  assert.equal(second.ok, true);
+  assert.equal(second.duplicate, false);
+  assert.equal(career.budget, 2550);
+  const secondReplay = settleRound(2, 1250);
+  assert.equal(secondReplay.ok, true);
+  assert.equal(secondReplay.duplicate, true);
+  assert.equal(career.budget, 2550);
+  assert.deepEqual(career.financeHistory.map(entry => [entry.round, entry.amount]), [[1, -1200], [2, -1250]]);
+});
