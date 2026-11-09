@@ -116,7 +116,7 @@ test('replayed atomic finance settlement is treated as successful without changi
 test('single finance posts keep duplicate replays blocked for one-time management actions', () => {
   assert.match(html, /function financePost\(eventId,category,description,amount\).*if\(!result\.ok\).*return false\}return !result\.duplicate/);
   const career = { budget: 1000, financeHistory: [] };
-  const entry = { eventId: 's1:training-facility:0', category: 'facility-investment', description: 'Training facility upgrade', amount: -400 };
+  const entry = { eventId: 's1:training-facility:0', season: 1, round: 1, category: 'facility-investment', description: 'Training facility upgrade', amount: -400 };
   const first = Finance.applyToCareer(career, entry);
   const replay = Finance.applyToCareer(career, entry);
   assert.equal(first.ok, true);
