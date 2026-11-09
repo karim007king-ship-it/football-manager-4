@@ -522,7 +522,7 @@ function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if
 function financePost(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok){console.error('FM4 finance ledger:',result.code,result.message);return false}return !result.duplicate}
 function financePostRecordedResult(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok)console.error('FM4 finance ledger:',result.code,result.message);return result}
 function financePostRecorded(eventId,category,description,amount){const result=financePostRecordedResult(eventId,category,description,amount);if(!result.ok)return false;return true}
-function financePostBatch(entries){const result=FM4FinanceLedger.applyBatchToCareer(G,entries,{season:G.season,round:G.round+1});if(!result.ok){console.error('FM4 finance batch:',result.code,result.message,result.failedIndex);return false}return !result.duplicate}
+function financePostBatch(entries){const result=FM4FinanceLedger.applyBatchToCareer(G,entries,{season:G.season,round:G.round+1});if(!result.ok){console.error('FM4 finance batch:',result.code,result.message,result.failedIndex);return false}return true}
 function financeHtml(seasonFilter='current',categoryFilter='all'){
   const history=Array.isArray(G.financeHistory)?G.financeHistory:[],seasons=[...new Set(history.map(x=>x.season).filter(Number.isInteger))].sort((a,b)=>b-a);
   if(!seasons.includes(G.season))seasons.unshift(G.season);
