@@ -337,6 +337,22 @@ test('season finalization remains retryable when league prize posting fails', ()
   assert.doesNotMatch(guard, /rw=0/);
 });
 
+test('season awards and promotion rewards are preflighted before finalization can erase their eligibility', () => {
+  const start = html.indexOf("function endSeason(){");
+  const scorer = html.indexOf("topScorer=seasonPlayers", start);
+  const promotion = html.indexOf("const promotedClubs=table(2).slice(0,2)", start);
+  const leaguePrize = html.indexOf("if(!financePost('s'+G.season+':league-prize'", start);
+  const seasonAdvance = html.indexOf("G.lastCompletedSeason=G.season;G.season++;G.round=0", start);
+  assert.ok(start >= 0 && scorer > start && promotion > scorer && leaguePrize > promotion && seasonAdvance > leaguePrize);
+  const preflight = html.slice(scorer, leaguePrize);
+  assert.match(preflight, /financePostRecorded\('s'\+G\.season\+':award:top-scorer:'/);
+  assert.match(preflight, /financePostRecorded\('s'\+G\.season\+':promotion-prize'/);
+  assert.match(preflight, /تعذّر تسجيل مكافأة الهداف؛ أُوقف إنهاء الموسم لإعادة المحاولة/);
+  assert.match(preflight, /تعذّر تسجيل مكافأة الصعود؛ أُوقف إنهاء الموسم لإعادة المحاولة/);
+  assert.match(html, /if\(financePostRecorded\('s'\+G\.season\+':award:top-scorer:'/);
+  assert.match(html, /if\(financePostRecorded\('s'\+G\.season\+':promotion-prize'/);
+});
+
 test('pending season finalization exposes a retry action instead of opening an invalid round fixture', () => {
   assert.match(html, /if\(G\.round>=14&&G\.lastCompletedSeason!==G\.season\)\{if\(!endSeason\(\)\)\{/);
   assert.match(html, /نهاية الموسم معلّقة/);
