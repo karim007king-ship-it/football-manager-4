@@ -410,3 +410,29 @@ test('weekly operating payroll is charged once in each distinct round and never 
   assert.equal(career.budget, 2550);
   assert.deepEqual(career.financeHistory.map(entry => [entry.round, entry.amount]), [[1, -1200], [2, -1250]]);
 });
+
+test('weekly payroll remains idempotent after a career save and reload', () => {
+  let career = { budget: 4200, financeHistory: [] };
+  const settle = (round, amount) => financeLedger.applyBatchToCareer(career, [
+    { eventId: `s3:r${round}:weekly-costs`, category: 'operating-expense', description: 'Weekly payroll and facilities', amount: -amount }
+  ], { season: 3, round });
+
+  const first = settle(6, 900);
+  assert.equal(first.ok, true);
+  assert.equal(career.budget, 3300);
+
+  career = JSON.parse(JSON.stringify(career));
+  const second = settle(7, 950);
+  assert.equal(second.ok, true);
+  assert.equal(career.budget, 2350);
+
+  career = JSON.parse(JSON.stringify(career));
+  const replayAfterReload = settle(7, 950);
+  assert.equal(replayAfterReload.ok, true);
+  assert.equal(replayAfterReload.duplicate, true);
+  assert.equal(career.budget, 2350);
+  assert.deepEqual(career.financeHistory.map(entry => [entry.season, entry.round, entry.amount]), [
+    [3, 6, -900],
+    [3, 7, -950]
+  ]);
+});
