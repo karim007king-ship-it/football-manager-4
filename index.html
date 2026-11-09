@@ -578,6 +578,7 @@ function go(t){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab==t));
   $('console').style.display='none';$('ctl').style.display='none';$('sb').style.display='none';
   const c=$('content');c.style.display='block';hdr();
+  if(G.round>=14&&G.lastCompletedSeason!==G.season){if(!endSeason()){c.innerHTML='<div class="pcard"><h3>⚠️ نهاية الموسم معلّقة</h3><p>لم يتم تأكيد تسجيل مكافأة مركز الدوري. لم نُنهِ الموسم ولم نُسقط المكافأة.</p><button class="action-btn gold" onclick="go(\'home\')">إعادة محاولة تسجيل المكافأة وإنهاء الموسم</button></div>';return}}
   if(G.conf<=0){if(!G.fired)fireNow();c.innerHTML=jobsHtml(true);return}
   const U=G.uid,mine=()=>G.players.filter(p=>p.clubId==U);
   if(t=='press'){c.innerHTML=pressHtml();return}
