@@ -188,3 +188,15 @@ test('weekly wage allocation rejects duplicate or inconsistent active loan recor
   assert.equal(Transfers.calculateWeeklyWageCommitment({ ...base, loans: [{ ...loan, toClubId: 3 }] }).code, 'LOAN_PLAYER_CLUB_MISMATCH');
   assert.equal(Transfers.calculateWeeklyWageCommitment({ ...base, loans: [loan], wageForPlayer: () => -1 }).code, 'INVALID_PLAYER_WAGE');
 });
+test('loan wage rounding preserves the exact total across both clubs', () => {
+  const players = [{ id: 'odd-wage', clubId: 1, wg: 1 }];
+  const loans = [{ id: 'odd-loan', playerId: 'odd-wage', fromClubId: 2, toClubId: 1, wageSharePct: 50, status: 'active' }];
+  const borrower = Transfers.calculateWeeklyWageCommitment({ players, loans, clubId: 1, wageForPlayer: p => p.wg });
+  const parent = Transfers.calculateWeeklyWageCommitment({ players, loans, clubId: 2, wageForPlayer: p => p.wg });
+  assert.equal(borrower.ok, true);
+  assert.equal(parent.ok, true);
+  assert.equal(borrower.amount, 1);
+  assert.equal(parent.amount, 0);
+  assert.equal(borrower.amount + parent.amount, 1);
+});
+
