@@ -354,6 +354,17 @@ test('season awards and promotion rewards are preflighted before finalization ca
   assert.match(html, /if\(financePostRecorded\('s'\+G\.season\+':promotion-prize'/);
 });
 
+test('league prize posting is idempotent when season finalization is retried after a successful post', () => {
+  const start = html.indexOf("function endSeason(){");
+  const prize = html.indexOf("if(!financePostRecorded('s'+G.season+':league-prize','league-prize','مكافأة مركز الدوري',rw))", start);
+  const advance = html.indexOf("G.lastCompletedSeason=G.season;G.season++;G.round=0", start);
+  assert.ok(start >= 0 && prize > start && advance > prize);
+  const posting = html.slice(prize, advance);
+  assert.match(posting, /تعذّر تسجيل مكافأة مركز الدوري؛ أُوقف إنهاء الموسم لإعادة المحاولة/);
+  assert.match(html, /function financePostRecorded\(eventId,category,description,amount\)[\s\S]*?return true\}/);
+  assert.doesNotMatch(posting, /financePost\('s'\+G\.season\+':league-prize'/);
+});
+
 test('pending season finalization exposes a retry action instead of opening an invalid round fixture', () => {
   assert.match(html, /if\(G\.round>=14&&G\.lastCompletedSeason!==G\.season\)\{if\(!endSeason\(\)\)\{/);
   assert.match(html, /نهاية الموسم معلّقة/);
