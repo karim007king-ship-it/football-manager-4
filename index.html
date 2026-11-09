@@ -1537,7 +1537,7 @@ function endSeason(){
   const promotedClubs=table(2).slice(0,2);
   if(promotedClubs.some(c=>c.id===G.uid)&&!financePostRecorded('s'+G.season+':promotion-prize','promotion-income','مكافأة الصعود إلى الدرجة الأولى',500000)){G.news.push('⚠️ تعذّر تسجيل مكافأة الصعود؛ أُوقف إنهاء الموسم لإعادة المحاولة');return false}
   let t=table(),rk=t.findIndex(x=>x.id==G.uid)+1,rw=(rk==1?900000:rk==2?500000:rk==3?250000:50000)*(C(G.uid).dv==2?.5:1);
-  if(!financePost('s'+G.season+':league-prize','league-prize','مكافأة مركز الدوري',rw)){G.news.push('⚠️ تعذّر تسجيل مكافأة مركز الدوري؛ أُوقف إنهاء الموسم لإعادة المحاولة');return false}G.conf=cl(G.conf+cl(((G.exp||rk)-rk)*5,-15,15)+(rk<=3?4:0),0,100);
+  if(!financePostRecorded('s'+G.season+':league-prize','league-prize','مكافأة مركز الدوري',rw)){G.news.push('⚠️ تعذّر تسجيل مكافأة مركز الدوري؛ أُوقف إنهاء الموسم لإعادة المحاولة');return false}G.conf=cl(G.conf+cl(((G.exp||rk)-rk)*5,-15,15)+(rk<=3?4:0),0,100);
   let msg=`<b>🏁 نهاية الموسم ${G.season}</b><br>البطل: ${t[0].name}<br>مركزك: ${rk}<br>مكافأة: ${money(rw)}`;
   G.news.push(`نهاية الموسم ${G.season}: البطل ${t[0].name} ومركزك ${rk}`);
   let sd=buildStory(t,rk);
