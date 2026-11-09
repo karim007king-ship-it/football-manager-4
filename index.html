@@ -257,7 +257,7 @@ function met(o){let v=objCur(o);return o.k=='rank'?v<=o.t:v>=o.t}
 function objRows(){return (G.obj||[]).map(o=>{let v=objCur(o),t=o.k=='rank'?'المركز '+v:o.k=='budget'?money(v):v;
   return `<div class="row"><span>${o.k=='rank'?'📍':met(o)?'✅':'⏳'} ${otxt(o)}<br><span class="dim">الحالي: ${t} • المكافأة ${money(o.rw)} + ${o.cf}% ثقة${o.k=='rank'?' • الفشل -10% ثقة':''}</span></span></div>`}).join('')}
 function objEnd(){let h='<br><br><b>🎯 أهداف الإدارة</b>';
-  (G.obj||[]).forEach((o,i)=>{let ok=met(o),paid=false;if(ok){paid=financePost('s'+G.season+':management-objective:'+i,'management-prize','مكافأة هدف الإدارة: '+otxt(o),o.rw);if(paid)G.conf=cl(G.conf+o.cf,0,100)}else if(o.k=='rank')G.conf=cl(G.conf-10,0,100);
+  (G.obj||[]).forEach((o,i)=>{let ok=met(o),paid=false;if(ok){const result=financePostRecordedResult('s'+G.season+':management-objective:'+i,'management-prize','مكافأة هدف الإدارة: '+otxt(o),o.rw);paid=result.ok;if(paid){const applied=G.managementObjectiveRewards||(G.managementObjectiveRewards={}),rewardKey='s'+G.season+':'+i;if(!applied[rewardKey]){applied[rewardKey]=true;G.conf=cl(G.conf+o.cf,0,100)}}}else if(o.k=='rank')G.conf=cl(G.conf-10,0,100);
     h+=`<br>${ok?(paid?'✅':'⚠️'):'❌'} ${otxt(o)}${paid?' (+'+money(o.rw)+')':ok?' (تعذّر تسجيل المكافأة)':''}`});return h}
 const CN=['ربع النهائي','نصف النهائي','النهائي'];
 function newCup(){let i=G.clubs.filter(c=>c.dv==C(G.uid).dv).map(c=>c.id).sort(()=>Math.random()-.5);G.cup={s:0,pairs:[[i[0],i[1]],[i[2],i[3]],[i[4],i[5]],[i[6],i[7]]],lg:[],due:false,done:false}}
@@ -520,7 +520,8 @@ let saveWarn=false;
 function save(){try{if(G&&!Array.isArray(G.loans)){if(G.loans!==undefined&&G.loans!==null)G.loansRecovery=G.loans;G.loans=[]}if(G&&!Array.isArray(G.negotiations))G.negotiations=[];if(G&&!Array.isArray(G.financeHistory)){if(G.financeHistory!==undefined&&G.financeHistory!==null)G.financeHistoryRecovery=G.financeHistory;G.financeHistory=[]}localStorage.setItem(KEY,JSON.stringify(G))}catch(e){if(!saveWarn){saveWarn=true;say('⚠️ تعذّر حفظ اللعبة على هذا الجهاز. قد يلزم تفعيل التخزين المحلي في المتصفح أو WebView وإلا ضاع تقدمك.')}}}
 function load(){try{let s=localStorage.getItem(KEY);if(s){let o=JSON.parse(s);if(o&&o.v==2){G=o;if(!Array.isArray(G.loans)){if(G.loans!==undefined&&G.loans!==null)G.loansRecovery=G.loans;G.loans=[]}if(!Array.isArray(G.negotiations))G.negotiations=[];if(!Array.isArray(G.financeHistory)){if(G.financeHistory!==undefined&&G.financeHistory!==null)G.financeHistoryRecovery=G.financeHistory;G.financeHistory=[]}}}}catch(e){try{let raw=localStorage.getItem(KEY);if(raw)localStorage.setItem(KEY+'_recovery',raw)}catch(recoveryError){}if(!saveWarn){saveWarn=true;say('⚠️ تعذّر قراءة الحفظ. احتفظنا بنسخة استرداد إن أمكن؛ لا تبدأ مسيرة جديدة قبل مراجعة الحفظ.')}}}
 function financePost(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok){console.error('FM4 finance ledger:',result.code,result.message);return false}return !result.duplicate}
-function financePostRecorded(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok){console.error('FM4 finance ledger:',result.code,result.message);return false}return true}
+function financePostRecordedResult(eventId,category,description,amount){const result=FM4FinanceLedger.applyToCareer(G,{eventId,season:G.season,round:G.round+1,category,description,amount});if(!result.ok)console.error('FM4 finance ledger:',result.code,result.message);return result}
+function financePostRecorded(eventId,category,description,amount){return financePostRecordedResult(eventId,category,description,amount).ok}
 function financePostBatch(entries){const result=FM4FinanceLedger.applyBatchToCareer(G,entries,{season:G.season,round:G.round+1});if(!result.ok){console.error('FM4 finance batch:',result.code,result.message,result.failedIndex);return false}return !result.duplicate}
 function financeHtml(seasonFilter='current',categoryFilter='all'){
   const history=Array.isArray(G.financeHistory)?G.financeHistory:[],seasons=[...new Set(history.map(x=>x.season).filter(Number.isInteger))].sort((a,b)=>b-a);
@@ -1510,8 +1511,18 @@ function endMatch(){
   save();clearMatchSession();busy=false;M=null;shadowMonitor=null;document.body.classList.remove('match-live');hdr();$('ctl').style.display='none';
   $('content').style.display='block';$('content').innerHTML=`<button class="action-btn" onclick="go('home')">متابعة</button>`;if(!done)setTimeout(lockerEvent,700)}
 
+function managementObjectivesPreflight(){
+  const objectives=Array.isArray(G.obj)?G.obj:[];
+  for(let i=0;i<objectives.length;i++){
+    const objective=objectives[i];if(!objective||!met(objective))continue;
+    const result=financePostRecordedResult('s'+G.season+':management-objective:'+i,'management-prize','مكافأة هدف الإدارة: '+otxt(objective),objective.rw);
+    if(!result.ok){G.news.push('⚠️ تعذّر تسجيل مكافأة هدف الإدارة؛ أُوقف إنهاء الموسم لإعادة المحاولة');return false}
+  }
+  return true
+}
 function endSeason(){
   if(G.round<14||G.lastCompletedSeason===G.season){console.warn('FM4 season lifecycle: season is not ready or already finalized',G.season,G.round);return false}
+  if(!managementObjectivesPreflight())return false;
   let loanPreflight=FM4TransferSystem.returnLoansAtSeasonEnd({players:G.players,loans:G.loans||[],season:G.season});
   if(!loanPreflight.ok){
     console.error('FM4 loan lifecycle:',loanPreflight.code,loanPreflight.message);
