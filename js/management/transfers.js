@@ -218,17 +218,23 @@
     for (const player of x.players) {
       const loan = byPlayer.get(player.id);
       let sharePct = 100;
+      let parentClubShare = false;
       if (loan) {
         if (player.clubId !== loan.toClubId) return fail('LOAN_PLAYER_CLUB_MISMATCH', 'النادي المسجل للاعب لا يطابق النادي المستعير.');
         if (x.clubId === loan.toClubId) sharePct = loan.wageSharePct;
-        else if (x.clubId === loan.fromClubId) sharePct = 100 - loan.wageSharePct;
-        else continue;
+        else if (x.clubId === loan.fromClubId) {
+          sharePct = 100 - loan.wageSharePct;
+          parentClubShare = true;
+        } else continue;
       } else if (player.clubId !== x.clubId) {
         continue;
       }
       const wage = x.wageForPlayer(player);
       if (!validMoney(wage)) return fail('INVALID_PLAYER_WAGE', 'راتب أحد اللاعبين غير صالح.');
-      const portion = Math.round(wage * sharePct / 100);
+      // Calculate the borrowing club's rounded share once; the parent club gets
+      // the exact remainder so both clubs' commitments always equal the wage.
+      const borrowerShare = loan ? Math.round(wage * loan.wageSharePct / 100) : wage;
+      const portion = parentClubShare ? wage - borrowerShare : Math.round(wage * sharePct / 100);
       if (!Number.isSafeInteger(amount + portion)) return fail('WAGE_TOTAL_OVERFLOW', 'إجمالي الرواتب يتجاوز النطاق المالي المسموح.');
       amount += portion;
     }
